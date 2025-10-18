@@ -28,6 +28,7 @@ class _MainScreenState extends State<MainScreen> {
   final ScrollController _scrollController = ScrollController();
   List<Map<String, dynamic>> _projects = [];
   String _currentDate = '';
+  final Map<int, GlobalKey> _projectKeys = {};
   bool _isLoadingProjects = false;
   bool _hasLoadedProjects = false;
   
@@ -49,6 +50,19 @@ class _MainScreenState extends State<MainScreen> {
     _loadProjectsOnce();
   }
 
+  @override
+  void didUpdateWidget(MainScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Scroll to active project if it exists when widget updates
+    if (_activeProjectId != null && _projects.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(milliseconds: 100), () {
+          _scrollToActiveProject();
+        });
+      });
+    }
+  }
+
   Future<void> _loadActiveProject() async {
     final prefs = await SharedPreferences.getInstance();
     final activeId = prefs.getInt('active_project_id');
@@ -56,7 +70,18 @@ class _MainScreenState extends State<MainScreen> {
       setState(() {
         _activeProjectId = activeId;
       });
+      debugPrint('📂 Active project loaded: $activeId');
+    } else {
+      debugPrint('📂 No active project found in storage');
     }
+    
+    // Load expanded projects state
+    final expandedList = prefs.getStringList('expanded_projects') ?? [];
+    final expandedIds = expandedList.map((id) => int.tryParse(id) ?? 0).toSet();
+    setState(() {
+      _expandedProjects = expandedIds;
+    });
+    debugPrint('📂 Expanded projects loaded: $expandedIds');
   }
 
   Future<void> _saveActiveProject(int? projectId) async {
@@ -66,6 +91,12 @@ class _MainScreenState extends State<MainScreen> {
     } else {
       await prefs.remove('active_project_id');
     }
+  }
+
+  Future<void> _saveExpandedProjects() async {
+    final prefs = await SharedPreferences.getInstance();
+    final expandedList = _expandedProjects.map((id) => id.toString()).toList();
+    await prefs.setStringList('expanded_projects', expandedList);
   }
 
   Future<void> _loadProjectsOnce() async {
@@ -85,11 +116,18 @@ class _MainScreenState extends State<MainScreen> {
           _currentDate = result['dayx'] ?? '';
           _hasLoadedProjects = true;
         });
+        
+        // Clean up old project keys that are no longer in the projects list
+        final currentProjectIds = _projects.map((p) => int.tryParse(p['id'].toString()) ?? 0).toSet();
+        _projectKeys.removeWhere((key, value) => !currentProjectIds.contains(key));
 
         // Auto scroll to active project after loading
         if (_activeProjectId != null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            _scrollToActiveProject();
+            // Add a delay to ensure the UI is fully rendered and keys are available
+            Future.delayed(const Duration(milliseconds: 500), () {
+              _scrollToActiveProject();
+            });
           });
         }
       }
@@ -105,22 +143,83 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _scrollToActiveProject() {
-    if (_activeProjectId == null || !_scrollController.hasClients) return;
+    if (_activeProjectId == null || _projects.isEmpty) return;
+    
+    // Wait for ScrollController to be ready
+    if (!_scrollController.hasClients) {
+      Future.delayed(const Duration(milliseconds: 100), () {
+        _scrollToActiveProject();
+      });
+      return;
+    }
 
+    // Try using GlobalKey approach first
+    final projectKey = _projectKeys[_activeProjectId];
+    if (projectKey != null && projectKey.currentContext != null) {
+      try {
+        Scrollable.ensureVisible(
+          projectKey.currentContext!,
+          duration: const Duration(milliseconds: 1200),
+          curve: Curves.easeInOutCubic,
+          alignment: 0.2, // Position at 20% from top of viewport
+        );
+        debugPrint('✅ Using ensureVisible for project $_activeProjectId');
+        return;
+      } catch (e) {
+        debugPrint('⚠️ ensureVisible failed, falling back to manual calculation: $e');
+      }
+    }
+
+    // Fallback to manual calculation
     final activeIndex = _projects.indexWhere((project) {
       final projectId = int.tryParse(project['id'].toString()) ?? 0;
       return projectId == _activeProjectId;
     });
 
     if (activeIndex != -1) {
-      final double cardHeight = 200.0;
-      final double targetOffset = activeIndex * (cardHeight + 16);
+      try {
+        // Use a more accurate approach by calculating cumulative heights
+        double totalOffset = 0.0;
+        
+        // Calculate the offset by summing up heights of all cards before the target
+        for (int i = 0; i < activeIndex; i++) {
+          final projectId = int.tryParse(_projects[i]['id'].toString()) ?? 0;
+          
+          // More accurate base card height measurement
+          double cardHeight = 160.0; // Increased base height to match actual card
+          
+          // Add expanded content height if this project is expanded
+          if (_expandedProjects.contains(projectId)) {
+            cardHeight += 220.0; // Height for expanded content (visits list)
+          }
+          
+          // Add margin
+          cardHeight += 16.0;
+          
+          totalOffset += cardHeight;
+        }
+        
+        // Add some padding to center the target card better
+        final double viewportHeight = _scrollController.position.viewportDimension;
+        final double centeredOffset = totalOffset - (viewportHeight * 0.15);
+        
+        final double maxScrollExtent = _scrollController.position.maxScrollExtent;
+        final double finalOffset = centeredOffset.clamp(0.0, maxScrollExtent);
 
-      _scrollController.animateTo(
-        targetOffset,
-        duration: const Duration(milliseconds: 800),
-        curve: Curves.easeInOut,
-      );
+        _scrollController.animateTo(
+          finalOffset,
+          duration: const Duration(milliseconds: 1200),
+          curve: Curves.easeInOutCubic,
+        );
+        
+        debugPrint('✅ Manual scroll to project $_activeProjectId (index: $activeIndex)');
+        debugPrint('📏 Calculated offset: $totalOffset, Final offset: $finalOffset');
+        debugPrint('📋 Total projects: ${_projects.length}, Expanded: ${_expandedProjects.length}');
+      } catch (e) {
+        debugPrint('❌ Error scrolling to active project: $e');
+      }
+    } else {
+      debugPrint('⚠️ Active project $_activeProjectId not found in projects list');
     }
   }
 
@@ -892,6 +991,15 @@ class _MainScreenState extends State<MainScreen> {
       onTap: (index) {
         int actualIndex = index >= 2 ? index + 1 : index;
         setState(() => _selectedIndex = actualIndex);
+        
+        // If switching to projects tab and there's an active project, scroll to it
+        if (actualIndex == 1 && _activeProjectId != null && _projects.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Future.delayed(const Duration(milliseconds: 400), () {
+              _scrollToActiveProject();
+            });
+          });
+        }
       },
     );
   }
@@ -915,7 +1023,18 @@ class _MainScreenState extends State<MainScreen> {
       activeColor: AppColors.primary,
       inactiveColor: Colors.grey[600],
       splashColor: AppColors.primary.withAlpha(51),
-      onTap: (index) => setState(() => _selectedIndex = index),
+      onTap: (index) {
+        setState(() => _selectedIndex = index);
+        
+        // If switching to projects tab and there's an active project, scroll to it
+        if (index == 1 && _activeProjectId != null && _projects.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Future.delayed(const Duration(milliseconds: 400), () {
+              _scrollToActiveProject();
+            });
+          });
+        }
+      },
     );
   }
 
@@ -1927,6 +2046,12 @@ class _MainScreenState extends State<MainScreen> {
     final projectId = int.tryParse(project['id'].toString()) ?? 0;
     bool isExpanded = _expandedProjects.contains(projectId);
     bool isActive = _activeProjectId == projectId;
+    
+    // Create or get GlobalKey for this project
+    if (!_projectKeys.containsKey(projectId)) {
+      _projectKeys[projectId] = GlobalKey();
+    }
+    final projectKey = _projectKeys[projectId]!;
 
     return GestureDetector(
       onTap: () {
@@ -1937,10 +2062,12 @@ class _MainScreenState extends State<MainScreen> {
 
         // Save to SharedPreferences
         _saveActiveProject(newActiveId);
+        debugPrint('💾 Active project saved: $newActiveId');
 
         // No need to scroll here, will auto-scroll when loading
       },
       child: Container(
+        key: projectKey,
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -1984,7 +2111,7 @@ class _MainScreenState extends State<MainScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1998,7 +2125,8 @@ class _MainScreenState extends State<MainScreen> {
                               color: Colors.grey[600],
                             ),
                             const SizedBox(width: 8),
-                            Expanded(
+                            SizedBox(
+                              width: 170,
                               child: Text(
                                 project['cname'] ?? 'عميل غير محدد',
                                 style: GoogleFonts.cairo(
@@ -2009,13 +2137,12 @@ class _MainScreenState extends State<MainScreen> {
                                 overflow: TextOverflow.ellipsis,
                                 maxLines: 1,
                               ),
-                            ),
+                            )
                           ],
                         ),
                       ],
                     ),
                   ),
-                  const Spacer(),
                   // Expand/Collapse button
                   GestureDetector(
                     onTap: () {
@@ -2026,6 +2153,8 @@ class _MainScreenState extends State<MainScreen> {
                           _expandedProjects.add(projectId);
                         }
                       });
+                      // Save expanded projects state
+                      _saveExpandedProjects();
                     },
                     child: Container(
                       padding: const EdgeInsets.all(8),
