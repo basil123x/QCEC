@@ -153,6 +153,12 @@ class AuthProvider extends ChangeNotifier {
     return name;
   }
   
+  /// Get user ID
+  String getUserId() {
+    if (_userData == null) return '0';
+    return _userData!['id']?.toString() ?? '0';
+  }
+
   /// Get user profile image URL
   String getUserImageUrl() {
     if (_userData == null) return '';

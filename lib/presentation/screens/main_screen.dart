@@ -24,6 +24,11 @@ class _MainScreenState extends State<MainScreen> {
   bool _isSearching = false;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
+  
+  // Search for visits
+  bool _isSearchingVisits = false;
+  String _searchQueryVisits = '';
+  final TextEditingController _searchControllerVisits = TextEditingController();
   int? _activeProjectId;
   final ScrollController _scrollController = ScrollController();
   List<Map<String, dynamic>> _projects = [];
@@ -370,7 +375,7 @@ class _MainScreenState extends State<MainScreen> {
     return AppBar(
       backgroundColor: Colors.white,
       elevation: 0,
-      centerTitle: !_isSearching,
+      centerTitle: !_isSearching && !_isSearchingVisits,
       title: _isSearching && _selectedIndex == 1
           ? TextField(
               controller: _searchController,
@@ -391,14 +396,34 @@ class _MainScreenState extends State<MainScreen> {
                 });
               },
             )
-          : Text(
-              pageTitle,
-              style: GoogleFonts.cairo(
-                fontSize: 20,
-                color: Colors.grey[800],
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+          : _isSearchingVisits && (_selectedIndex == 3 || (_selectedIndex == 2 && authProvider.isEngineer()))
+              ? TextField(
+                  controller: _searchControllerVisits,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: 'البحث في الزيارات...',
+                    hintStyle: GoogleFonts.cairo(
+                      color: Colors.grey[500],
+                      fontSize: 16,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                  ),
+                  style: GoogleFonts.cairo(fontSize: 16, color: Colors.grey[800]),
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQueryVisits = value;
+                    });
+                  },
+                )
+              : Text(
+                  pageTitle,
+                  style: GoogleFonts.cairo(
+                    fontSize: 20,
+                    color: Colors.grey[800],
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
       leading: _isSearching
           ? IconButton(
               icon: Icon(Iconsax.arrow_right_3, color: Colors.grey[700]),
@@ -410,7 +435,18 @@ class _MainScreenState extends State<MainScreen> {
                 });
               },
             )
-          : null,
+          : _isSearchingVisits
+              ? IconButton(
+                  icon: Icon(Iconsax.arrow_right_3, color: Colors.grey[700]),
+                  onPressed: () {
+                    setState(() {
+                      _isSearchingVisits = false;
+                      _searchQueryVisits = '';
+                      _searchControllerVisits.clear();
+                    });
+                  },
+                )
+              : null,
       actions: [
         if (_selectedIndex == 1) // Only show search in projects tab
           IconButton(
@@ -433,6 +469,32 @@ class _MainScreenState extends State<MainScreen> {
               ),
               child: Icon(
                 _isSearching ? Iconsax.close_square : Iconsax.search_normal,
+                color: AppColors.primary,
+                size: 20,
+              ),
+            ),
+          ),
+        if (_selectedIndex == 3 || (_selectedIndex == 2 && authProvider.isEngineer())) // Show search in visits tab
+          IconButton(
+            onPressed: () {
+              setState(() {
+                if (_isSearchingVisits) {
+                  _isSearchingVisits = false;
+                  _searchQueryVisits = '';
+                  _searchControllerVisits.clear();
+                } else {
+                  _isSearchingVisits = true;
+                }
+              });
+            },
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withAlpha(51),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                _isSearchingVisits ? Iconsax.close_square : Iconsax.search_normal,
                 color: AppColors.primary,
                 size: 20,
               ),
@@ -1249,9 +1311,12 @@ class _MainScreenState extends State<MainScreen> {
   Widget _buildEngineersStatsFullScreen(AuthProvider authProvider) {
     final dateKey = intlx.DateFormat('yyyy-MM-dd').format(_selectedDate);
     
-    return FutureBuilder<Map<String, dynamic>>(
-      future: authProvider.getEngineersStats(datexx: dateKey),
-      builder: (context, snapshot) {
+    // Check user type and show appropriate content
+    if (authProvider.isAdmin()) {
+      // Show full statistics for admin
+      return FutureBuilder<Map<String, dynamic>>(
+        future: authProvider.getEngineersStats(datexx: dateKey),
+        builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
@@ -1410,6 +1475,90 @@ class _MainScreenState extends State<MainScreen> {
         );
       },
     );
+    } else if (authProvider.isEngineer()) {
+      // Show a circle with number for engineers
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.primary,
+                    AppColors.primary.withOpacity(0.7),
+                  ],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Text(
+                  '${authProvider.getUserId()}',
+                  style: GoogleFonts.cairo(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'معرف المهندس',
+              style: GoogleFonts.cairo(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              authProvider.getUserName(),
+              style: GoogleFonts.cairo(
+                fontSize: 16,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
+      // For customers and contractors, show empty space
+      return Container(
+        width: double.infinity,
+        height: double.infinity,
+        color: Colors.grey[50],
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Iconsax.chart,
+                size: 64,
+                color: Colors.grey[300],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'الإحصائيات غير متاحة',
+                style: GoogleFonts.cairo(
+                  fontSize: 16,
+                  color: Colors.grey[500],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
   }
 
   Widget _buildEngineerStatCard(Map<String, dynamic> stat, int rank) {
@@ -1433,59 +1582,15 @@ class _MainScreenState extends State<MainScreen> {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            // Rank badge
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: rank == 1 
-                    ? Colors.amber 
-                    : rank == 2 
-                    ? Colors.grey[400] 
-                    : rank == 3 
-                    ? Colors.orange[300]
-                    : AppColors.primary,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: (rank == 1 
-                        ? Colors.amber 
-                        : rank == 2 
-                        ? Colors.grey[400]! 
-                        : rank == 3 
-                        ? Colors.orange[300]!
-                        : AppColors.primary).withAlpha(102),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Center(
-                child: Text(
-                  '$rank',
-                  style: GoogleFonts.cairo(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
             // Engineer photo
             CircleAvatar(
               radius: 30,
               backgroundColor: AppColors.primary.withAlpha(51),
               backgroundImage: NetworkImage(
                 'https://qcec.online/erp2025/assets/users/$engineerId/images/1.jpg',
-              ),
-              child: Icon(
-                Iconsax.user_octagon,
-                color: AppColors.primary,
-                size: 20,
               ),
             ),
             const SizedBox(width: 16),
@@ -1495,7 +1600,7 @@ class _MainScreenState extends State<MainScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    engineerName,
+                    "م/ $engineerName",
                     style: GoogleFonts.cairo(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -2910,16 +3015,42 @@ class _MainScreenState extends State<MainScreen> {
     }
 
     final visits = result['visits'] as List<dynamic>;
-    if (visits.isEmpty) {
+    
+    // Filter visits based on search query
+    final filteredVisits = _searchQueryVisits.isEmpty
+        ? visits
+        : visits.where((visit) {
+            final visitMap = visit as Map<String, dynamic>;
+            final searchLower = _searchQueryVisits.toLowerCase();
+            
+            return (visitMap['cname']?.toString().toLowerCase().contains(searchLower) ?? false) ||
+                   (visitMap['ename']?.toString().toLowerCase().contains(searchLower) ?? false) ||
+                   (visitMap['cn_name']?.toString().toLowerCase().contains(searchLower) ?? false) ||
+                   (visitMap['proj']?.toString().toLowerCase().contains(searchLower) ?? false) ||
+                   (visitMap['place']?.toString().toLowerCase().contains(searchLower) ?? false) ||
+                   (visitMap['a2']?.toString().toLowerCase().contains(searchLower) ?? false) ||
+                   (visitMap['a4']?.toString().toLowerCase().contains(searchLower) ?? false);
+          }).toList();
+    
+    if (filteredVisits.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Iconsax.calendar_remove, size: 48, color: Colors.grey[400]),
+            Icon(
+              _searchQueryVisits.isEmpty
+                  ? Iconsax.calendar_remove
+                  : Iconsax.search_normal,
+              size: 48,
+              color: Colors.grey[400],
+            ),
             const SizedBox(height: 16),
             Text(
-              'لا توجد زيارات في هذا التاريخ',
+              _searchQueryVisits.isEmpty
+                  ? 'لا توجد زيارات في هذا التاريخ'
+                  : 'لا توجد نتائج للبحث عن "$_searchQueryVisits"',
               style: GoogleFonts.cairo(fontSize: 16, color: Colors.grey[600]),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -2928,9 +3059,9 @@ class _MainScreenState extends State<MainScreen> {
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: visits.length,
+      itemCount: filteredVisits.length,
       itemBuilder: (context, index) {
-        final visit = visits[index] as Map<String, dynamic>;
+        final visit = filteredVisits[index] as Map<String, dynamic>;
         return _buildVisitCard(visit, index + 1, authProvider);
       },
     );
