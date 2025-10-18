@@ -47,6 +47,9 @@ class _MainScreenState extends State<MainScreen> {
   Map<int, int> _currentPhotoIndex = {};
 
   bool _showingStats = false; // Toggle between visits and statistics
+  
+  // Current visit ID for camera session
+  int? _currentVisitId;
 
   @override
   void initState() {
@@ -745,43 +748,171 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildCamera(AuthProvider authProvider) {
-    return Center(
+    return Container(
+      padding: const EdgeInsets.all(16),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.primary, AppColors.secondary],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withAlpha(102),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
+          // Visit Info Header
+          if (_currentVisitId != null) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.green, Colors.green.shade600],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-              ],
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.green.withAlpha(102),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Icon(Iconsax.tick_circle, color: Colors.white, size: 24),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'زيارة نشطة',
+                          style: GoogleFonts.cairo(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'رقم الزيارة: $_currentVisitId',
+                        style: GoogleFonts.cairo(
+                          fontSize: 14,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        'المشروع: $_activeProjectId',
+                        style: GoogleFonts.cairo(
+                          fontSize: 14,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            child: Icon(Iconsax.camera, color: Colors.white, size: 50),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'الكاميرا',
-            style: GoogleFonts.cairo(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[800],
+            const SizedBox(height: 24),
+          ],
+          
+          // Camera Interface
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [AppColors.primary, AppColors.secondary],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withAlpha(102),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Icon(Iconsax.camera, color: Colors.white, size: 50),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    _currentVisitId != null ? 'كاميرا الزيارة' : 'الكاميرا',
+                    style: GoogleFonts.cairo(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _currentVisitId != null 
+                        ? 'جاهز لالتقاط الصور للزيارة رقم $_currentVisitId'
+                        : 'قيد التطوير',
+                    style: GoogleFonts.cairo(
+                      fontSize: 16, 
+                      color: _currentVisitId != null ? Colors.green[600] : Colors.grey[500],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  
+                  if (_currentVisitId != null) ...[
+                    const SizedBox(height: 32),
+                    ElevatedButton.icon(
+                      onPressed: () => _showComingSoon('فتح الكاميرا'),
+                      icon: Icon(Iconsax.camera, size: 20),
+                      label: Text(
+                        'فتح الكاميرا',
+                        style: GoogleFonts.cairo(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _currentVisitId = null;
+                          _selectedIndex = 0; // Go back to home
+                        });
+                      },
+                      icon: Icon(Iconsax.close_circle, size: 20),
+                      label: Text(
+                        'إلغاء الزيارة',
+                        style: GoogleFonts.cairo(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.red,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'قيد التطوير',
-            style: GoogleFonts.cairo(fontSize: 16, color: Colors.grey[500]),
           ),
         ],
       ),
@@ -1103,12 +1234,153 @@ class _MainScreenState extends State<MainScreen> {
   Widget? _buildFloatingActionButton(AuthProvider authProvider) {
     if (authProvider.isEngineer()) {
       return FloatingActionButton(
-        onPressed: () => setState(() => _selectedIndex = 2),
+        onPressed: () => _handleCameraButtonPress(authProvider),
         backgroundColor: AppColors.primary,
         child: Icon(Iconsax.camera, color: Colors.white),
       );
     }
     return null;
+  }
+
+  void _handleCameraButtonPress(AuthProvider authProvider) async {
+    // Check if there's an active project selected
+    if (_activeProjectId == null) {
+      _showErrorDialog(
+        'لا يوجد مشروع محدد',
+        'يرجى اختيار مشروع من قائمة المشاريع أولاً لبدء زيارة جديدة',
+      );
+      return;
+    }
+
+    // Show loading dialog
+    _showLoadingDialog('جاري إنشاء زيارة جديدة...');
+
+    try {
+      // Create new visit via API
+      final result = await authProvider.createNewVisit(
+        projectId: _activeProjectId!,
+      );
+
+      // Hide loading dialog
+      Navigator.of(context).pop();
+
+      if (result['success'] == true) {
+        // Save the visit ID for the camera session
+        setState(() {
+          _currentVisitId = result['visit_id'];
+          _selectedIndex = 2; // Navigate to camera
+        });
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'تم إنشاء الزيارة بنجاح - ID: ${result['visit_id']}',
+              style: GoogleFonts.cairo(),
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+
+        debugPrint('✅ Visit created successfully: ${result['visit_id']}');
+      } else {
+        _showErrorDialog(
+          'فشل في إنشاء الزيارة',
+          result['message'] ?? 'حدث خطأ غير متوقع',
+        );
+      }
+    } catch (e) {
+      // Hide loading dialog
+      Navigator.of(context).pop();
+      
+      _showErrorDialog(
+        'خطأ في الاتصال',
+        'تأكد من اتصالك بالإنترنت وحاول مرة أخرى',
+      );
+      
+      debugPrint('❌ Error creating visit: $e');
+    }
+  }
+
+  void _showLoadingDialog(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(color: AppColors.primary),
+              const SizedBox(height: 16),
+              Text(
+                message,
+                style: GoogleFonts.cairo(
+                  fontSize: 16,
+                  color: Colors.grey[800],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showErrorDialog(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(Iconsax.warning_2, color: Colors.red, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: GoogleFonts.cairo(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: Colors.red,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            message,
+            style: GoogleFonts.cairo(
+              fontSize: 16,
+              color: Colors.grey[700],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'حسناً',
+                style: GoogleFonts.cairo(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _showComingSoon(String feature) {

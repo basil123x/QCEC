@@ -578,6 +578,62 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Create new visit
+  Future<Map<String, dynamic>> createNewVisit({
+    required int projectId,
+  }) async {
+    try {
+      debugPrint('Creating new visit for project: $projectId');
+      
+      final response = await _dio.post(
+        baseUrl,
+        data: json.encode({
+          'action': 'create_new_visit',
+          'project_id': projectId.toString(),
+          'engineer_id': getUserId(),
+        }),
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+      
+      debugPrint('Create visit response: ${response.data}');
+      
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data['success'] == true) {
+          return {
+            'success': true,
+            'message': data['message'] ?? 'تم إنشاء الزيارة بنجاح',
+            'visit_id': data['data']['visit_id'],
+            'project_id': data['data']['project_id'],
+            'engineer_id': data['data']['engineer_id'],
+            'date': data['data']['date'],
+            'datetime': data['data']['datetime'],
+          };
+        } else {
+          return {
+            'success': false,
+            'message': data['message'] ?? 'فشل في إنشاء الزيارة',
+          };
+        }
+      } else {
+        return {
+          'success': false,
+          'message': 'خطأ في الاتصال بالخادم',
+        };
+      }
+    } catch (e) {
+      debugPrint('Error creating new visit: $e');
+      return {
+        'success': false,
+        'message': 'حدث خطأ غير متوقع: ${e.toString()}',
+      };
+    }
+  }
+
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners();

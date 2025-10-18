@@ -102,6 +102,9 @@ switch ($action) {
     case 'get_full_visits_data':
         getFullVisitsData($input);
         break;
+    case 'create_new_visit':
+        createNewVisit($input);
+        break;
     default:
         sendResponse(false, 'Invalid action');
 }
@@ -875,6 +878,44 @@ ON cn.id = v.a3
         ]
     ], JSON_UNESCAPED_UNICODE);
     exit;
+}
+
+/**
+ * CREATE NEW VISIT
+ * Creates a new visit entry in visits_det table
+ */
+function createNewVisit($input) {
+    global $conx;
+    
+    // Validate required parameters
+    if (!isset($input['project_id']) || !isset($input['engineer_id'])) {
+        sendResponse(false, 'معرف المشروع ومعرف المهندس مطلوبان');
+    }
+    
+    $projectId = sanitize($input['project_id']);
+    $engineerId = sanitize($input['engineer_id']);
+    
+    // Get current date and datetime
+    $currentDate = date('Y-m-d');
+    $currentDateTime = date('Y-m-d H:i:s');
+    
+    // Insert new visit into visits_det table
+    $insertQuery = "INSERT INTO visits_det (a1, a7, a9, a10) VALUES ('$projectId', '$currentDate', '0', '$currentDateTime')";
+    
+    if (mysqli_query($conx, $insertQuery)) {
+        // Get the newly created visit ID
+        $visitId = mysqli_insert_id($conx);
+        
+        sendResponse(true, 'تم إنشاء الزيارة بنجاح', [
+            'visit_id' => $visitId,
+            'project_id' => $projectId,
+            'engineer_id' => $engineerId,
+            'date' => $currentDate,
+            'datetime' => $currentDateTime
+        ]);
+    } else {
+        sendResponse(false, 'فشل في إنشاء الزيارة: ' . mysqli_error($conx));
+    }
 }
 
 // If no action matched, return error
