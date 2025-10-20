@@ -10,7 +10,12 @@ import '../providers/auth_provider.dart';
 import '../../services/upload_service.dart';
 import '../../services/report_service.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_photo_editor/flutter_photo_editor.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
+import 'package:video_player/video_player.dart';
+import 'package:path_provider/path_provider.dart';
 import 'additional_camera_screen.dart';
+import 'simple_video_player.dart';
 
 class AddVisitScreen extends StatefulWidget {
   final int visitId;
@@ -47,6 +52,10 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
   // Contact options
   bool _contactCustomer = false;
   bool _contactContractor = false;
+
+  // Image editing states
+  bool _showEditIcons = false;
+  bool _isLongPressed = false;
 
   @override
   void initState() {
@@ -104,6 +113,573 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
     }
   }
 
+  /// Toggle edit icons visibility
+  void _toggleEditIcons() {
+    setState(() {
+      _showEditIcons = !_showEditIcons;
+      _isLongPressed = false;
+    });
+  }
+
+  /// Handle long press to show delete icons
+  void _handleLongPress() {
+    setState(() {
+      _showEditIcons = true;
+      _isLongPressed = true;
+    });
+  }
+
+  /// Delete image at specific index
+  void _deleteImage(int index) {
+    if (index == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'لا يمكن حذف الصورة الأولى',
+            style: GoogleFonts.cairo(),
+          ),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            'حذف الصورة',
+            style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            'هل تريد حذف هذه الصورة؟',
+            style: GoogleFonts.cairo(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'إلغاء',
+                style: GoogleFonts.cairo(color: Colors.grey),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                setState(() {
+                  _images.removeAt(index);
+                  if (_currentImageIndex >= _images.length && _images.isNotEmpty) {
+                    _currentImageIndex = _images.length - 1;
+                    _pageController.animateToPage(
+                      _currentImageIndex,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  }
+                  _showEditIcons = false;
+                  _isLongPressed = false;
+                });
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'تم حذف الصورة',
+                      style: GoogleFonts.cairo(),
+                    ),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              },
+              child: Text(
+                'حذف',
+                style: GoogleFonts.cairo(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Edit/Crop image at specific index using flutter_photo_editor
+  Future<void> _editImage(int index) async {
+    try {
+      final result = await FlutterPhotoEditor().editImage(_images[index]);
+      
+      if (result == true) {
+        // The image was edited successfully, but the path remains the same
+        // flutter_photo_editor modifies the original file
+        
+        // Save updated images to SharedPreferences
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setStringList("imagesSaved_${widget.visitId}", _images);
+        
+        // Force UI refresh to show the edited image
+        setState(() {
+          // Trigger rebuild to reload the image
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'تم تعديل الصورة بنجاح! 🎨',
+              style: GoogleFonts.cairo(),
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'تم إلغاء التعديل',
+              style: GoogleFonts.cairo(),
+            ),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 1),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error editing image: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'حدث خطأ أثناء تعديل الصورة',
+            style: GoogleFonts.cairo(),
+          ),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    }
+  }
+
+  /// Build edit icon for image
+  Widget _buildEditIcon(int index) {
+    return GestureDetector(
+      onTap: () => _editImage(index),
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: Colors.blue.withOpacity(0.9),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: const Icon(
+          Iconsax.edit,
+          color: Colors.white,
+          size: 20,
+        ),
+      ),
+    );
+  }
+
+  /// Build delete icon for image
+  Widget _buildDeleteIcon(int index) {
+    // Don't show delete icon for first image
+    if (index == 0) {
+      return Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: Colors.grey.withOpacity(0.7),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          Iconsax.lock,
+          color: Colors.white,
+          size: 20,
+        ),
+      );
+    }
+
+    return GestureDetector(
+      onTap: () => _deleteImage(index),
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: Colors.red.withOpacity(0.9),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: const Icon(
+          Iconsax.trash,
+          color: Colors.white,
+          size: 20,
+        ),
+      ),
+    );
+  }
+
+  /// Check if file is a video
+  bool _isVideoFile(String path) {
+    final extension = path.toLowerCase().split('.').last;
+    return ['mp4', 'mov', 'avi', 'mkv', '3gp'].contains(extension);
+  }
+
+  /// Build video player widget with thumbnail
+  Widget _buildVideoPlayer(String videoPath) {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      color: Colors.black,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Video thumbnail
+          FutureBuilder<String?>(
+            future: _generateVideoThumbnail(videoPath),
+            builder: (context, snapshot) {
+              if (snapshot.hasData && snapshot.data != null) {
+                return Image.file(
+                  File(snapshot.data!),
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                );
+              } else {
+                return Container(
+                  width: double.infinity,
+                  height: double.infinity,
+                  color: Colors.black,
+                  child: Icon(
+                    Iconsax.video_play,
+                    color: Colors.white,
+                    size: 64,
+                  ),
+                );
+              }
+            },
+          ),
+          // Play button overlay
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.black54,
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              onPressed: () => _playVideo(videoPath),
+              icon: Icon(
+                Iconsax.play,
+                color: Colors.white,
+                size: 32,
+              ),
+            ),
+          ),
+          // Video indicator
+          Positioned(
+            top: 12,
+            left: 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.purple.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white, width: 1),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Iconsax.video, color: Colors.white, size: 12),
+                  const SizedBox(width: 4),
+                  Text(
+                    'فيديو 15 ث',
+                    style: GoogleFonts.cairo(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          // Duration indicator
+          Positioned(
+            bottom: 12,
+            left: 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '0:15',
+                style: GoogleFonts.cairo(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Generate video thumbnail
+  Future<String?> _generateVideoThumbnail(String videoPath) async {
+    try {
+      final thumbnail = await VideoThumbnail.thumbnailFile(
+        video: videoPath,
+        thumbnailPath: (await getTemporaryDirectory()).path,
+        imageFormat: ImageFormat.JPEG,
+        maxHeight: 200,
+        quality: 75,
+      );
+      return thumbnail;
+    } catch (e) {
+      debugPrint('Error generating thumbnail: $e');
+      return null;
+    }
+  }
+
+  /// Play video in simple fullscreen player
+  void _playVideo(String videoPath) async {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => SimpleVideoPlayer(videoPath: videoPath),
+      ),
+    );
+  }
+
+
+  /// Show camera options bottom sheet
+  void _showCameraOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            
+            // Title
+            Text(
+              'اختر نوع الوسائط',
+              style: GoogleFonts.cairo(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 24),
+            
+            // Photo option
+            _buildBottomSheetOption(
+              icon: Iconsax.camera,
+              title: 'التقاط صورة',
+              subtitle: 'التقط صورة جديدة بالكاميرا',
+              color: AppColors.primary,
+              onTap: () {
+                Navigator.pop(context);
+                _captureImageFromCamera();
+              },
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Video option
+            _buildBottomSheetOption(
+              icon: Iconsax.video,
+              title: 'تسجيل فيديو',
+              subtitle: 'سجل فيديو جديد (15 ثانية)',
+              color: Colors.purple,
+              onTap: () {
+                Navigator.pop(context);
+                _captureVideoFromCamera();
+              },
+            ),
+            
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Show gallery options bottom sheet
+  void _showGalleryOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            
+            // Title
+            Text(
+              'اختر من المعرض',
+              style: GoogleFonts.cairo(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 24),
+            
+            // Photos option
+            _buildBottomSheetOption(
+              icon: Iconsax.gallery,
+              title: 'صور من المعرض',
+              subtitle: 'اختر صور محفوظة من الجاليري',
+              color: AppColors.secondary,
+              onTap: () {
+                Navigator.pop(context);
+                _pickImagesFromGallery();
+              },
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Videos option
+            _buildBottomSheetOption(
+              icon: Iconsax.video_play,
+              title: 'فيديو من المعرض',
+              subtitle: 'اختر فيديو محفوظ من الجاليري',
+              color: Colors.orange,
+              onTap: () {
+                Navigator.pop(context);
+                _pickVideoFromGallery();
+              },
+            ),
+            
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build bottom sheet option
+  Widget _buildBottomSheetOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.cairo(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.cairo(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Iconsax.arrow_left_2,
+              color: color,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _descriptionController.dispose();
@@ -129,15 +705,6 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
           _images.addAll(result);
         });
         
-        // انتقال للصورة الأخيرة
-        Future.delayed(const Duration(milliseconds: 100), () {
-          _pageController.animateToPage(
-            _images.length - 1,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-          );
-        });
-        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -154,6 +721,106 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
         SnackBar(
           content: Text(
             'فشل في التقاط الصورة',
+            style: GoogleFonts.cairo(),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  /// تسجيل فيديو من الكاميرا مع حد أقصى 15 ثانية
+  Future<void> _captureVideoFromCamera() async {
+    try {
+      final picker = ImagePicker();
+      final XFile? video = await picker.pickVideo(
+        source: ImageSource.camera,
+        maxDuration: const Duration(seconds: 15), // حد أقصى 15 ثانية
+      );
+      
+      if (video != null) {
+        setState(() {
+          _images.add(video.path); // Add video to images list for display
+        });
+        
+        // Save to SharedPreferences
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setStringList("imagesSaved_${widget.visitId}", _images);
+        
+        // Move to the new video in the slider
+        Future.delayed(const Duration(milliseconds: 100), () {
+          _pageController.animateToPage(
+            _images.length - 1,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'تم تسجيل فيديو ${_images.length} (15 ثانية) 🎥',
+              style: GoogleFonts.cairo(),
+            ),
+            backgroundColor: Colors.purple,
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error capturing video from camera: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'حدث خطأ أثناء تسجيل الفيديو',
+            style: GoogleFonts.cairo(),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  /// اختيار فيديو من الجاليري
+  Future<void> _pickVideoFromGallery() async {
+    try {
+      final picker = ImagePicker();
+      final XFile? video = await picker.pickVideo(source: ImageSource.gallery);
+      
+      if (video != null) {
+        setState(() {
+          _images.add(video.path); // Add video to images list for display
+        });
+        
+        // Save to SharedPreferences
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setStringList("imagesSaved_${widget.visitId}", _images);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'تم إضافة الفيديو بنجاح! 🎥',
+              style: GoogleFonts.cairo(),
+            ),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error picking video from gallery: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'حدث خطأ أثناء اختيار الفيديو',
             style: GoogleFonts.cairo(),
           ),
           backgroundColor: Colors.red,
@@ -357,23 +1024,46 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                     borderRadius: BorderRadius.circular(16),
                     child: Stack(
                       children: [
-                        PageView.builder(
-                          controller: _pageController,
-                          onPageChanged: (index) {
-                            setState(() {
-                              _currentImageIndex = index;
-                            });
-                          },
-                          itemCount: _images.length,
-                          itemBuilder: (context, index) {
-                            return Image.file(
-                              File(_images[index]),
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: double.infinity,
-                            );
-                          },
+                        GestureDetector(
+                          onTap: _toggleEditIcons,
+                          onLongPress: _handleLongPress,
+                          child: PageView.builder(
+                            controller: _pageController,
+                            onPageChanged: (index) {
+                              setState(() {
+                                _currentImageIndex = index;
+                              });
+                            },
+                            itemCount: _images.length,
+                            itemBuilder: (context, index) {
+                              return Stack(
+                                children: [
+                                  _isVideoFile(_images[index])
+                                      ? _buildVideoPlayer(_images[index])
+                                      : Image.file(
+                                          File(_images[index]),
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                          height: double.infinity,
+                                        ),
+                                  // Edit/Delete icons overlay for each image
+                                  if (_showEditIcons && index == _currentImageIndex)
+                                    Positioned(
+                                      top: 12,
+                                      right: 12,
+                                      child: AnimatedContainer(
+                                        duration: const Duration(milliseconds: 300),
+                                        child: _isLongPressed
+                                            ? _buildDeleteIcon(index)
+                                            : _buildEditIcon(index),
+                                      ),
+                                    ),
+                                ],
+                              );
+                            },
+                          ),
                         ),
+                        // Image counter
                         Positioned(
                           bottom: 12,
                           right: 12,
@@ -396,6 +1086,30 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                             ),
                           ),
                         ),
+                        // Edit mode indicator
+                        if (_showEditIcons)
+                          Positioned(
+                            top: 12,
+                            left: 12,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _isLongPressed ? Colors.red.withOpacity(0.8) : Colors.blue.withOpacity(0.8),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                _isLongPressed ? 'وضع الحذف' : 'وضع التعديل',
+                                style: GoogleFonts.cairo(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -484,66 +1198,66 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
     );
   }
 
-  /// بناء أزرار إضافة الصور
+  /// بناء أزرار إضافة الوسائط المبسطة
   Widget _buildAddImageButtons() {
     return Row(
       children: [
-        // زر التقاط صورة من الكاميرا
+        // زر وسائط من الكاميرا
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: _captureImageFromCamera,
+            onPressed: _showCameraOptions,
             icon: const Icon(
               Iconsax.camera,
               color: Colors.white,
-              size: 20,
+              size: 24,
             ),
             label: Text(
-              'التقاط صورة',
+              'وسائط من الكاميرا',
               style: GoogleFonts.cairo(
                 color: Colors.white,
-                fontSize: 14,
+                fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
               ),
-              elevation: 2,
+              elevation: 3,
             ),
           ),
         ),
         
-        const SizedBox(width: 12),
+        const SizedBox(width: 16),
         
-        // زر اختيار صور من الجاليري
+        // زر وسائط من الجاليري
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: _pickImagesFromGallery,
+            onPressed: _showGalleryOptions,
             icon: const Icon(
               Iconsax.gallery,
               color: Colors.white,
-              size: 20,
+              size: 24,
             ),
             label: Text(
-              'من الجاليري',
+              'وسائط من الجاليري',
               style: GoogleFonts.cairo(
                 color: Colors.white,
-                fontSize: 14,
+                fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.secondary,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
               ),
-              elevation: 2,
+              elevation: 3,
             ),
           ),
         ),
