@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:dio/dio.dart';
@@ -5,7 +6,7 @@ import 'dart:convert';
 
 class AuthProvider extends ChangeNotifier {
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
-  final Dio _dio = Dio();
+  late final Dio _dio;
   
   bool _isLoading = true; // Start with loading = true
   bool _isLoggedIn = false;
@@ -22,7 +23,37 @@ class AuthProvider extends ChangeNotifier {
   static const String baseUrl = 'https://qcec.online/app2026/sql.php';
   
   AuthProvider() {
+    _initializeDio();
     _checkLoginStatus();
+  }
+  
+  /// Initialize Dio with proper configuration for release mode
+  void _initializeDio() {
+    _dio = Dio(BaseOptions(
+      baseUrl: baseUrl,
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
+      sendTimeout: const Duration(seconds: 30),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      followRedirects: true,
+      validateStatus: (status) {
+        return status != null && status < 500;
+      },
+    ));
+    
+    // Add interceptors for debugging (only in debug mode)
+    if (kDebugMode) {
+      _dio.interceptors.add(LogInterceptor(
+        requestBody: true,
+        responseBody: true,
+        requestHeader: true,
+        responseHeader: false,
+        error: true,
+      ));
+    }
   }
   
   /// Check if user is already logged in
@@ -59,17 +90,12 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('Attempting login for phone: $phone');
       
       final response = await _dio.post(
-        baseUrl,
+        '',  // baseUrl is already set in Dio configuration
         data: {
           'action': 'login',
           'phone': phone,
           'password': password,
         },
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        ),
       );
       
       debugPrint('Response status: ${response.statusCode}');
@@ -573,15 +599,162 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('Error getting engineers stats: $e');
       return {
         'success': false,
-        'message': 'حدث خطأ غير متوقع: ${e.toString()}',
+        'message': 'خطأ في الشبكة: ${e.toString()}',
+      };
+    }
+  }
+
+  /// Get visit details (customer name, phone, contractor phone)
+  Future<Map<String, dynamic>> getVisitDetails(String visitId) async {
+    try {
+      debugPrint('Getting visit details for visit: $visitId');
+      
+      final response = await _dio.post(
+        baseUrl,
+        data: json.encode({
+          'action': 'get_visit_details',
+          'visit_id': visitId.toString(),
+        }),
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+      
+      debugPrint('Visit details response: ${response.data}');
+      
+      if (response.statusCode == 200) {
+        return response.data;
+      } else {
+        return {
+          'success': false,
+          'message': 'فشل في الاتصال بالخادم',
+        };
+      }
+    } catch (e) {
+      debugPrint('Error getting visit details: $e');
+      return {
+        'success': false,
+        'message': 'خطأ في الشبكة: ${e.toString()}',
+      };
+    }
+  }
+
+  /// Get engineer customers (all customers for current engineer)
+  Future<Map<String, dynamic>> getEngineerCustomers() async {
+    try {
+      debugPrint('Getting customers for engineer: ${getUserId()}');
+      
+      final response = await _dio.post(
+        baseUrl,
+        data: json.encode({
+          'action': 'get_engineer_customers',
+          'engineer_id': getUserId(),
+        }),
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+      
+      debugPrint('Engineer customers response: ${response.data}');
+      
+      if (response.statusCode == 200) {
+        return response.data;
+      } else {
+        return {
+          'success': false,
+          'message': 'فشل في الاتصال بالخادم',
+        };
+      }
+    } catch (e) {
+      debugPrint('Error getting engineer customers: $e');
+      return {
+        'success': false,
+        'message': 'خطأ في الشبكة: ${e.toString()}',
+      };
+    }
+  }
+
+  /// Delete visit from database
+  Future<Map<String, dynamic>> deleteVisit(String visitId) async {
+    try {
+      debugPrint('Deleting visit: $visitId');
+      
+      final response = await _dio.post(
+        baseUrl,
+        data: json.encode({
+          'action': 'delete_visit',
+          'visit_id': visitId,
+        }),
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+      
+      debugPrint('Delete visit response: ${response.data}');
+      
+      if (response.statusCode == 200) {
+        return response.data;
+      } else {
+        return {
+          'success': false,
+          'message': 'فشل في الاتصال بالخادم',
+        };
+      }
+    } catch (e) {
+      debugPrint('Error deleting visit: $e');
+      return {
+        'success': false,
+        'message': 'خطأ في الشبكة: ${e.toString()}',
+      };
+    }
+  }
+
+  /// Update visit project ID
+  Future<Map<String, dynamic>> updateVisitProject(String visitId, String projectId) async {
+    try {
+      debugPrint('Updating visit $visitId with project $projectId');
+      
+      final response = await _dio.post(
+        baseUrl,
+        data: json.encode({
+          'action': 'update_visit_project',
+          'visit_id': visitId,
+          'project_id': projectId,
+        }),
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+      
+      debugPrint('Update visit project response: ${response.data}');
+      
+      if (response.statusCode == 200) {
+        return response.data;
+      } else {
+        return {
+          'success': false,
+          'message': 'فشل في الاتصال بالخادم',
+        };
+      }
+    } catch (e) {
+      debugPrint('Error updating visit project: $e');
+      return {
+        'success': false,
+        'message': 'خطأ في الشبكة: ${e.toString()}',
       };
     }
   }
 
   /// Create new visit
-  Future<Map<String, dynamic>> createNewVisit({
-    required int projectId,
-  }) async {
+  Future<Map<String, dynamic>> createNewVisit(String projectId, String engineerId) async {
     try {
       debugPrint('Creating new visit for project: $projectId');
       
@@ -630,6 +803,94 @@ class AuthProvider extends ChangeNotifier {
       return {
         'success': false,
         'message': 'حدث خطأ غير متوقع: ${e.toString()}',
+      };
+    }
+  }
+
+  /// Get total statistics for current user
+  Future<Map<String, dynamic>> getTotalStats() async {
+    if (!_isLoggedIn || _userData == null) {
+      return {
+        'success': false,
+        'message': 'يجب تسجيل الدخول أولاً',
+      };
+    }
+    
+    try {
+      // Determine x parameter based on user type
+      String x = '0'; // Default for admin
+      switch (_userType) {
+        case 1: x = '1'; break; // Customer
+        case 2: x = '2'; break; // Engineer  
+        case 3: x = '3'; break; // Contractor
+      }
+      
+      final requestData = {
+        'action': 'get_total',
+        'uid': _userData!['id'].toString(),
+        'x': x,
+      };
+      
+      debugPrint('Sending total stats request: $requestData');
+      
+      final response = await _dio.post(
+        baseUrl,
+        data: requestData,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+      
+      debugPrint('Total stats response status: ${response.statusCode}');
+      debugPrint('Total stats response data: ${response.data}');
+      debugPrint('Total stats response type: ${response.data.runtimeType}');
+      
+      if (response.statusCode == 200) {
+        // Handle both Map and String responses
+        dynamic data;
+        if (response.data is String) {
+          try {
+            data = json.decode(response.data);
+          } catch (e) {
+            debugPrint('JSON decode error: $e');
+            debugPrint('Raw response: ${response.data}');
+            return {
+              'success': false,
+              'message': 'خطأ في تحليل البيانات من الخادم',
+            };
+          }
+        } else {
+          data = response.data;
+        }
+        
+        debugPrint('Parsed data: $data');
+        
+        if (data is Map && data['status'] == 'success') {
+          return {
+            'success': true,
+            'message': 'تم جلب الإحصائيات بنجاح',
+            'stats': data['trans_data'] ?? [],
+          };
+        } else {
+          return {
+            'success': false,
+            'message': data['message'] ?? 'خطأ في جلب الإحصائيات',
+          };
+        }
+      } else {
+        return {
+          'success': false,
+          'message': 'خطأ في الاتصال بالخادم (${response.statusCode})',
+        };
+      }
+    } catch (e) {
+      debugPrint('Error getting total stats: $e');
+      debugPrint('Error type: ${e.runtimeType}');
+      return {
+        'success': false,
+        'message': 'حدث خطأ في الشبكة: ${e.toString()}',
       };
     }
   }

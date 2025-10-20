@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart' as intlx;
-import 'package:qcec/core/constants/app_colors.dart';
-import 'package:qcec/presentation/providers/auth_provider.dart';
+import 'package:QCEC/core/constants/app_colors.dart';
+import 'package:QCEC/presentation/providers/auth_provider.dart';
 import '../statistics/statistics_screen.dart';
 import 'visit_card.dart';
 

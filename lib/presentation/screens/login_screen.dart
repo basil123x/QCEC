@@ -173,10 +173,9 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                   children: [
                     const SizedBox(height: 40),
                     
-                    // Empty space instead of back button
-                    const SizedBox(height: 20),
+                    Image.asset("assets/images/logo.png", width: 100,),
                     
-                    const SizedBox(height: 60),
+                    const SizedBox(height: 20),
                     
                     // Welcome Text
                     AnimatedBuilder(
@@ -214,7 +213,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                       },
                     ),
                     
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 60),
                     
                     // Form Fields
                     AnimatedBuilder(

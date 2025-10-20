@@ -1,6 +1,6 @@
 class AppStrings {
   // App Info
-  static const String appName = 'Q.C.E.C';
+  static const String appName = 'QCEC';
   static const String appFullName = 'المركز القطري للاستشارات الهندسية';
   static const String appSubtitle = 'تصميم - إشراف';
   

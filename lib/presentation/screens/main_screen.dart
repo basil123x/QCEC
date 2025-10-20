@@ -9,6 +9,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../providers/auth_provider.dart';
 import '../../core/constants/app_colors.dart';
 import 'login_screen.dart';
+import 'camera_working.dart';
+import '../widgets/stats_section.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -530,7 +532,7 @@ class _MainScreenState extends State<MainScreen> {
         case 1:
           return _buildProjects(authProvider);
         case 2:
-          return _buildCamera(authProvider);
+          return _buildComingSoonScreen('الكاميرا', 'يتم فتح الكاميرا تلقائياً عند الضغط على الزر');
         case 3:
           return _buildVisits(authProvider);
         case 4:
@@ -638,6 +640,11 @@ class _MainScreenState extends State<MainScreen> {
             childAspectRatio: 1.2,
             children: _buildQuickActions(authProvider),
           ),
+
+          const SizedBox(height: 32),
+
+          // Statistics Section
+          const StatsSection(),
         ],
       ),
     );
@@ -747,172 +754,45 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget _buildCamera(AuthProvider authProvider) {
-    return Container(
-      padding: const EdgeInsets.all(16),
+  Widget _buildComingSoonScreen(String title, String subtitle) {
+    return Center(
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Visit Info Header
-          if (_currentVisitId != null) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.green, Colors.green.shade600],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppColors.primary, AppColors.secondary],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withAlpha(102),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
                 ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.green.withAlpha(102),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Icon(Iconsax.tick_circle, color: Colors.white, size: 24),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'زيارة نشطة',
-                          style: GoogleFonts.cairo(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'رقم الزيارة: $_currentVisitId',
-                        style: GoogleFonts.cairo(
-                          fontSize: 14,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        'المشروع: $_activeProjectId',
-                        style: GoogleFonts.cairo(
-                          fontSize: 14,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+              ],
             ),
-            const SizedBox(height: 24),
-          ],
-          
-          // Camera Interface
-          Expanded(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [AppColors.primary, AppColors.secondary],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withAlpha(102),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: Icon(Iconsax.camera, color: Colors.white, size: 50),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    _currentVisitId != null ? 'كاميرا الزيارة' : 'الكاميرا',
-                    style: GoogleFonts.cairo(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[800],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _currentVisitId != null 
-                        ? 'جاهز لالتقاط الصور للزيارة رقم $_currentVisitId'
-                        : 'قيد التطوير',
-                    style: GoogleFonts.cairo(
-                      fontSize: 16, 
-                      color: _currentVisitId != null ? Colors.green[600] : Colors.grey[500],
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  
-                  if (_currentVisitId != null) ...[
-                    const SizedBox(height: 32),
-                    ElevatedButton.icon(
-                      onPressed: () => _showComingSoon('فتح الكاميرا'),
-                      icon: Icon(Iconsax.camera, size: 20),
-                      label: Text(
-                        'فتح الكاميرا',
-                        style: GoogleFonts.cairo(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 32,
-                          vertical: 16,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextButton.icon(
-                      onPressed: () {
-                        setState(() {
-                          _currentVisitId = null;
-                          _selectedIndex = 0; // Go back to home
-                        });
-                      },
-                      icon: Icon(Iconsax.close_circle, size: 20),
-                      label: Text(
-                        'إلغاء الزيارة',
-                        style: GoogleFonts.cairo(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.red,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+            child: Icon(Iconsax.camera, color: Colors.white, size: 50),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            title,
+            style: GoogleFonts.cairo(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[800],
             ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            subtitle,
+            style: GoogleFonts.cairo(fontSize: 16, color: Colors.grey[500]),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -1258,7 +1138,8 @@ class _MainScreenState extends State<MainScreen> {
     try {
       // Create new visit via API
       final result = await authProvider.createNewVisit(
-        projectId: _activeProjectId!,
+        _activeProjectId.toString(),
+        authProvider.getUserId(),
       );
 
       // Hide loading dialog
@@ -1268,23 +1149,10 @@ class _MainScreenState extends State<MainScreen> {
         // Save the visit ID for the camera session
         setState(() {
           _currentVisitId = result['visit_id'];
-          _selectedIndex = 2; // Navigate to camera
         });
 
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'تم إنشاء الزيارة بنجاح - ID: ${result['visit_id']}',
-              style: GoogleFonts.cairo(),
-            ),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
+        // Navigate directly to camera screen
+        _openCameraScreen(result['visit_id']);
 
         debugPrint('✅ Visit created successfully: ${result['visit_id']}');
       } else {
@@ -1381,6 +1249,47 @@ class _MainScreenState extends State<MainScreen> {
         );
       },
     );
+  }
+
+  void _openCameraScreen(int visitId) async {
+    final result = await Navigator.of(context).push<List<String>>(
+      MaterialPageRoute(
+        builder: (context) => CameraWorking(
+          visitId: visitId,
+          projectId: _activeProjectId!,
+        ),
+      ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      // Photos were captured successfully
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'تم حفظ ${result.length} صورة للزيارة رقم $visitId',
+            style: GoogleFonts.cairo(),
+          ),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+
+      // Reset visit ID after successful completion
+      setState(() {
+        _currentVisitId = null;
+      });
+
+      debugPrint('✅ Visit $visitId completed with ${result.length} photos');
+    } else {
+      // User cancelled or no photos taken
+      setState(() {
+        _currentVisitId = null;
+      });
+      debugPrint('❌ Visit $visitId cancelled or no photos taken');
+    }
   }
 
   void _showComingSoon(String feature) {

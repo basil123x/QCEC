@@ -85,7 +85,7 @@ switch ($action) {
         deleteProject($input);
         break;
     case 'delete_visit':
-        deleteVisit($input);
+        deleteVisitFromDB($input);
         break;
     case 'reset_contractor_password':
         resetContractorPassword($input);
@@ -104,6 +104,29 @@ switch ($action) {
         break;
     case 'create_new_visit':
         createNewVisit($input);
+        break;
+    case 'get_visit_details':
+        getVisitDetails($input);
+        break;
+    
+    case 'get_engineer_customers':
+        getEngineerCustomers($input);
+        break;
+    
+    case 'update_visit_project':
+        updateVisitProject($input);
+        break;
+    case 'get_vlist':
+        getVlist($input);
+        break;
+    case 'update_visit_description':
+        updateVisitDescription($input);
+        break;
+    case 'update_visit_notes':
+        updateVisitNotes($input);
+        break;
+    case 'get_total':
+        handleGetTotal($input);
         break;
     default:
         sendResponse(false, 'Invalid action');
@@ -322,13 +345,15 @@ function addVisit($input) {
     
     if (mysqli_query($conx, $query)) {
         $visitId = mysqli_insert_id($conx);
-        sendResponse(true, 'تم إضافة الزيارة بنجاح', ['visit_id' => $visitId]);
+        sendResponse(true, 'Visit created successfully', ['visit_id' => $visitId]);
     } else {
         sendResponse(false, 'خطأ في إضافة الزيارة');
     }
 }
 
 /**
+ * GET VISIT DETAILS
+ * Gets customer name, phone, and contractor phone for a specific visit
  * UPDATE PROJECT
  */
 function updateProject($input) {
@@ -405,22 +430,6 @@ function deleteProject($input) {
     }
 }
 
-/**
- * DELETE VISIT
- */
-function deleteVisit($input) {
-    global $conx;
-    
-    $visitId = sanitize($input['visit_id']);
-    
-    $query = "DELETE FROM visits WHERE id = '$visitId'";
-    
-    if (mysqli_query($conx, $query)) {
-        sendResponse(true, 'تم حذف الزيارة بنجاح');
-    } else {
-        sendResponse(false, 'خطأ في حذف الزيارة');
-    }
-}
 
 /**
  * RESET CONTRACTOR PASSWORD
@@ -537,6 +546,21 @@ function getContractorPhone($input) {
 function getAllTransactions($input) {
     global $conx;
     
+    // Test database connection
+    if (!$conx) {
+        error_log("Database connection failed in getAllTransactions");
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Database connection failed',
+            'transaction_data' => [],
+            'x' => '0',
+            'xx' => ''
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    
+    error_log("getAllTransactions called with input: " . json_encode($input));
+    
     $d1 = $d2 = '';
     $uid = isset($input['uid']) ? sanitize($input['uid']) : '';
     $x = isset($input['x']) ? sanitize($input['x']) : '0';
@@ -629,6 +653,8 @@ function getAllTransactions($input) {
         ORDER BY v.std DESC, 
              CASE WHEN v.std = 0 THEN v.id END DESC";
 
+    error_log("Executing getAllTransactions query: " . $query);
+    
     $result = $conx->query($query);
 
     $transactions = [];
@@ -636,16 +662,112 @@ function getAllTransactions($input) {
         while ($row = $result->fetch_assoc()) {
             $transactions[] = $row;
         }
+        
+        error_log("Found " . count($transactions) . " transactions");
+        
+        echo json_encode([
+            'status' => 'success',
+            'dayx' => $dayx,
+            'transaction_data' => $transactions,
+            'x' => $x,
+            'xx' => $xx
+        ], JSON_UNESCAPED_UNICODE);
+    } else {
+        $error = mysqli_error($conx);
+        error_log("MySQL Error in getAllTransactions: " . $error);
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Database error: ' . $error,
+            'transaction_data' => [],
+            'x' => $x,
+            'xx' => $xx
+        ], JSON_UNESCAPED_UNICODE);
     }
-
-    echo json_encode([
-        'status' => 'success',
-        'dayx' => $dayx,
-        'transaction_data' => $transactions,
-        'x' => $x,
-        'xx' => $xx
-    ], JSON_UNESCAPED_UNICODE);
     exit;
+}
+
+/**
+ * GET VLIST DATA
+ * Gets all data from vlist table (arb column)
+ */
+function getVlist($input) {
+    global $conx;
+    
+    // Query to get all arb values from vlist table
+    $query = "SELECT arb FROM vlist WHERE arb IS NOT NULL AND arb != '' ORDER BY arb ASC";
+    
+    $result = mysqli_query($conx, $query);
+    
+    if ($result) {
+        $vlistData = [];
+        while ($row = mysqli_fetch_assoc($result)) {
+            $vlistData[] = $row['arb'];
+        }
+        
+        sendResponse(true, 'تم جلب بيانات القائمة بنجاح', $vlistData);
+    } else {
+        sendResponse(false, 'خطأ في جلب بيانات القائمة: ' . mysqli_error($conx));
+    }
+}
+
+/**
+ * UPDATE VISIT DESCRIPTION
+ * Updates the description (a2) for a specific visit
+ */
+function updateVisitDescription($input) {
+    global $conx;
+    
+    // Validate required parameters
+    if (!isset($input['visit_id']) || !isset($input['description'])) {
+        sendResponse(false, 'معرف الزيارة والوصف مطلوبان');
+        return;
+    }
+    
+    $visitId = sanitize($input['visit_id']);
+    $description = sanitize($input['description']);
+    
+    // SQL query to update visit description
+    $query = "UPDATE visits_det SET a2 = '$description' WHERE id = '$visitId'";
+    
+    if (mysqli_query($conx, $query)) {
+        if (mysqli_affected_rows($conx) > 0) {
+            sendResponse(true, 'تم تحديث الوصف بنجاح');
+        } else {
+            sendResponse(false, 'لم يتم العثور على الزيارة أو لم يتم التحديث');
+        }
+    } else {
+        sendResponse(false, 'خطأ في تحديث الوصف: ' . mysqli_error($conx));
+    }
+}
+
+/**
+ * UPDATE VISIT NOTES
+ * Updates the notes (a4) for a specific visit
+ */
+function updateVisitNotes($input) {
+    global $conx;
+    
+    // Validate required parameters
+    if (!isset($input['visit_id']) || !isset($input['notes'])) {
+        sendResponse(false, 'معرف الزيارة والملاحظات مطلوبان');
+        return;
+    }
+    
+    $visitId = sanitize($input['visit_id']);
+    $notes = sanitize($input['notes']);
+    
+    // SQL query to update visit notes
+    $query = "UPDATE visits_det SET a4 = '$notes' WHERE id = '$visitId'";
+    
+    if (mysqli_query($conx, $query)) {
+        if (mysqli_affected_rows($conx) > 0) {
+            sendResponse(true, 'تم تحديث الملاحظات بنجاح');
+        } else {
+            sendResponse(false, 'لم يتم العثور على الزيارة أو لم يتم التحديث');
+        }
+    } else {
+        sendResponse(false, 'خطأ في تحديث الملاحظات: ' . mysqli_error($conx));
+    }
 }
 
 // Get full visits data for visits screen
@@ -887,13 +1009,18 @@ ON cn.id = v.a3
 function createNewVisit($input) {
     global $conx;
     
+    // Debug: Log received input
+    error_log("createNewVisit received: " . json_encode($input));
+    
     // Validate required parameters
-    if (!isset($input['project_id']) || !isset($input['engineer_id'])) {
-        sendResponse(false, 'معرف المشروع ومعرف المهندس مطلوبان');
+    if (!isset($input['project_id'])) {
+        error_log("Missing parameters - project_id: " . (isset($input['project_id']) ? 'YES' : 'NO'));
+        sendResponse(false, 'معرف المشروع مطلوب');
+        return;
     }
     
     $projectId = sanitize($input['project_id']);
-    $engineerId = sanitize($input['engineer_id']);
+    $engineerId = isset($input['engineer_id']) ? sanitize($input['engineer_id']) : '0';
     
     // Get current date and datetime
     $currentDate = date('Y-m-d');
@@ -901,6 +1028,8 @@ function createNewVisit($input) {
     
     // Insert new visit into visits_det table
     $insertQuery = "INSERT INTO visits_det (a1, a7, a9, a10) VALUES ('$projectId', '$currentDate', '0', '$currentDateTime')";
+    
+    error_log("Executing query: " . $insertQuery);
     
     if (mysqli_query($conx, $insertQuery)) {
         // Get the newly created visit ID
@@ -914,8 +1043,207 @@ function createNewVisit($input) {
             'datetime' => $currentDateTime
         ]);
     } else {
-        sendResponse(false, 'فشل في إنشاء الزيارة: ' . mysqli_error($conx));
+        $error = mysqli_error($conx);
+        error_log("MySQL Error: " . $error);
+        sendResponse(false, 'فشل في إنشاء الزيارة: ' . $error);
     }
+}
+
+/**
+ * GET VISIT DETAILS
+ * Gets customer name, phone, and contractor phone for a specific visit
+ */
+function getVisitDetails($input) {
+    global $conx;
+    
+    // Validate required parameters
+    if (!isset($input['visit_id'])) {
+        sendResponse(false, 'معرف الزيارة مطلوب');
+        return;
+    }
+    
+    $visitId = sanitize($input['visit_id']);
+    
+    // SQL query to get visit details
+    $query = "SELECT
+                customers.a1 AS customer_name,
+                customers.a2 AS customer_phone,
+                contractors.a3 AS contractor_phone
+              FROM
+                visits_det
+              RIGHT JOIN visitsx
+                ON visits_det.a1 = visitsx.id 
+              LEFT JOIN customers
+                ON visitsx.a1 = customers.id 
+              LEFT JOIN contractors
+                ON visitsx.a3 = contractors.id
+              WHERE
+                visits_det.id = '$visitId' 
+              GROUP BY visitsx.id";
+    
+    $result = mysqli_query($conx, $query);
+    
+    if ($result && mysqli_num_rows($result) > 0) {
+        $visitDetails = mysqli_fetch_assoc($result);
+        sendResponse(true, 'تم جلب تفاصيل الزيارة بنجاح', $visitDetails);
+    } else {
+        sendResponse(false, 'لم يتم العثور على تفاصيل الزيارة');
+    }
+}
+
+/**
+ * GET ENGINEER CUSTOMERS
+ * Gets all customers for a specific engineer with their phone numbers and contractor phones
+ */
+function getEngineerCustomers($input) {
+    global $conx;
+    
+    // Validate required parameters
+    if (!isset($input['engineer_id'])) {
+        sendResponse(false, 'معرف المهندس مطلوب');
+        return;
+    }
+    
+    $engineerId = sanitize($input['engineer_id']);
+    
+    // SQL query to get engineer customers
+    $query = "SELECT
+                v.id AS project_id,
+                c.a1 AS customer_name,
+                contractors.a1 AS contractor_name,
+                contractors.a3 AS contractor_phone,
+                c.a2 AS customer_phone
+              FROM
+                visitsx AS v
+              LEFT JOIN customers AS c
+                ON v.a1 = c.id 
+              LEFT JOIN contractors
+                ON contractors.id = v.a3
+              WHERE
+                v.stx = '1'
+                AND v.a2 = '$engineerId'
+              ORDER BY
+                v.a1 ASC";
+    
+    $result = mysqli_query($conx, $query);
+    
+    if ($result) {
+        $customers = [];
+        while ($row = mysqli_fetch_assoc($result)) {
+            $customers[] = $row;
+        }
+        
+        sendResponse(true, 'تم جلب عملاء المهندس بنجاح', $customers);
+    } else {
+        sendResponse(false, 'خطأ في جلب عملاء المهندس: ' . mysqli_error($conx));
+    }
+}
+
+/**
+ * DELETE VISIT FROM DATABASE
+ * Deletes a visit from visits_det table
+ */
+function deleteVisitFromDB($input) {
+    global $conx;
+    
+    // Validate required parameters
+    if (!isset($input['visit_id'])) {
+        sendResponse(false, 'معرف الزيارة مطلوب');
+        return;
+    }
+    
+    $visitId = sanitize($input['visit_id']);
+    
+    // SQL query to delete visit
+    $query = "DELETE FROM visits_det WHERE id = '$visitId'";
+    
+    if (mysqli_query($conx, $query)) {
+        if (mysqli_affected_rows($conx) > 0) {
+            sendResponse(true, 'تم حذف الزيارة بنجاح');
+        } else {
+            sendResponse(false, 'لم يتم العثور على الزيارة');
+        }
+    } else {
+        sendResponse(false, 'خطأ في حذف الزيارة: ' . mysqli_error($conx));
+    }
+}
+
+/**
+ * UPDATE VISIT PROJECT
+ * Updates the project ID (a1) for a specific visit
+ */
+function updateVisitProject($input) {
+    global $conx;
+    
+    // Validate required parameters
+    if (!isset($input['visit_id']) || !isset($input['project_id'])) {
+        sendResponse(false, 'معرف الزيارة ومعرف المشروع مطلوبان');
+        return;
+    }
+    
+    $visitId = sanitize($input['visit_id']);
+    $projectId = sanitize($input['project_id']);
+    
+    // SQL query to update visit project
+    $query = "UPDATE visits_det SET a1 = '$projectId' WHERE id = '$visitId'";
+    
+    if (mysqli_query($conx, $query)) {
+        if (mysqli_affected_rows($conx) > 0) {
+            sendResponse(true, 'تم تحديث مشروع الزيارة بنجاح');
+        } else {
+            sendResponse(false, 'لم يتم العثور على الزيارة أو لا توجد تغييرات');
+        }
+    } else {
+        sendResponse(false, 'خطأ في تحديث مشروع الزيارة: ' . mysqli_error($conx));
+    }
+}
+
+/**
+ * Handle get_total action - exactly as requested
+ */
+function handleGetTotal($input) {
+    global $conx;
+    
+    $d1='';
+    $uid = $input['uid'];
+    $x = $input['x'];
+    $today = date('Y-m-d');
+    $currentMonth = date('Y-m');
+    
+    switch($x){  
+        case '1': $d1 = " and a1='$uid'  "; break; 
+        case '2': $d1 = "and  a2='$uid' "; break;  
+        case '3': $d1 = " and a3='$uid' "; break;
+    }
+    
+    $query = "SELECT
+    COUNT(id) AS v1,
+    SUM(a8) AS v2,
+    COUNT(CASE WHEN a10 = '$today' THEN 1 END) AS v3,
+    COUNT(CASE WHEN a10 LIKE '$currentMonth%' THEN 1 END) AS v4
+FROM visitsx
+WHERE stx = '1'  $d1"; 
+    
+    $result = $conx->query($query);
+    
+    if (!$result) {
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'خطأ في الاستعلام: ' . $conx->error,
+        ]);
+        exit;
+    }
+
+    $total_trans = [];
+    while ($row = $result->fetch_assoc()) {
+        $total_trans[] = $row;
+    }
+
+    echo json_encode([
+        'status' => 'success',
+        'trans_data' => $total_trans,
+    ]);
+    exit; // إنهاء التنفيذ هنا
 }
 
 // If no action matched, return error
@@ -923,7 +1251,7 @@ echo json_encode([
     'success' => false,
     'message' => 'Invalid action',
     'received_action' => $action,
-    'available_actions' => ['login', 'get_all_transactions', 'get_full_visits_data', 'get_top_stats']
+    'available_actions' => ['login', 'get_all_transactions', 'get_full_visits_data', 'get_top_stats', 'get_total']
 ], JSON_UNESCAPED_UNICODE);
 
 // Close connection
