@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -6,11 +9,19 @@ import 'package:intl/intl.dart' as intlx;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
+import 'package:video_thumbnail/video_thumbnail.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:awesome_dialog/awesome_dialog.dart';
 import '../providers/auth_provider.dart';
+import '../providers/language_provider.dart';
+import '../providers/theme_provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import 'login_screen.dart';
 import 'camera_working.dart';
 import '../widgets/stats_section.dart';
+import '../widgets/full_screen_video_player.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -26,7 +37,7 @@ class _MainScreenState extends State<MainScreen> {
   bool _isSearching = false;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
-  
+
   // Search for visits
   bool _isSearchingVisits = false;
   String _searchQueryVisits = '';
@@ -38,7 +49,7 @@ class _MainScreenState extends State<MainScreen> {
   final Map<int, GlobalKey> _projectKeys = {};
   bool _isLoadingProjects = false;
   bool _hasLoadedProjects = false;
-  
+
   // Cache for visits data
   Map<String, Map<String, dynamic>> _visitsCache = {};
   bool _isLoadingVisits = false;
@@ -49,7 +60,7 @@ class _MainScreenState extends State<MainScreen> {
   Map<int, int> _currentPhotoIndex = {};
 
   bool _showingStats = false; // Toggle between visits and statistics
-  
+
   // Current visit ID for camera session
   int? _currentVisitId;
 
@@ -59,6 +70,192 @@ class _MainScreenState extends State<MainScreen> {
     _loadActiveProject();
     _loadProjectsOnce();
   }
+
+  int _getMediaCount(Map<String, dynamic> visit) {
+    // For now, assume same count as photos
+    // In future, this should check both images and videos folders
+    return _getPhotosCount(visit);
+  }
+
+  void _logout(AuthProvider authProvider) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            'تسجيل الخروج',
+            style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            'هل أنت متأكد من تسجيل الخروج؟',
+            style: GoogleFonts.cairo(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'إلغاء',
+                style: GoogleFonts.cairo(color: Colors.grey[600]),
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await authProvider.logout();
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                );
+              },
+              child: Text(
+                'تسجيل الخروج',
+                style: GoogleFonts.cairo(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showFullScreenImage(String imageUrl, int imageNumber) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(0),
+          child: Stack(
+            children: [
+              // Full screen image
+              Center(
+                child: InteractiveViewer(
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.contain,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                  : null,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'جاري تحميل الصورة...',
+                              style: GoogleFonts.cairo(
+                                fontSize: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Iconsax.image,
+                              size: 80,
+                              color: Colors.white54,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'لا يمكن تحميل الصورة',
+                              style: GoogleFonts.cairo(
+                                fontSize: 18,
+                                color: Colors.white,
+                              ),
+                            ),
+                            Text(
+                              'صورة رقم $imageNumber',
+                              style: GoogleFonts.cairo(
+                                fontSize: 14,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              // Close button
+              Positioned(
+                top: 50,
+                right: 20,
+                child: GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Iconsax.close_circle,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ),
+              // Image info
+              Positioned(
+                bottom: 50,
+                left: 20,
+                right: 20,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'صورة رقم $imageNumber',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.cairo(
+                      fontSize: 16,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+ 
 
   @override
   void didUpdateWidget(MainScreen oldWidget) {
@@ -84,7 +281,7 @@ class _MainScreenState extends State<MainScreen> {
     } else {
       debugPrint('📂 No active project found in storage');
     }
-    
+
     // Load expanded projects state
     final expandedList = prefs.getStringList('expanded_projects') ?? [];
     final expandedIds = expandedList.map((id) => int.tryParse(id) ?? 0).toSet();
@@ -126,10 +323,14 @@ class _MainScreenState extends State<MainScreen> {
           _currentDate = result['dayx'] ?? '';
           _hasLoadedProjects = true;
         });
-        
+
         // Clean up old project keys that are no longer in the projects list
-        final currentProjectIds = _projects.map((p) => int.tryParse(p['id'].toString()) ?? 0).toSet();
-        _projectKeys.removeWhere((key, value) => !currentProjectIds.contains(key));
+        final currentProjectIds = _projects
+            .map((p) => int.tryParse(p['id'].toString()) ?? 0)
+            .toSet();
+        _projectKeys.removeWhere(
+          (key, value) => !currentProjectIds.contains(key),
+        );
 
         // Auto scroll to active project after loading
         if (_activeProjectId != null) {
@@ -152,9 +353,145 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
+  Future<void> _refreshProjects(AuthProvider authProvider) async {
+    try {
+      final result = await authProvider.getProjects();
+
+      if (result['success'] && mounted) {
+        setState(() {
+          _projects = List<Map<String, dynamic>>.from(result['projects'] ?? []);
+          _currentDate = result['dayx'] ?? '';
+        });
+
+        // Clean up old project keys that are no longer in the projects list
+        final currentProjectIds = _projects
+            .map((p) => int.tryParse(p['id'].toString()) ?? 0)
+            .toSet();
+        _projectKeys.removeWhere(
+          (key, value) => !currentProjectIds.contains(key),
+        );
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'تم تحديث المشاريع بنجاح',
+              style: GoogleFonts.cairo(),
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error refreshing projects: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'فشل في تحديث المشاريع',
+            style: GoogleFonts.cairo(),
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _refreshVisits(AuthProvider authProvider) async {
+    try {
+      final dateKey = intlx.DateFormat('yyyy-MM-dd').format(_selectedDate);
+      
+      // Clear cache for current date to force reload
+      _visitsCache.remove(dateKey);
+      
+      // Reload visits data
+      final result = await _loadVisitsData(authProvider, dateKey);
+      
+      if (result['success'] && mounted) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'تم تحديث الزيارات بنجاح',
+              style: GoogleFonts.cairo(),
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+        
+        // Trigger rebuild
+        setState(() {});
+      }
+    } catch (e) {
+      debugPrint('Error refreshing visits: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'فشل في تحديث الزيارات',
+            style: GoogleFonts.cairo(),
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _refreshEngineersStats(AuthProvider authProvider) async {
+    try {
+      // Force refresh of engineers stats
+      // This will depend on how the stats are loaded - for now just show success
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'تم تحديث إحصائيات المهندسين بنجاح',
+            style: GoogleFonts.cairo(),
+          ),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+      
+      // Trigger rebuild
+      setState(() {});
+    } catch (e) {
+      debugPrint('Error refreshing engineers stats: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'فشل في تحديث إحصائيات المهندسين',
+            style: GoogleFonts.cairo(),
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    }
+  }
+
   void _scrollToActiveProject() {
     if (_activeProjectId == null || _projects.isEmpty) return;
-    
+
     // Wait for ScrollController to be ready
     if (!_scrollController.hasClients) {
       Future.delayed(const Duration(milliseconds: 100), () {
@@ -176,7 +513,9 @@ class _MainScreenState extends State<MainScreen> {
         debugPrint('✅ Using ensureVisible for project $_activeProjectId');
         return;
       } catch (e) {
-        debugPrint('⚠️ ensureVisible failed, falling back to manual calculation: $e');
+        debugPrint(
+          '⚠️ ensureVisible failed, falling back to manual calculation: $e',
+        );
       }
     }
 
@@ -190,30 +529,33 @@ class _MainScreenState extends State<MainScreen> {
       try {
         // Use a more accurate approach by calculating cumulative heights
         double totalOffset = 0.0;
-        
+
         // Calculate the offset by summing up heights of all cards before the target
         for (int i = 0; i < activeIndex; i++) {
           final projectId = int.tryParse(_projects[i]['id'].toString()) ?? 0;
-          
+
           // More accurate base card height measurement
-          double cardHeight = 160.0; // Increased base height to match actual card
-          
+          double cardHeight =
+              160.0; // Increased base height to match actual card
+
           // Add expanded content height if this project is expanded
           if (_expandedProjects.contains(projectId)) {
             cardHeight += 220.0; // Height for expanded content (visits list)
           }
-          
+
           // Add margin
           cardHeight += 16.0;
-          
+
           totalOffset += cardHeight;
         }
-        
+
         // Add some padding to center the target card better
-        final double viewportHeight = _scrollController.position.viewportDimension;
+        final double viewportHeight =
+            _scrollController.position.viewportDimension;
         final double centeredOffset = totalOffset - (viewportHeight * 0.15);
-        
-        final double maxScrollExtent = _scrollController.position.maxScrollExtent;
+
+        final double maxScrollExtent =
+            _scrollController.position.maxScrollExtent;
         final double finalOffset = centeredOffset.clamp(0.0, maxScrollExtent);
 
         _scrollController.animateTo(
@@ -221,15 +563,23 @@ class _MainScreenState extends State<MainScreen> {
           duration: const Duration(milliseconds: 1200),
           curve: Curves.easeInOutCubic,
         );
-        
-        debugPrint('✅ Manual scroll to project $_activeProjectId (index: $activeIndex)');
-        debugPrint('📏 Calculated offset: $totalOffset, Final offset: $finalOffset');
-        debugPrint('📋 Total projects: ${_projects.length}, Expanded: ${_expandedProjects.length}');
+
+        debugPrint(
+          '✅ Manual scroll to project $_activeProjectId (index: $activeIndex)',
+        );
+        debugPrint(
+          '📏 Calculated offset: $totalOffset, Final offset: $finalOffset',
+        );
+        debugPrint(
+          '📋 Total projects: ${_projects.length}, Expanded: ${_expandedProjects.length}',
+        );
       } catch (e) {
         debugPrint('❌ Error scrolling to active project: $e');
       }
     } else {
-      debugPrint('⚠️ Active project $_activeProjectId not found in projects list');
+      debugPrint(
+        '⚠️ Active project $_activeProjectId not found in projects list',
+      );
     }
   }
 
@@ -258,18 +608,21 @@ class _MainScreenState extends State<MainScreen> {
     // Show welcome message only on home screen
     if (_selectedIndex == 0) {
       return AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         centerTitle: true,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(
-              'الرئيسية',
-              style: GoogleFonts.cairo(
-                fontSize: 16,
-                color: Colors.grey[800],
-                fontWeight: FontWeight.bold,
+            GestureDetector(
+
+              child: Text(
+                'الرئيسية',
+                style: GoogleFonts.cairo(
+                  fontSize: 16,
+                  color: Theme.of(context).textTheme.titleLarge?.color,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
@@ -292,15 +645,15 @@ class _MainScreenState extends State<MainScreen> {
       );
     } else if (_selectedIndex == 2) {
       return AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         centerTitle: true,
         title: Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withAlpha(13),
+                color: Theme.of(context).shadowColor.withAlpha(13),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
@@ -318,13 +671,15 @@ class _MainScreenState extends State<MainScreen> {
                   icon: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: _showingStats ? Colors.green.withAlpha(51) : Colors.blue.withAlpha(51),
+                      color: _showingStats
+                          ? Colors.green.withAlpha(51)
+                          : Colors.blue.withAlpha(51),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
-                      _showingStats ? Iconsax.chart_success : Iconsax.chart_2, 
-                      color: _showingStats ? Colors.green : Colors.blue, 
-                      size: 20
+                      _showingStats ? Iconsax.chart_success : Iconsax.chart_2,
+                      color: _showingStats ? Colors.green : Colors.blue,
+                      size: 20,
                     ),
                   ),
                 ),
@@ -335,7 +690,7 @@ class _MainScreenState extends State<MainScreen> {
                   style: GoogleFonts.cairo(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey[800],
+                    color: Theme.of(context).textTheme.titleLarge?.color,
                   ),
                 ),
               ),
@@ -378,7 +733,7 @@ class _MainScreenState extends State<MainScreen> {
     }
 
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       elevation: 0,
       centerTitle: !_isSearching && !_isSearchingVisits,
       title: _isSearching && _selectedIndex == 1
@@ -388,50 +743,52 @@ class _MainScreenState extends State<MainScreen> {
               decoration: InputDecoration(
                 hintText: 'البحث في المشاريع...',
                 hintStyle: GoogleFonts.cairo(
-                  color: Colors.grey[500],
+                  color: Theme.of(context).textTheme.bodyMedium?.color,
                   fontSize: 16,
                 ),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16),
               ),
-              style: GoogleFonts.cairo(fontSize: 16, color: Colors.grey[800]),
+              style: GoogleFonts.cairo(fontSize: 16, color: Theme.of(context).textTheme.titleLarge?.color),
               onChanged: (value) {
                 setState(() {
                   _searchQuery = value;
                 });
               },
             )
-          : _isSearchingVisits && (_selectedIndex == 3 || (_selectedIndex == 2 && authProvider.isEngineer()))
-              ? TextField(
-                  controller: _searchControllerVisits,
-                  autofocus: true,
-                  decoration: InputDecoration(
-                    hintText: 'البحث في الزيارات...',
-                    hintStyle: GoogleFonts.cairo(
-                      color: Colors.grey[500],
-                      fontSize: 16,
-                    ),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                  ),
-                  style: GoogleFonts.cairo(fontSize: 16, color: Colors.grey[800]),
-                  onChanged: (value) {
-                    setState(() {
-                      _searchQueryVisits = value;
-                    });
-                  },
-                )
-              : Text(
-                  pageTitle,
-                  style: GoogleFonts.cairo(
-                    fontSize: 20,
-                    color: Colors.grey[800],
-                    fontWeight: FontWeight.bold,
-                  ),
+          : _isSearchingVisits &&
+                (_selectedIndex == 3 ||
+                    (_selectedIndex == 2 && authProvider.isEngineer()))
+          ? TextField(
+              controller: _searchControllerVisits,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: 'البحث في الزيارات...',
+                hintStyle: GoogleFonts.cairo(
+                  color: Theme.of(context).textTheme.bodyMedium?.color,
+                  fontSize: 16,
                 ),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+              ),
+              style: GoogleFonts.cairo(fontSize: 16, color: Theme.of(context).textTheme.titleLarge?.color),
+              onChanged: (value) {
+                setState(() {
+                  _searchQueryVisits = value;
+                });
+              },
+            )
+          : Text(
+              pageTitle,
+              style: GoogleFonts.cairo(
+                fontSize: 20,
+                color: Theme.of(context).textTheme.titleLarge?.color,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
       leading: _isSearching
           ? IconButton(
-              icon: Icon(Iconsax.arrow_right_3, color: Colors.grey[700]),
+              icon: Icon(Iconsax.arrow_right_3, color: Theme.of(context).iconTheme.color),
               onPressed: () {
                 setState(() {
                   _isSearching = false;
@@ -441,17 +798,17 @@ class _MainScreenState extends State<MainScreen> {
               },
             )
           : _isSearchingVisits
-              ? IconButton(
-                  icon: Icon(Iconsax.arrow_right_3, color: Colors.grey[700]),
-                  onPressed: () {
-                    setState(() {
-                      _isSearchingVisits = false;
-                      _searchQueryVisits = '';
-                      _searchControllerVisits.clear();
-                    });
-                  },
-                )
-              : null,
+          ? IconButton(
+              icon: Icon(Iconsax.arrow_right_3, color: Theme.of(context).iconTheme.color),
+              onPressed: () {
+                setState(() {
+                  _isSearchingVisits = false;
+                  _searchQueryVisits = '';
+                  _searchControllerVisits.clear();
+                });
+              },
+            )
+          : null,
       actions: [
         if (_selectedIndex == 1) // Only show search in projects tab
           IconButton(
@@ -479,7 +836,9 @@ class _MainScreenState extends State<MainScreen> {
               ),
             ),
           ),
-        if (_selectedIndex == 3 || (_selectedIndex == 2 && authProvider.isEngineer())) // Show search in visits tab
+        if (_selectedIndex == 3 ||
+            (_selectedIndex == 2 &&
+                authProvider.isEngineer())) // Show search in visits tab
           IconButton(
             onPressed: () {
               setState(() {
@@ -499,7 +858,9 @@ class _MainScreenState extends State<MainScreen> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
-                _isSearchingVisits ? Iconsax.close_square : Iconsax.search_normal,
+                _isSearchingVisits
+                    ? Iconsax.close_square
+                    : Iconsax.search_normal,
                 color: AppColors.primary,
                 size: 20,
               ),
@@ -532,7 +893,10 @@ class _MainScreenState extends State<MainScreen> {
         case 1:
           return _buildProjects(authProvider);
         case 2:
-          return _buildComingSoonScreen('الكاميرا', 'يتم فتح الكاميرا تلقائياً عند الضغط على الزر');
+          return _buildComingSoonScreen(
+            'الكاميرا',
+            'يتم فتح الكاميرا تلقائياً عند الضغط على الزر',
+          );
         case 3:
           return _buildVisits(authProvider);
         case 4:
@@ -749,7 +1113,15 @@ class _MainScreenState extends State<MainScreen> {
   Widget _buildProjects(AuthProvider authProvider) {
     return SafeArea(
       child: Column(
-        children: [Expanded(child: _buildProjectsList(authProvider))],
+        children: [
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () => _refreshProjects(authProvider),
+              color: AppColors.primary,
+              child: _buildProjectsList(authProvider),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -807,9 +1179,17 @@ class _MainScreenState extends State<MainScreen> {
           _buildDateNavigationBar(),
           // Content - either visits or statistics
           Expanded(
-            child: _showingStats 
-                ? _buildEngineersStatsFullScreen(authProvider)
-                : _buildVisitsList(authProvider)
+            child: _showingStats
+                ? RefreshIndicator(
+                    onRefresh: () => _refreshEngineersStats(authProvider),
+                    color: AppColors.primary,
+                    child: _buildEngineersStatsFullScreen(authProvider),
+                  )
+                : RefreshIndicator(
+                    onRefresh: () => _refreshVisits(authProvider),
+                    color: AppColors.primary,
+                    child: _buildVisitsList(authProvider),
+                  ),
           ),
         ],
       ),
@@ -896,7 +1276,9 @@ class _MainScreenState extends State<MainScreen> {
             Container(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () => _logout(authProvider),
+                onPressed: () {
+                  // _logout(authProvider)
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red[400],
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -943,20 +1325,23 @@ class _MainScreenState extends State<MainScreen> {
       ),
       child: Column(
         children: [
-          _buildSettingsItem(
-            icon: Iconsax.language_circle,
-            title: 'تغيير اللغة',
-            subtitle: 'العربية',
-            onTap: () => _showLanguageDialog(),
-            color: Colors.blue,
+          Consumer<LanguageProvider>(
+            builder: (context, languageProvider, child) {
+              final localizations = AppLocalizations.of(context)!;
+              return _buildSettingsItem(
+                icon: Iconsax.language_circle,
+                title: localizations.changeLanguage,
+                subtitle: languageProvider.currentLanguageName,
+                onTap: () => _showLanguageDialog(),
+                color: Colors.blue,
+              );
+            },
           ),
           _buildDivider(),
-          _buildSettingsItem(
-            icon: Iconsax.moon,
-            title: 'الوضع المظلم',
-            subtitle: 'قيد التطوير',
-            onTap: () => _showComingSoon('الوضع المظلم'),
-            color: Colors.purple,
+          Consumer<ThemeProvider>(
+            builder: (context, themeProvider, child) {
+              return _buildThemeToggleItem(themeProvider);
+            },
           ),
           _buildDivider(),
           _buildSettingsItem(
@@ -1009,14 +1394,93 @@ class _MainScreenState extends State<MainScreen> {
         style: GoogleFonts.cairo(
           fontSize: 16,
           fontWeight: FontWeight.w600,
-          color: Colors.grey[800],
+          color: Theme.of(context).textTheme.titleLarge?.color,
         ),
       ),
       subtitle: Text(
         subtitle,
-        style: GoogleFonts.cairo(fontSize: 14, color: Colors.grey[600]),
+        style: GoogleFonts.cairo(
+          fontSize: 14, 
+          color: Theme.of(context).textTheme.bodyMedium?.color,
+        ),
       ),
-      trailing: Icon(Iconsax.arrow_left_2, color: Colors.grey[400], size: 20),
+      trailing: Icon(
+        Iconsax.arrow_left_2, 
+        color: Theme.of(context).iconTheme.color?.withOpacity(0.6), 
+        size: 20,
+      ),
+    );
+  }
+
+  Widget _buildThemeToggleItem(ThemeProvider themeProvider) {
+    final localizations = AppLocalizations.of(context)!;
+    
+    return ListTile(
+      onTap: () async {
+        await themeProvider.toggleTheme();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              localizations.themeChanged,
+              style: GoogleFonts.cairo(),
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      },
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.purple.withAlpha(51),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(
+          themeProvider.isDarkMode ? Iconsax.sun_1 : Iconsax.moon,
+          color: Colors.purple,
+          size: 24,
+        ),
+      ),
+      title: Text(
+        themeProvider.isDarkMode ? localizations.lightMode : localizations.darkMode,
+        style: GoogleFonts.cairo(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: Theme.of(context).textTheme.titleLarge?.color,
+        ),
+      ),
+      subtitle: Text(
+        themeProvider.isDarkMode ? localizations.enableLightMode : localizations.enableDarkMode,
+        style: GoogleFonts.cairo(
+          fontSize: 14, 
+          color: Theme.of(context).textTheme.bodyMedium?.color,
+        ),
+      ),
+      trailing: Switch(
+        value: themeProvider.isDarkMode,
+        onChanged: (value) async {
+          await themeProvider.toggleTheme();
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                localizations.themeChanged,
+                style: GoogleFonts.cairo(),
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        },
+        activeColor: AppColors.primary,
+      ),
     );
   }
 
@@ -1064,9 +1528,11 @@ class _MainScreenState extends State<MainScreen> {
       onTap: (index) {
         int actualIndex = index >= 2 ? index + 1 : index;
         setState(() => _selectedIndex = actualIndex);
-        
+
         // If switching to projects tab and there's an active project, scroll to it
-        if (actualIndex == 1 && _activeProjectId != null && _projects.isNotEmpty) {
+        if (actualIndex == 1 &&
+            _activeProjectId != null &&
+            _projects.isNotEmpty) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             Future.delayed(const Duration(milliseconds: 400), () {
               _scrollToActiveProject();
@@ -1098,7 +1564,7 @@ class _MainScreenState extends State<MainScreen> {
       splashColor: AppColors.primary.withAlpha(51),
       onTap: (index) {
         setState(() => _selectedIndex = index);
-        
+
         // If switching to projects tab and there's an active project, scroll to it
         if (index == 1 && _activeProjectId != null && _projects.isNotEmpty) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1164,12 +1630,12 @@ class _MainScreenState extends State<MainScreen> {
     } catch (e) {
       // Hide loading dialog
       Navigator.of(context).pop();
-      
+
       _showErrorDialog(
         'خطأ في الاتصال',
         'تأكد من اتصالك بالإنترنت وحاول مرة أخرى',
       );
-      
+
       debugPrint('❌ Error creating visit: $e');
     }
   }
@@ -1190,10 +1656,7 @@ class _MainScreenState extends State<MainScreen> {
               const SizedBox(height: 16),
               Text(
                 message,
-                style: GoogleFonts.cairo(
-                  fontSize: 16,
-                  color: Colors.grey[800],
-                ),
+                style: GoogleFonts.cairo(fontSize: 16, color: Colors.grey[800]),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -1229,10 +1692,7 @@ class _MainScreenState extends State<MainScreen> {
           ),
           content: Text(
             message,
-            style: GoogleFonts.cairo(
-              fontSize: 16,
-              color: Colors.grey[700],
-            ),
+            style: GoogleFonts.cairo(fontSize: 16, color: Colors.grey[700]),
           ),
           actions: [
             TextButton(
@@ -1254,10 +1714,8 @@ class _MainScreenState extends State<MainScreen> {
   void _openCameraScreen(int visitId) async {
     final result = await Navigator.of(context).push<List<String>>(
       MaterialPageRoute(
-        builder: (context) => CameraWorking(
-          visitId: visitId,
-          projectId: _activeProjectId!,
-        ),
+        builder: (context) =>
+            CameraWorking(visitId: visitId, projectId: _activeProjectId!),
       ),
     );
 
@@ -1373,7 +1831,11 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
-  Widget _buildExpandableText(String text, int visitId, StateSetter setLocalState) {
+  Widget _buildExpandableText(
+    String text,
+    int visitId,
+    StateSetter setLocalState,
+  ) {
     final isExpanded = _expandedNotes.contains(visitId);
     final maxLines = isExpanded ? null : 2;
 
@@ -1491,171 +1953,167 @@ class _MainScreenState extends State<MainScreen> {
 
   Widget _buildEngineersStatsFullScreen(AuthProvider authProvider) {
     final dateKey = intlx.DateFormat('yyyy-MM-dd').format(_selectedDate);
-    
+
     // Check user type and show appropriate content
     if (authProvider.isAdmin()) {
       // Show full statistics for admin
       return FutureBuilder<Map<String, dynamic>>(
         future: authProvider.getEngineersStats(datexx: dateKey),
         builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-        if (snapshot.hasError) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Iconsax.warning_2, size: 48, color: Colors.grey[400]),
-                const SizedBox(height: 16),
-                Text(
-                  'حدث خطأ في جلب الإحصائيات',
-                  style: GoogleFonts.cairo(
-                    fontSize: 16,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                ElevatedButton(
-                  onPressed: () => setState(() {}),
-                  child: Text('إعادة المحاولة'),
-                ),
-              ],
-            ),
-          );
-        }
-
-        final result = snapshot.data;
-        if (result == null || result['success'] != true) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Iconsax.chart_fail,
-                  size: 48,
-                  color: Colors.grey[400],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'حدث خطأ في جلب الإحصائيات',
-                  style: GoogleFonts.cairo(
-                    fontSize: 16,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                ElevatedButton(
-                  onPressed: () => setState(() {}),
-                  child: Text('إعادة المحاولة'),
-                ),
-              ],
-            ),
-          );
-        }
-
-        final engineersStats = result['engineers_stats'] as List<dynamic>;
-
-        if (engineersStats.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Iconsax.chart_fail,
-                  size: 48,
-                  color: Colors.grey[400],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'لا توجد إحصائيات في هذا التاريخ',
-                  style: GoogleFonts.cairo(
-                    fontSize: 16,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'جرب تاريخ آخر أو تأكد من وجود زيارات',
-                  style: GoogleFonts.cairo(
-                    fontSize: 14,
-                    color: Colors.grey[500],
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        return Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.grey[50]!,
-                Colors.white,
-              ],
-            ),
-          ),
-          child: Column(
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.all(20),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withAlpha(51),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Icon(Iconsax.chart_success, color: Colors.blue, size: 28),
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Iconsax.warning_2, size: 48, color: Colors.grey[400]),
+                  const SizedBox(height: 16),
+                  Text(
+                    'حدث خطأ في جلب الإحصائيات',
+                    style: GoogleFonts.cairo(
+                      fontSize: 16,
+                      color: Colors.grey[600],
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'إحصائيات المهندسين',
-                            style: GoogleFonts.cairo(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 22,
-                              color: Colors.grey[800],
-                            ),
-                          ),
-                          Text(
-                            intlx.DateFormat('yyyy-MM-dd').format(_selectedDate),
-                            style: GoogleFonts.cairo(
-                              fontSize: 14,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: () => setState(() {}),
+                    child: Text('إعادة المحاولة'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final result = snapshot.data;
+          if (result == null || result['success'] != true) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Iconsax.chart_fail, size: 48, color: Colors.grey[400]),
+                  const SizedBox(height: 16),
+                  Text(
+                    'حدث خطأ في جلب الإحصائيات',
+                    style: GoogleFonts.cairo(
+                      fontSize: 16,
+                      color: Colors.grey[600],
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: () => setState(() {}),
+                    child: Text('إعادة المحاولة'),
+                  ),
+                ],
               ),
-              // Statistics List
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: engineersStats.length,
-                  itemBuilder: (context, index) {
-                    final stat = engineersStats[index] as Map<String, dynamic>;
-                    return _buildEngineerStatCard(stat, index + 1);
-                  },
-                ),
+            );
+          }
+
+          final engineersStats = result['engineers_stats'] as List<dynamic>;
+
+          if (engineersStats.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Iconsax.chart_fail, size: 48, color: Colors.grey[400]),
+                  const SizedBox(height: 16),
+                  Text(
+                    'لا توجد إحصائيات في هذا التاريخ',
+                    style: GoogleFonts.cairo(
+                      fontSize: 16,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'جرب تاريخ آخر أو تأكد من وجود زيارات',
+                    style: GoogleFonts.cairo(
+                      fontSize: 14,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        );
-      },
-    );
+            );
+          }
+
+          return Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.grey[50]!, Colors.white],
+              ),
+            ),
+            child: Column(
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withAlpha(51),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Icon(
+                          Iconsax.chart_success,
+                          color: Colors.blue,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'إحصائيات المهندسين',
+                              style: GoogleFonts.cairo(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 22,
+                                color: Colors.grey[800],
+                              ),
+                            ),
+                            Text(
+                              intlx.DateFormat(
+                                'yyyy-MM-dd',
+                              ).format(_selectedDate),
+                              style: GoogleFonts.cairo(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Statistics List
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: engineersStats.length,
+                    itemBuilder: (context, index) {
+                      final stat =
+                          engineersStats[index] as Map<String, dynamic>;
+                      return _buildEngineerStatCard(stat, index + 1);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
     } else if (authProvider.isEngineer()) {
       // Show a circle with number for engineers
       return Center(
@@ -1704,10 +2162,7 @@ class _MainScreenState extends State<MainScreen> {
             const SizedBox(height: 8),
             Text(
               authProvider.getUserName(),
-              style: GoogleFonts.cairo(
-                fontSize: 16,
-                color: Colors.grey[600],
-              ),
+              style: GoogleFonts.cairo(fontSize: 16, color: Colors.grey[600]),
             ),
           ],
         ),
@@ -1722,18 +2177,11 @@ class _MainScreenState extends State<MainScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Iconsax.chart,
-                size: 64,
-                color: Colors.grey[300],
-              ),
+              Icon(Iconsax.chart, size: 64, color: Colors.grey[300]),
               const SizedBox(height: 16),
               Text(
                 'الإحصائيات غير متاحة',
-                style: GoogleFonts.cairo(
-                  fontSize: 16,
-                  color: Colors.grey[500],
-                ),
+                style: GoogleFonts.cairo(fontSize: 16, color: Colors.grey[500]),
               ),
             ],
           ),
@@ -1825,13 +2273,18 @@ class _MainScreenState extends State<MainScreen> {
                       ),
                       const SizedBox(width: 12),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: (percentage > 80
-                              ? Colors.green
-                              : percentage > 60
-                              ? Colors.orange
-                              : Colors.red).withAlpha(51),
+                          color:
+                              (percentage > 80
+                                      ? Colors.green
+                                      : percentage > 60
+                                      ? Colors.orange
+                                      : Colors.red)
+                                  .withAlpha(51),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -1927,78 +2380,96 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _showLanguageDialog() {
-    showDialog(
+    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    final localizations = AppLocalizations.of(context)!;
+    
+    AwesomeDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withAlpha(51),
-                  borderRadius: BorderRadius.circular(10),
+      dialogType: DialogType.noHeader,
+      animType: AnimType.scale,
+      width: MediaQuery.of(context).size.width * 0.85,
+      body: Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withAlpha(51),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Iconsax.language_circle,
+                    color: Colors.blue,
+                    size: 28,
+                  ),
                 ),
-                child: Icon(
-                  Iconsax.language_circle,
-                  color: Colors.blue,
-                  size: 24,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    localizations.changeLanguage,
+                    style: GoogleFonts.cairo(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                      color: Colors.grey[800],
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'اختر اللغة',
-                style: GoogleFonts.cairo(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  color: Colors.grey[800],
-                ),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildLanguageOption(
-                'العربية',
-                'https://cdn-icons-png.flaticon.com/512/197/197571.png',
-                true,
-              ),
-              const SizedBox(height: 12),
-              _buildLanguageOption(
-                'English',
-                'https://cdn-icons-png.flaticon.com/512/197/197374.png',
-                false,
-              ),
-              _buildLanguageOption('हिंदी', '🇮🇳', false),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'إلغاء',
-                style: GoogleFonts.cairo(color: Colors.grey[600]),
-              ),
+              ],
             ),
+            const SizedBox(height: 24),
+            
+            // Language Options
+            ...languageProvider.getSupportedLanguages().map((language) {
+              final isSelected = languageProvider.currentLanguageCode == language['code'];
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: _buildLanguageOption(
+                  language['name']!,
+                  language['nativeName']!,
+                  language['code']!,
+                  isSelected,
+                  languageProvider,
+                ),
+              );
+            }).toList(),
           ],
-        );
-      },
-    );
+        ),
+      ),
+    ).show();
   }
 
   Widget _buildLanguageOption(
-    String language,
-    String flagUrl,
+    String displayName,
+    String nativeName,
+    String languageCode,
     bool isSelected,
+    LanguageProvider languageProvider,
   ) {
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
         Navigator.of(context).pop();
-        _showComingSoon('تغيير اللغة إلى $language');
+        
+        await languageProvider.changeLanguage(languageCode);
+        
+        final localizations = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              localizations.languageChanged,
+              style: GoogleFonts.cairo(),
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
       },
       child: Container(
         width: double.infinity,
@@ -2023,54 +2494,46 @@ class _MainScreenState extends State<MainScreen> {
         child: Row(
           children: [
             Container(
-              width: 32,
-              height: 32,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(25),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                color: AppColors.primary.withAlpha(25),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  flagUrl,
-                  width: 32,
-                  height: 32,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: 32,
-                      height: 32,
-                      color: Colors.grey[300],
-                      child: Icon(
-                        Iconsax.flag,
-                        color: Colors.grey[600],
-                        size: 16,
-                      ),
-                    );
-                  },
+              child: Center(
+                child: Text(
+                  _getLanguageFlag(languageCode),
+                  style: const TextStyle(fontSize: 20),
                 ),
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: Text(
-                language,
-                style: GoogleFonts.cairo(
-                  fontSize: 16,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  color: isSelected ? AppColors.primary : Colors.grey[800],
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    nativeName,
+                    style: GoogleFonts.cairo(
+                      fontSize: 16,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                      color: isSelected ? AppColors.primary : Colors.grey[800],
+                    ),
+                  ),
+                  if (displayName != nativeName)
+                    Text(
+                      displayName,
+                      style: GoogleFonts.cairo(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                ],
               ),
             ),
             if (isSelected)
               Container(
-                padding: const EdgeInsets.all(4),
+                padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
                   color: AppColors.primary,
                   shape: BoxShape.circle,
@@ -2082,13 +2545,30 @@ class _MainScreenState extends State<MainScreen> {
       ),
     );
   }
+  
+  String _getLanguageFlag(String languageCode) {
+    switch (languageCode) {
+      case 'ar':
+        return '🇸🇦';
+      case 'en':
+        return '🇺🇸';
+      case 'ur':
+        return '🇵🇰';
+      case 'fa':
+        return '🇮🇷';
+      case 'bn':
+        return '🇧🇩';
+      case 'hi':
+        return '🇮🇳';
+      default:
+        return '🌐';
+    }
+  }
 
   Widget _buildDateNavigationBar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withAlpha(51),
-      ),
+      decoration: BoxDecoration(color: AppColors.primary.withAlpha(51)),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -2097,7 +2577,9 @@ class _MainScreenState extends State<MainScreen> {
               setState(() {
                 _selectedDate = _selectedDate.subtract(const Duration(days: 1));
                 // Clear cache for old date to ensure fresh data
-                final oldDateKey = intlx.DateFormat('yyyy-MM-dd').format(_selectedDate.add(const Duration(days: 1)));
+                final oldDateKey = intlx.DateFormat(
+                  'yyyy-MM-dd',
+                ).format(_selectedDate.add(const Duration(days: 1)));
                 _visitsCache.remove(oldDateKey);
               });
             },
@@ -2167,7 +2649,9 @@ class _MainScreenState extends State<MainScreen> {
                         const Duration(days: 1),
                       );
                       // Clear cache for old date to ensure fresh data
-                      final oldDateKey = intlx.DateFormat('yyyy-MM-dd').format(_selectedDate.subtract(const Duration(days: 1)));
+                      final oldDateKey = intlx.DateFormat(
+                        'yyyy-MM-dd',
+                      ).format(_selectedDate.subtract(const Duration(days: 1)));
                       _visitsCache.remove(oldDateKey);
                     });
                   }
@@ -2332,7 +2816,7 @@ class _MainScreenState extends State<MainScreen> {
     final projectId = int.tryParse(project['id'].toString()) ?? 0;
     bool isExpanded = _expandedProjects.contains(projectId);
     bool isActive = _activeProjectId == projectId;
-    
+
     // Create or get GlobalKey for this project
     if (!_projectKeys.containsKey(projectId)) {
       _projectKeys[projectId] = GlobalKey();
@@ -2423,7 +2907,7 @@ class _MainScreenState extends State<MainScreen> {
                                 overflow: TextOverflow.ellipsis,
                                 maxLines: 1,
                               ),
-                            )
+                            ),
                           ],
                         ),
                       ],
@@ -2739,12 +3223,12 @@ class _MainScreenState extends State<MainScreen> {
 
   Widget _buildVisitsList(AuthProvider authProvider) {
     final dateKey = intlx.DateFormat('yyyy-MM-dd').format(_selectedDate);
-    
+
     // Check if we have cached data for this date
     if (_visitsCache.containsKey(dateKey)) {
       return _buildVisitsListFromCache(dateKey, authProvider);
     }
-    
+
     // If no cache, load from API
     return FutureBuilder<Map<String, dynamic>>(
       future: _loadVisitsData(authProvider, dateKey),
@@ -2909,38 +3393,50 @@ class _MainScreenState extends State<MainScreen> {
                 Tooltip(
                   message: 'اضغط لعرض الصور',
                   child: GestureDetector(
-                    onTap: () => _togglePhotosExpansion(int.tryParse(visit['vdid']?.toString() ?? '0') ?? 0),
-                    child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: _expandedPhotos.contains(int.tryParse(visit['vdid']?.toString() ?? '0') ?? 0)
-                          ? AppColors.primary
-                          : AppColors.primary.withAlpha(51),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.primary, width: 2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withAlpha(102),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                    onTap: () => _togglePhotosExpansion(
+                      int.tryParse(visit['vdid']?.toString() ?? '0') ?? 0,
                     ),
-                    child: Center(
-                      child: Text(
-                        '${_getPhotosCount(visit)}',
-                        style: GoogleFonts.cairo(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: _expandedPhotos.contains(int.tryParse(visit['vdid']?.toString() ?? '0') ?? 0)
-                              ? Colors.white
-                              : AppColors.primary,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color:
+                            _expandedPhotos.contains(
+                              int.tryParse(visit['vdid']?.toString() ?? '0') ??
+                                  0,
+                            )
+                            ? AppColors.primary
+                            : AppColors.primary.withAlpha(51),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.primary, width: 2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withAlpha(102),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${_getPhotosCount(visit)}',
+                          style: GoogleFonts.cairo(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color:
+                                _expandedPhotos.contains(
+                                  int.tryParse(
+                                        visit['vdid']?.toString() ?? '0',
+                                      ) ??
+                                      0,
+                                )
+                                ? Colors.white
+                                : AppColors.primary,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
                 ),
               ],
             ),
@@ -2976,7 +3472,7 @@ class _MainScreenState extends State<MainScreen> {
                                 decoration: TextDecoration.underline,
                                 decorationColor: Colors.blue.withAlpha(102),
                                 decorationThickness: 1.5,
-                            ),
+                              ),
                             ),
                           ),
                         ),
@@ -2992,23 +3488,23 @@ class _MainScreenState extends State<MainScreen> {
                     },
                     child: Row(
                       children: [
-                      Icon(Iconsax.building_4, size: 16, color: Colors.green),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          visit['cn_name'] ?? 'عميل غير محدد',
-                          style: GoogleFonts.cairo(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.blue,
-                            textStyle: TextStyle(
-                              decoration: TextDecoration.underline,
-                              decorationColor: Colors.blue.withAlpha(102),
-                              decorationThickness: 1.5,
-                          ),
+                        Icon(Iconsax.building_4, size: 16, color: Colors.green),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            visit['cn_name'] ?? 'عميل غير محدد',
+                            style: GoogleFonts.cairo(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.blue,
+                              textStyle: TextStyle(
+                                decoration: TextDecoration.underline,
+                                decorationColor: Colors.blue.withAlpha(102),
+                                decorationThickness: 1.5,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
                       ],
                     ),
                   ),
@@ -3017,9 +3513,11 @@ class _MainScreenState extends State<MainScreen> {
               ),
             ),
             // Photos section (expandable)
-            if (_expandedPhotos.contains(int.tryParse(visit['vdid']?.toString() ?? '0') ?? 0)) ...[
+            if (_expandedPhotos.contains(
+              int.tryParse(visit['vdid']?.toString() ?? '0') ?? 0,
+            )) ...[
               const SizedBox(height: 12),
-              _buildPhotosSection(visit),
+              _buildMediaSection(visit),
             ],
             const SizedBox(height: 12),
 
@@ -3148,15 +3646,16 @@ class _MainScreenState extends State<MainScreen> {
                 ],
               ),
             ),
-
-            
           ],
         ),
       ),
     );
   }
 
-  Future<Map<String, dynamic>> _loadVisitsData(AuthProvider authProvider, String dateKey) async {
+  Future<Map<String, dynamic>> _loadVisitsData(
+    AuthProvider authProvider,
+    String dateKey,
+  ) async {
     if (_isLoadingVisits) {
       // If already loading, wait and return cached data
       while (_isLoadingVisits) {
@@ -3164,10 +3663,12 @@ class _MainScreenState extends State<MainScreen> {
       }
       return _visitsCache[dateKey] ?? {'success': false};
     }
-    
+
     _isLoadingVisits = true;
     try {
-      final result = await authProvider.getFullVisitsData(selectedDate: dateKey);
+      final result = await authProvider.getFullVisitsData(
+        selectedDate: dateKey,
+      );
       if (result['success'] == true) {
         _visitsCache[dateKey] = result;
       }
@@ -3196,23 +3697,44 @@ class _MainScreenState extends State<MainScreen> {
     }
 
     final visits = result['visits'] as List<dynamic>;
-    
+
     // Filter visits based on search query
     final filteredVisits = _searchQueryVisits.isEmpty
         ? visits
         : visits.where((visit) {
             final visitMap = visit as Map<String, dynamic>;
             final searchLower = _searchQueryVisits.toLowerCase();
-            
-            return (visitMap['cname']?.toString().toLowerCase().contains(searchLower) ?? false) ||
-                   (visitMap['ename']?.toString().toLowerCase().contains(searchLower) ?? false) ||
-                   (visitMap['cn_name']?.toString().toLowerCase().contains(searchLower) ?? false) ||
-                   (visitMap['proj']?.toString().toLowerCase().contains(searchLower) ?? false) ||
-                   (visitMap['place']?.toString().toLowerCase().contains(searchLower) ?? false) ||
-                   (visitMap['a2']?.toString().toLowerCase().contains(searchLower) ?? false) ||
-                   (visitMap['a4']?.toString().toLowerCase().contains(searchLower) ?? false);
+
+            return (visitMap['cname']?.toString().toLowerCase().contains(
+                      searchLower,
+                    ) ??
+                    false) ||
+                (visitMap['ename']?.toString().toLowerCase().contains(
+                      searchLower,
+                    ) ??
+                    false) ||
+                (visitMap['cn_name']?.toString().toLowerCase().contains(
+                      searchLower,
+                    ) ??
+                    false) ||
+                (visitMap['proj']?.toString().toLowerCase().contains(
+                      searchLower,
+                    ) ??
+                    false) ||
+                (visitMap['place']?.toString().toLowerCase().contains(
+                      searchLower,
+                    ) ??
+                    false) ||
+                (visitMap['a2']?.toString().toLowerCase().contains(
+                      searchLower,
+                    ) ??
+                    false) ||
+                (visitMap['a4']?.toString().toLowerCase().contains(
+                      searchLower,
+                    ) ??
+                    false);
           }).toList();
-    
+
     if (filteredVisits.isEmpty) {
       return Center(
         child: Column(
@@ -3248,11 +3770,11 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget _buildPhotosSection(Map<String, dynamic> visit) {
+  Widget _buildMediaSection(Map<String, dynamic> visit) {
     final visitId = int.tryParse(visit['vdid']?.toString() ?? '0') ?? 0;
-    final photosCount = _getPhotosCount(visit);
+    final mediaCount = _getMediaCount(visit);
     final currentIndex = _currentPhotoIndex[visitId] ?? 0;
-
+    print(mediaCount);
     return Container(
       decoration: BoxDecoration(
         color: Colors.grey[50],
@@ -3269,7 +3791,7 @@ class _MainScreenState extends State<MainScreen> {
                 Icon(Iconsax.gallery, size: 16, color: AppColors.primary),
                 const SizedBox(width: 8),
                 Text(
-                  'صور الزيارة',
+                  'وسائط الزيارة',
                   style: GoogleFonts.cairo(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -3278,13 +3800,16 @@ class _MainScreenState extends State<MainScreen> {
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withAlpha(51),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    '${currentIndex + 1} / $photosCount',
+                    '${currentIndex + 1} / $mediaCount',
                     style: GoogleFonts.cairo(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -3295,40 +3820,170 @@ class _MainScreenState extends State<MainScreen> {
               ],
             ),
           ),
-          // Photos PageView
+          // Media PageView
           Container(
             height: 200,
             child: PageView.builder(
-              itemCount: photosCount,
+              itemCount: mediaCount,
               onPageChanged: (index) {
                 setState(() {
                   _currentPhotoIndex[visitId] = index;
                 });
               },
               itemBuilder: (context, index) {
-                // Build actual image URL from Amazon S3
-                final imageUrl = 'https://visitsqcecs.s3.ap-south-1.amazonaws.com/visits/${visit['vdid']}/${index + 1}.jpg';
-                
-                return GestureDetector(
-                  onTap: () => _showFullScreenImage(imageUrl, index + 1),
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(25),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        imageUrl,
-                        fit: BoxFit.cover,
+                return _buildMediaItem(visit, index);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Helper functions for media handling
+  Future<bool> _checkIfVideoExists(String videoUrl) async {
+    try {
+      final response = await http.head(Uri.parse(videoUrl));
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Widget _buildVideoThumbnail(String videoUrl) {
+    return FutureBuilder<String?>(
+      future: _generateVideoThumbnail(videoUrl),
+      builder: (context, snapshot) {
+        if (snapshot.hasData && snapshot.data != null) {
+          return Image.file(
+            File(snapshot.data!),
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+          );
+        }
+        return Container(
+          color: Colors.grey[300],
+          child: Center(
+            child: Icon(Iconsax.video, size: 40, color: Colors.grey[600]),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<String?> _generateVideoThumbnail(String videoUrl) async {
+    try {
+      final thumbnail = await VideoThumbnail.thumbnailFile(
+        video: videoUrl,
+        thumbnailPath: (await getTemporaryDirectory()).path,
+        imageFormat: ImageFormat.JPEG,
+        maxHeight: 200,
+        quality: 75,
+      );
+      return thumbnail;
+    } catch (e) {
+      debugPrint('Error generating video thumbnail: $e');
+      return null;
+    }
+  }
+
+  void _showFullScreenVideo(String videoUrl, int index) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            FullScreenVideoPlayer(videoUrl: videoUrl, title: 'فيديو $index'),
+      ),
+    );
+  }
+
+  // void _showFullScreenImage(String imageUrl, int index) {
+  //   Navigator.push(
+  //     context,
+  //     MaterialPageRoute(
+  //       builder: (context) => Scaffold(
+  //         backgroundColor: Colors.black,
+  //         appBar: AppBar(
+  //           backgroundColor: Colors.black,
+  //           title: Text(
+  //             'صورة $index',
+  //             style: GoogleFonts.cairo(color: Colors.white),
+  //           ),
+  //           iconTheme: const IconThemeData(color: Colors.white),
+  //         ),
+  //         body: Center(
+  //           child: InteractiveViewer(
+  //             child: Image.network(
+  //               imageUrl,
+  //               fit: BoxFit.contain,
+  //               loadingBuilder: (context, child, loadingProgress) {
+  //                 if (loadingProgress == null) return child;
+  //                 return const Center(
+  //                   child: CircularProgressIndicator(color: Colors.white),
+  //                 );
+  //               },
+  //               errorBuilder: (context, error, stackTrace) {
+  //                 return const Center(
+  //                   child: Icon(Iconsax.image, color: Colors.white, size: 64),
+  //                 );
+  //               },
+  //             ),
+  //           ),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+
+  Widget _buildMediaItem(Map<String, dynamic> visit, int index) {
+    final visitId = visit['vdid'];
+
+    // Try both image and video URLs in the same folder
+    final imageUrl =
+        'https://visitsqcecs.s3.ap-south-1.amazonaws.com/visits/$visitId/${index + 1}.jpg';
+    final videoUrl =
+        'https://visitsqcecs.s3.ap-south-1.amazonaws.com/visits/$visitId/${index + 1}.mp4';
+
+    return FutureBuilder<bool>(
+      future: _checkIfVideoExists(videoUrl),
+      builder: (context, snapshot) {
+        final isVideo = snapshot.data == true;
+
+        return GestureDetector(
+          onTap: () {
+            if (isVideo) {
+              _showFullScreenVideo(videoUrl, index + 1);
+            } else {
+              _showFullScreenImage(imageUrl, index + 1);
+            }
+          },
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(25),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Stack(
+                children: [
+                  // Display image or video thumbnail
+                  if (isVideo)
+                    _buildVideoThumbnail(videoUrl)
+                  else
+                    Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;
                         return Center(
@@ -3336,15 +3991,16 @@ class _MainScreenState extends State<MainScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               CircularProgressIndicator(
-                                value: loadingProgress.expectedTotalBytes != null
+                                value:
+                                    loadingProgress.expectedTotalBytes != null
                                     ? loadingProgress.cumulativeBytesLoaded /
-                                        loadingProgress.expectedTotalBytes!
+                                          loadingProgress.expectedTotalBytes!
                                     : null,
                                 color: AppColors.primary,
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                'جاري تحميل الصورة...',
+                                'جاري تحميل ${isVideo ? "الفيديو" : "الصورة"}...',
                                 style: GoogleFonts.cairo(
                                   fontSize: 12,
                                   color: Colors.grey[600],
@@ -3359,259 +4015,62 @@ class _MainScreenState extends State<MainScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Iconsax.image, size: 40, color: Colors.grey[400]),
+                              Icon(
+                                isVideo ? Iconsax.video : Iconsax.image,
+                                size: 40,
+                                color: Colors.grey[400],
+                              ),
                               const SizedBox(height: 8),
                               Text(
-                                'لا توجد صورة',
+                                'لا توجد ${isVideo ? "فيديو" : "صورة"}',
                                 style: GoogleFonts.cairo(
                                   fontSize: 14,
                                   color: Colors.grey[600],
                                 ),
                               ),
                               Text(
-                                'صورة ${index + 1}',
+                                '${isVideo ? "فيديو" : "صورة"} ${index + 1}',
                                 style: GoogleFonts.cairo(
                                   fontSize: 12,
                                   color: Colors.grey[500],
                                 ),
                               ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          // Dots indicator
-          if (photosCount > 1) ...[
-            const SizedBox(height: 12),
-            Container(
-              height: 20,
-              child: photosCount <= 15 
-                ? Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(photosCount, (index) {
-                      return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 3),
-                        width: currentIndex == index ? 12 : 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: currentIndex == index
-                              ? AppColors.primary
-                              : Colors.grey[300],
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      );
-                    }),
-                  )
-                : SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(photosCount, (index) {
-                        return Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 2),
-                          width: currentIndex == index ? 10 : 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: currentIndex == index
-                                ? AppColors.primary
-                                : Colors.grey[300],
-                            borderRadius: BorderRadius.circular(3),
+                            ],
                           ),
                         );
-                      }),
+                      },
                     ),
-                  ),
-            ),
-            const SizedBox(height: 12),
-          ] else ...[
-            const SizedBox(height: 8),
-          ],
-        ],
-      ),
-    );
-  }
 
-  void _logout(AuthProvider authProvider) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Text(
-            'تسجيل الخروج',
-            style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
-          ),
-          content: Text(
-            'هل أنت متأكد من تسجيل الخروج؟',
-            style: GoogleFonts.cairo(),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'إلغاء',
-                style: GoogleFonts.cairo(color: Colors.grey[600]),
+                  // Video play icon overlay
+                  if (isVideo)
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.9),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Iconsax.play,
+                              color: AppColors.primary,
+                              size: 24,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
-            TextButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                await authProvider.logout();
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                );
-              },
-              child: Text(
-                'تسجيل الخروج',
-                style: GoogleFonts.cairo(
-                  color: Colors.red,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showFullScreenImage(String imageUrl, int imageNumber) {
-    showDialog(
-      context: context,
-      barrierColor: Colors.black87,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.all(0),
-          child: Stack(
-            children: [
-              // Full screen image
-              Center(
-                child: InteractiveViewer(
-                  child: Image.network(
-                    imageUrl,
-                    fit: BoxFit.contain,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                  : null,
-                              color: Colors.white,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'جاري تحميل الصورة...',
-                              style: GoogleFonts.cairo(
-                                fontSize: 16,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Iconsax.image,
-                              size: 80,
-                              color: Colors.white54,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'لا يمكن تحميل الصورة',
-                              style: GoogleFonts.cairo(
-                                fontSize: 18,
-                                color: Colors.white,
-                              ),
-                            ),
-                            Text(
-                              'صورة رقم $imageNumber',
-                              style: GoogleFonts.cairo(
-                                fontSize: 14,
-                                color: Colors.white70,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              // Close button
-              Positioned(
-                top: 50,
-                right: 20,
-                child: GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Iconsax.close_circle,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                ),
-              ),
-              // Image info
-              Positioned(
-                bottom: 50,
-                left: 20,
-                right: 20,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    'صورة رقم $imageNumber',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.cairo(
-                      fontSize: 16,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ],
           ),
         );
       },
     );
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    _scrollController.dispose();
-    super.dispose();
   }
 }

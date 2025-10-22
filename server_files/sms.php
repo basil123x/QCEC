@@ -40,6 +40,9 @@ switch ($action) {
     case 'send_whatsapp':
         sendWhatsApp($input);
         break;
+    case 'send_whatsapp_video':
+        sendWhatsAppVideo($input);
+        break;
     case 'generate_report':
         generateReport($input);
         break;
@@ -282,6 +285,80 @@ function sendWhatsApp($input) {
         ]);
     } else {
         sendResponse(false, 'فشل في الإرسال - كود الخطأ: ' . $httpCode);
+    }
+}
+
+/**
+ * إرسال فيديو عبر WhatsApp باستخدام Wasender API
+ */
+function sendWhatsAppVideo($input) {
+    if (!isset($input['phone']) || !isset($input['video_url'])) {
+        sendResponse(false, 'رقم الهاتف ورابط الفيديو مطلوبان');
+        return;
+    }
+    
+    $phone = $input['phone'];
+    $videoUrl = $input['video_url'];
+    $text = $input['text'] ?? 'فيديو من الزيارة';
+    
+    $apiKey = 'c59e7748d6bd6d086bfae052e04027a71f9eb7083594b488d90dea00b02d1260';
+    
+    // تنظيف رقم الهاتف
+    $phone = preg_replace('/[^0-9]/', '', $phone);
+    if (substr($phone, 0, 3) !== '974') {
+        $phone = '974' . $phone;
+    }
+    $phone = '+' . $phone;
+    
+    // إعداد البيانات للفيديو
+    $data = [
+        'to' => $phone,
+        'text' => $text,
+        'videoUrl' => $videoUrl
+    ];
+    
+    error_log("Sending WhatsApp video to: $phone with URL: $videoUrl");
+    
+    // إرسال الطلب
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, 'https://www.wasenderapi.com/api/send-message');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Authorization: Bearer ' . $apiKey,
+        'Content-Type: application/json'
+    ]);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+    curl_setopt($ch, CURLOPT_TIMEOUT, 60); // زيادة الوقت للفيديوهات
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $error = curl_error($ch);
+    curl_close($ch);
+    
+    error_log("WhatsApp Video Response Code: $httpCode");
+    error_log("WhatsApp Video Response: " . substr($response, 0, 500));
+    
+    if ($error) {
+        error_log("WhatsApp Video cURL Error: $error");
+        sendResponse(false, 'خطأ في إرسال الفيديو: ' . $error);
+        return;
+    }
+    
+    if ($httpCode == 200) {
+        $responseData = json_decode($response, true);
+        sendResponse(true, 'تم إرسال الفيديو بنجاح', [
+            'phone' => $phone,
+            'video_url' => $videoUrl,
+            'response' => $responseData
+        ]);
+    } else {
+        sendResponse(false, 'فشل في إرسال الفيديو - كود الخطأ: ' . $httpCode, [
+            'phone' => $phone,
+            'video_url' => $videoUrl,
+            'response' => $response
+        ]);
     }
 }
 

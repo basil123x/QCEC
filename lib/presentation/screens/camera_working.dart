@@ -119,135 +119,66 @@ class _CameraWorkingState extends State<CameraWorking> {
             key: _cameraKey,
             child: CameraAwesomeBuilder.awesome(
               saveConfig: SaveConfig.photoAndVideo(
-                initialCaptureMode: isVideoMode ? CaptureMode.video : CaptureMode.photo,
+                initialCaptureMode: isVideoMode
+                    ? CaptureMode.video
+                    : CaptureMode.photo,
                 photoPathBuilder: _captureRequestBuilder,
                 videoPathBuilder: _videoCaptureRequestBuilder,
               ),
-            onMediaCaptureEvent: (MediaCapture capture) async {
-              SharedPreferences prefx = await SharedPreferences.getInstance();
-              final file = File(capture.captureRequest.path!);
+              onMediaCaptureEvent: (MediaCapture capture) async {
+                SharedPreferences prefx = await SharedPreferences.getInstance();
+                final file = File(capture.captureRequest.path!);
 
-              if (await file.exists() && mounted) {
-                final isVideo = capture.captureRequest.path!.contains('video_');
-
-                debugPrint(
-                  '📸 ${isVideo ? "Video" : "Photo"} captured: ${file.path}',
-                );
-
-                setState(() {
-                  allImages.add(file.path);
-                  if (isVideo) {
-                    videoCounter++;
-                  } else {
-                    photoCounter++;
-                  }
-                  prefx.setStringList(
-                    "imagesSaved_${widget.visitId}",
-                    allImages,
+                if (await file.exists() && mounted) {
+                  final isVideo = capture.captureRequest.path!.contains(
+                    'video_',
                   );
-                });
 
-                // Show success feedback
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      isVideo
-                          ? 'تم تسجيل الفيديو ${allImages.where((p) => p.contains('video_')).length} ✅'
-                          : 'تم التقاط الصورة ${allImages.where((p) => p.contains('photo_')).length} ✅',
-                      style: GoogleFonts.cairo(),
+                  debugPrint(
+                    '📸 ${isVideo ? "Video" : "Photo"} captured: ${file.path}',
+                  );
+
+                  setState(() {
+                    allImages.add(file.path);
+                    if (isVideo) {
+                      videoCounter++;
+                    } else {
+                      photoCounter++;
+                    }
+                    prefx.setStringList(
+                      "imagesSaved_${widget.visitId}",
+                      allImages,
+                    );
+                  });
+
+                  // Show success feedback
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        isVideo
+                            ? 'تم تسجيل الفيديو ${allImages.where((p) => p.contains('video_')).length} ✅'
+                            : 'تم التقاط الصورة ${allImages.where((p) => p.contains('photo_')).length} ✅',
+                        style: GoogleFonts.cairo(),
+                      ),
+                      backgroundColor: Colors.green,
+                      duration: const Duration(seconds: 1),
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    backgroundColor: Colors.green,
-                    duration: const Duration(seconds: 1),
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                );
-              }
-            },
-            bottomActionsBuilder: (state) {
-              return _buildBottomActions(state);
-            },
-            topActionsBuilder: (state) {
-              return _buildTopActions(state);
-            },
-            middleContentBuilder: (state) {
-              return _buildMiddleContent(state);
-            },
+                  );
+                }
+              },
+              bottomActionsBuilder: (state) {
+                return _buildBottomActions(state);
+              },
+              topActionsBuilder: (state) {
+                return _buildTopActions(state);
+              },
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildMiddleContent(CameraState state) {
-    return Column(
-      children: [
-        // Top section with flash, aspect ratio, and location
-        SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Flash button
-                state.when(
-                  onPhotoMode: (photoState) =>
-                      AwesomeFlashButton(state: photoState),
-                  onVideoMode: (videoState) =>
-                      AwesomeFlashButton(state: videoState),
-                  onVideoRecordingMode: (_) => SizedBox(width: 40),
-                  onPreparingCamera: (_) => SizedBox(width: 40),
-                ),
-
-                // Aspect ratio (وسط) - بس في Photo mode
-                state.when(
-                  onPhotoMode: (photoState) =>
-                      AwesomeAspectRatioButton(state: photoState),
-                  onVideoMode: (_) => SizedBox(width: 40),
-                  onVideoRecordingMode: (_) => SizedBox(width: 40),
-                  onPreparingCamera: (_) => SizedBox(width: 40),
-                ),
-
-                // Location button (اليمين) - بس في Photo mode
-                state.when(
-                  onPhotoMode: (photoState) =>
-                      AwesomeLocationButton(state: photoState),
-                  onVideoMode: (_) => SizedBox(width: 40),
-                  onVideoRecordingMode: (_) => SizedBox(width: 40),
-                  onPreparingCamera: (_) => SizedBox(width: 40),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        Spacer(),
-
-        // Recording indicator in the middle
-        if (isRecording) _buildRecordingIndicator(),
-
-        Spacer(),
-      ],
-    );
-  }
-
-  Widget _buildRecordingIndicator() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.7),
-        borderRadius: BorderRadius.circular(25),
-      ),
-      child: Text(
-        '${recordingSeconds}:${(recordingSeconds % 60).toString().padLeft(2, '0')}',
-        style: GoogleFonts.cairo(
-          color: Colors.white,
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-        ),
       ),
     );
   }
@@ -346,125 +277,60 @@ class _CameraWorkingState extends State<CameraWorking> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Zoom indicator
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                '1.0X',
-                style: GoogleFonts.cairo(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Gallery preview (top right during video mode)
-            if (isVideoMode && !isRecording && allImages.isNotEmpty)
-              Align(
-                alignment: Alignment.centerRight,
-                child: GestureDetector(
-                  onTap: _showGallery,
-                  child: Container(
-                    width: 60,
-                    height: 60,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: _buildMediaPreview(allImages.last),
-                    ),
-                  ),
-                ),
-              ),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 // Left: Flip camera OR Gallery (photo mode)
-                if (!isVideoMode)
-                  GestureDetector(
-                    onTap: allImages.isNotEmpty ? _showGallery : null,
-                    child: Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: allImages.isNotEmpty
-                            ? Colors.white.withOpacity(0.2)
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.5),
-                          width: 2,
-                        ),
+                GestureDetector(
+                  onTap: allImages.isNotEmpty ? _showGallery : null,
+                  child: Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: allImages.isNotEmpty
+                          ? Colors.white.withOpacity(0.2)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.5),
+                        width: 2,
                       ),
-                      child: allImages.isNotEmpty
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: Stack(
-                                children: [
-                                  _buildMediaPreview(allImages.last),
-                                  Positioned(
-                                    bottom: 2,
-                                    right: 2,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(2),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black54,
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        '${allImages.length}',
-                                        style: GoogleFonts.cairo(
-                                          color: Colors.white,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                    ),
+                    child: allImages.isNotEmpty
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Stack(
+                              children: [
+                                _buildMediaPreview(allImages.last),
+                                Positioned(
+                                  bottom: 2,
+                                  right: 2,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black54,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      '${allImages.length}',
+                                      style: GoogleFonts.cairo(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                   ),
-                                ],
-                              ),
-                            )
-                          : Icon(
-                              Iconsax.gallery,
-                              color: Colors.white.withOpacity(0.5),
-                              size: 24,
+                                ),
+                              ],
                             ),
-                    ),
-                  )
-                else if (isRecording)
-                  // Pause button during recording
-                  GestureDetector(
-                    onTap: () => _stopRecording(state),
-                    child: Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(Icons.pause, color: Colors.white, size: 32),
-                    ),
-                  )
-                else
-                  // Flip camera button
-                  AwesomeCameraSwitchButton(
-                    state: state,
-                    scale: 1.0,
-                    onSwitchTap: (state) {
-                      state.switchCameraSensor();
-                    },
+                          )
+                        : Icon(
+                            Iconsax.gallery,
+                            color: Colors.white.withOpacity(0.5),
+                            size: 24,
+                          ),
                   ),
+                ),
 
                 // Center: Capture button
                 state.when(
@@ -522,77 +388,28 @@ class _CameraWorkingState extends State<CameraWorking> {
                   ),
                 ),
 
-                // Right: Empty space or Finish button
-                if (!isVideoMode)
-                  GestureDetector(
-                    onTap: allImages.isNotEmpty ? _finishCapture : null,
-                    child: Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: allImages.isNotEmpty
-                            ? Colors.green
-                            : Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        Iconsax.tick_circle,
-                        color: Colors.white,
-                        size: 24,
-                      ),
+                GestureDetector(
+                  onTap: allImages.isNotEmpty ? _finishCapture : null,
+                  child: Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: allImages.isNotEmpty
+                          ? Colors.green
+                          : Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  )
-                else
-                  SizedBox(width: 60),
+                    child: Icon(
+                      Iconsax.tick_circle,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                ),
               ],
             ),
 
             const SizedBox(height: 20),
-
-            // Photo/Video mode toggle
-            if (!isRecording)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        isVideoMode = false;
-                        _cameraKey = UniqueKey(); // Rebuild camera
-                      });
-                    },
-                    child: Text(
-                      'PHOTO',
-                      style: GoogleFonts.cairo(
-                        color: !isVideoMode ? Colors.white : Colors.grey,
-                        fontSize: 16,
-                        fontWeight: !isVideoMode
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 40),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        isVideoMode = true;
-                        _cameraKey = UniqueKey(); // Rebuild camera
-                      });
-                    },
-                    child: Text(
-                      'VIDEO',
-                      style: GoogleFonts.cairo(
-                        color: isVideoMode ? Colors.white : Colors.grey,
-                        fontSize: 16,
-                        fontWeight: isVideoMode
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
           ],
         ),
       ),

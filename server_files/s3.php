@@ -25,6 +25,9 @@ switch ($action) {
     case 'upload_visit_images':
         uploadVisitImages($input);
         break;
+    case 'upload_visit_media':
+        uploadVisitMedia($input);
+        break;
     case 'upload_pdf':
         uploadPDF($input);
         break;
@@ -103,6 +106,101 @@ function uploadVisitImages($input) {
         
     } catch (Exception $e) {
         error_log("Fatal error in uploadVisitImages: " . $e->getMessage());
+        sendResponse(false, 'خطأ خطير في السيرفر: ' . $e->getMessage());
+    }
+}
+
+/**
+ * رفع وسائط الزيارة (صور وفيديوهات) إلى S3
+ */
+function uploadVisitMedia($input) {
+    global $bucket, $region, $accessKey, $secretKey;
+    
+    try {
+        error_log("Media upload request received for visit: " . ($input['visit_id'] ?? 'unknown'));
+        
+        if (!isset($input['visit_id']) || !isset($input['media'])) {
+            sendResponse(false, 'معرف الزيارة والوسائط مطلوبان');
+            return;
+        }
+        
+        $visitId = $input['visit_id'];
+        $mediaFiles = $input['media'];
+        $uploadedMedia = [];
+        $errors = [];
+        
+        error_log("Processing " . count($mediaFiles) . " media files for visit " . $visitId);
+        
+        foreach ($mediaFiles as $index => $mediaData) {
+            try {
+                if (!isset($mediaData['data']) || !isset($mediaData['type'])) {
+                    $errors[] = "بيانات الوسائط غير مكتملة للملف رقم " . ($index + 1);
+                    continue;
+                }
+                
+                $mediaContent = base64_decode($mediaData['data']);
+                $mediaType = $mediaData['type']; // 'image' or 'video'
+                $fileName = $mediaData['filename'] ?? null;
+                
+                if ($mediaContent === false) {
+                    $errors[] = "فشل في فك تشفير الوسائط رقم " . ($index + 1);
+                    continue;
+                }
+                
+                // تحديد امتداد الملف ونوع المحتوى
+                if ($mediaType === 'video') {
+                    $extension = 'mp4';
+                    $contentType = 'video/mp4';
+                    error_log("Processing video file: " . ($fileName ?? "video_" . ($index + 1)));
+                } else {
+                    $extension = 'jpg';
+                    $contentType = 'image/jpeg';
+                    
+                    // ضغط الصورة
+                    $mediaContent = compressImage($mediaContent);
+                    error_log("Compressed image file: " . ($fileName ?? "image_" . ($index + 1)));
+                }
+                
+                $mediaNumber = $index + 1;
+                $s3Key = "visits/{$visitId}/{$mediaNumber}.{$extension}";
+                
+                // رفع الوسائط باستخدام cURL
+                $result = uploadToS3WithCurl($bucket, $s3Key, $mediaContent, $region, $accessKey, $secretKey, $contentType);
+                
+                if ($result['success']) {
+                    $uploadedMedia[] = [
+                        'number' => $mediaNumber,
+                        'type' => $mediaType,
+                        'url' => "https://{$bucket}.s3.{$region}.amazonaws.com/{$s3Key}",
+                        's3_key' => $s3Key,
+                        'filename' => $fileName
+                    ];
+                    error_log("Successfully uploaded {$mediaType} " . $mediaNumber);
+                } else {
+                    $errors[] = "فشل رفع {$mediaType} رقم " . ($index + 1) . ": " . $result['error'];
+                    error_log("Failed to upload {$mediaType} " . $mediaNumber . ": " . $result['error']);
+                }
+                
+            } catch (Exception $e) {
+                $error_msg = "خطأ في رفع الوسائط رقم " . ($index + 1) . ": " . $e->getMessage();
+                $errors[] = $error_msg;
+                error_log("Exception: " . $error_msg);
+            }
+        }
+        
+        if (count($uploadedMedia) > 0) {
+            sendResponse(true, 'تم رفع ' . count($uploadedMedia) . ' ملف بنجاح', [
+                'uploaded_media' => $uploadedMedia,
+                'errors' => $errors,
+                'total_uploaded' => count($uploadedMedia),
+                'total_errors' => count($errors)
+            ]);
+        } else {
+            sendResponse(false, 'فشل في رفع جميع الوسائط', ['errors' => $errors]);
+        }
+        
+    } catch (Exception $e) {
+        error_log("Fatal error in uploadVisitMedia: " . $e->getMessage());
         sendResponse(false, 'خطأ خطير في السيرفر: ' . $e->getMessage());
     }
 }
@@ -256,6 +354,63 @@ function createAWS4Signature($method, $uri, $headers, $payload, $region, $access
  */
 function deleteVisitImages($input) {
     sendResponse(false, 'Delete function temporarily disabled');
+}
+
+/**
+ * ضغط الصورة
+ */
+function compressImage($imageData, $quality = 75) {
+    try {
+        // إنشاء صورة من البيانات
+        $image = imagecreatefromstring($imageData);
+        
+        if ($image === false) {
+            error_log("Failed to create image from string");
+            return $imageData; // إرجاع الصورة الأصلية في حالة الفشل
+        }
+        
+        // الحصول على أبعاد الصورة
+        $width = imagesx($image);
+        $height = imagesy($image);
+        
+        // تحديد الحد الأقصى للأبعاد
+        $maxWidth = 1920;
+        $maxHeight = 1080;
+        
+        // حساب الأبعاد الجديدة مع الحفاظ على النسبة
+        if ($width > $maxWidth || $height > $maxHeight) {
+            $ratio = min($maxWidth / $width, $maxHeight / $height);
+            $newWidth = intval($width * $ratio);
+            $newHeight = intval($height * $ratio);
+            
+            // إنشاء صورة جديدة بالأبعاد المحسوبة
+            $newImage = imagecreatetruecolor($newWidth, $newHeight);
+            
+            // نسخ وتغيير حجم الصورة
+            imagecopyresampled($newImage, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+            
+            // تحرير الذاكرة للصورة الأصلية
+            imagedestroy($image);
+            $image = $newImage;
+        }
+        
+        // بدء التخزين المؤقت للحصول على البيانات المضغوطة
+        ob_start();
+        imagejpeg($image, null, $quality);
+        $compressedData = ob_get_contents();
+        ob_end_clean();
+        
+        // تحرير الذاكرة
+        imagedestroy($image);
+        
+        error_log("Image compressed successfully. Original size: " . strlen($imageData) . " bytes, Compressed size: " . strlen($compressedData) . " bytes");
+        
+        return $compressedData;
+        
+    } catch (Exception $e) {
+        error_log("Image compression failed: " . $e->getMessage());
+        return $imageData; // إرجاع الصورة الأصلية في حالة الفشل
+    }
 }
 
 /**

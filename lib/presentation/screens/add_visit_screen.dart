@@ -1215,7 +1215,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
               'وسائط من الكاميرا',
               style: GoogleFonts.cairo(
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -1230,7 +1230,6 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
             ),
           ),
         ),
-        
         const SizedBox(width: 16),
         
         // زر وسائط من الجاليري
@@ -1246,7 +1245,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
               'وسائط من الجاليري',
               style: GoogleFonts.cairo(
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -1608,12 +1607,12 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
       await prefs.setString("visit_${widget.visitId}_notes", _notesController.text);
       await prefs.setStringList("visit_${widget.visitId}_images", _images);
 
-      // بدء رفع الصور في الخلفية
+      // بدء رفع الوسائط (صور وفيديوهات) في الخلفية
       if (_images.isNotEmpty) {
-        debugPrint('📤 Starting background upload for ${_images.length} images');
-        UploadService.uploadVisitImagesInBackground(
+        debugPrint('📤 Starting background upload for ${_images.length} media files');
+        UploadService.uploadVisitMediaInBackground(
           visitId: widget.visitId,
-          imagePaths: _images,
+          mediaPaths: _images,
         );
         
         // بدء إرسال التقارير في الخلفية (بعد رفع الصور)
