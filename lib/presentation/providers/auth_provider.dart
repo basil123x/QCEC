@@ -419,6 +419,7 @@ class AuthProvider extends ChangeNotifier {
     String? selectedDate,
     String? selectedId,
     String? selectedCust,
+    String? proxId
   }) async {
     if (!_isLoggedIn || _userData == null) {
       return {
@@ -440,7 +441,8 @@ class AuthProvider extends ChangeNotifier {
         'action': 'get_full_visits_data',
         'uid': _userData!['id'].toString(),
         'x': x,
-        'xx': selectedDate ?? '', // التاريخ المطلوب
+        'xx': selectedDate ?? '',
+        'prox': proxId
       };
       
       debugPrint('Sending visits request with date: $selectedDate');

@@ -24,6 +24,9 @@ import 'login_screen.dart';
 import 'camera_working.dart';
 import '../widgets/stats_section.dart';
 import '../widgets/full_screen_video_player.dart';
+import '../../services/app_lifecycle_service.dart';
+import '../../widgets/incomplete_visit_dialog.dart';
+import 'add_visit_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -38,6 +41,7 @@ class _MainScreenState extends State<MainScreen> {
   Set<int> _expandedProjects = {};
   bool _isSearching = false;
   String _searchQuery = '';
+  String prox = "";
   final TextEditingController _searchController = TextEditingController();
 
   // Search for visits
@@ -71,6 +75,7 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     _loadActiveProject();
     _loadProjectsOnce();
+    _checkIncompleteVisits();
   }
 
   int _getMediaCount(Map<String, dynamic> visit) {
@@ -412,6 +417,8 @@ class _MainScreenState extends State<MainScreen> {
       // Clear cache for current date to force reload
       _visitsCache.remove(dateKey);
 
+      prox = "";
+
       // Reload visits data
       final result = await _loadVisitsData(authProvider, dateKey);
 
@@ -592,7 +599,9 @@ class _MainScreenState extends State<MainScreen> {
         return Consumer<ThemeProvider>(
           builder: (context, themeProvider, child) {
             return Scaffold(
-              backgroundColor: themeProvider.isDarkMode ? AppColors.primaryDark : AppColors.pureWhite,
+              backgroundColor: themeProvider.isDarkMode
+                  ? AppColors.primaryDark
+                  : AppColors.pureWhite,
               appBar: _buildAppBar(authProvider, themeProvider),
               body: _buildBody(authProvider),
               bottomNavigationBar: _buildBottomNavBar(authProvider),
@@ -600,17 +609,22 @@ class _MainScreenState extends State<MainScreen> {
               floatingActionButtonLocation:
                   FloatingActionButtonLocation.centerDocked,
             );
-          }
+          },
         );
       },
     );
   }
 
-  PreferredSizeWidget _buildAppBar(AuthProvider authProvider, ThemeProvider themeProvider) {
+  PreferredSizeWidget _buildAppBar(
+    AuthProvider authProvider,
+    ThemeProvider themeProvider,
+  ) {
     // Show welcome message only on home screen
     if (_selectedIndex == 0) {
       return AppBar(
-        backgroundColor: themeProvider.isDarkMode ? AppColors.secondaryDark : AppColors.pureWhite,
+        backgroundColor: themeProvider.isDarkMode
+            ? AppColors.secondaryDark
+            : AppColors.pureWhite,
         elevation: 0,
         centerTitle: true,
         title: Column(
@@ -646,7 +660,9 @@ class _MainScreenState extends State<MainScreen> {
       );
     } else if (_selectedIndex == 2) {
       return AppBar(
-        backgroundColor: themeProvider.isDarkMode ? AppColors.secondaryDark : AppColors.pureWhite,
+        backgroundColor: themeProvider.isDarkMode
+            ? AppColors.secondaryDark
+            : AppColors.pureWhite,
         elevation: 0,
         centerTitle: true,
         title: Container(
@@ -718,7 +734,6 @@ class _MainScreenState extends State<MainScreen> {
 
     // For other screens, show page title and search (for projects only)
     String pageTitle = '';
-    
 
     if (authProvider.isEngineer()) {
       // For engineers: 0=Home, 1=Projects, 2=Camera, 3=Visits, 4=Profile
@@ -736,20 +751,22 @@ class _MainScreenState extends State<MainScreen> {
           pageTitle = AppLocalizations.of(context)!.profile;
           break;
       }
-      } else {
-        // For others: 0=Home, 1=Projects, 2=Visits, 3=Profile
-        switch (_selectedIndex) {
-          case 1:
-            pageTitle = AppLocalizations.of(context)!.allProjects;
-            break;
-          case 3:
-            pageTitle = AppLocalizations.of(context)!.profile;
-            break;
-        }
+    } else {
+      // For others: 0=Home, 1=Projects, 2=Visits, 3=Profile
+      switch (_selectedIndex) {
+        case 1:
+          pageTitle = AppLocalizations.of(context)!.allProjects;
+          break;
+        case 3:
+          pageTitle = AppLocalizations.of(context)!.profile;
+          break;
       }
+    }
 
     return AppBar(
-      backgroundColor: themeProvider.isDarkMode ? AppColors.secondaryDark : AppColors.pureWhite,
+      backgroundColor: themeProvider.isDarkMode
+          ? AppColors.secondaryDark
+          : AppColors.pureWhite,
       elevation: 0,
       centerTitle: !_isSearching && !_isSearchingVisits,
       title: _isSearching && _selectedIndex == 1
@@ -1263,109 +1280,111 @@ class _MainScreenState extends State<MainScreen> {
 
   Widget _buildProfile(AuthProvider authProvider) {
     return SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                // Profile Header
-                Consumer<ThemeProvider>(
-                  builder: (context, themeProvider, child) {
-                    return Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            themeProvider.isDarkMode
-                                ? AppColors.primaryDark
-                                : AppColors.primary,
-                            themeProvider.isDarkMode
-                                ? AppColors.secondaryDark
-                                : AppColors.secondary,
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            // Profile Header
+            Consumer<ThemeProvider>(
+              builder: (context, themeProvider, child) {
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        themeProvider.isDarkMode
+                            ? AppColors.primaryDark
+                            : AppColors.primary,
+                        themeProvider.isDarkMode
+                            ? AppColors.secondaryDark
+                            : AppColors.secondary,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: themeProvider.isDarkMode
+                            ? AppColors.primaryDark.withAlpha(102)
+                            : AppColors.primary.withAlpha(102),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 50,
+                        backgroundColor: Theme.of(
+                          context,
+                        ).cardColor.withAlpha(51),
+                        backgroundImage:
+                            authProvider.getUserImageUrl().isNotEmpty
+                            ? NetworkImage(authProvider.getUserImageUrl())
+                            : null,
+                        child: authProvider.getUserImageUrl().isEmpty
+                            ? Icon(
+                                Iconsax.user,
+                                color: Theme.of(context).cardColor,
+                                size: 40,
+                              )
+                            : null,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        authProvider.getUserName(),
+                        style: GoogleFonts.cairo(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: themeProvider.isDarkMode
-                                ? AppColors.primaryDark.withAlpha(102)
-                                : AppColors.primary.withAlpha(102),
-                            blurRadius: 15,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
                       ),
-                      child: Column(
-                        children: [
-                          CircleAvatar(
-                            radius: 50,
-                            backgroundColor: Theme.of(
-                              context,
-                            ).cardColor.withAlpha(51),
-                            backgroundImage:
-                                authProvider.getUserImageUrl().isNotEmpty
-                                ? NetworkImage(authProvider.getUserImageUrl())
-                                : null,
-                            child: authProvider.getUserImageUrl().isEmpty
-                                ? Icon(
-                                    Iconsax.user,
-                                    color: Theme.of(context).cardColor,
-                                    size: 40,
-                                  )
-                                : null,
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).cardColor.withAlpha(51),
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                        child: Text(
+                          authProvider.getUserTypeName(),
+                          style: GoogleFonts.cairo(
+                            fontSize: 14,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
                           ),
-                          const SizedBox(height: 16),
-                          Text(
-                            authProvider.getUserName(),
-                            style: GoogleFonts.cairo(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).cardColor.withAlpha(51),
-                              borderRadius: BorderRadius.circular(25),
-                            ),
-                            child: Text(
-                              authProvider.getUserTypeName(),
-                              style: GoogleFonts.cairo(
-                                fontSize: 14,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                    );
-                  },
-                ),
-        
-                const SizedBox(height: 24),
-        
-                // Settings Options
-                _buildSettingsSection(authProvider),
-        
-                const SizedBox(height: 24),
-        
-                // Logout Button
-                Container(
+                    ],
+                  ),
+                );
+              },
+            ),
+
+            const SizedBox(height: 24),
+
+            // Settings Options
+            _buildSettingsSection(authProvider),
+
+            const SizedBox(height: 24),
+
+            // Logout Button
+            Consumer<ThemeProvider>(
+              builder: (context, themeProvider, child) {
+                return Container(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
                       _logout(authProvider);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red[400],
+                      backgroundColor: AppColors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -1375,28 +1394,26 @@ class _MainScreenState extends State<MainScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Iconsax.logout,
-                          color: Theme.of(context).cardColor,
-                          size: 22,
-                        ),
+                        Icon(Iconsax.logout, color: Colors.white, size: 22),
                         const SizedBox(width: 12),
                         Text(
                           AppLocalizations.of(context)!.logout,
                           style: GoogleFonts.cairo(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Theme.of(context).cardColor,
+                            color: Colors.white,
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
-              ],
+                );
+              },
             ),
-          ),
-        );
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildSettingsSection(AuthProvider authProvider) {
@@ -1448,7 +1465,8 @@ class _MainScreenState extends State<MainScreen> {
                       builder: (context) => const AboutUsScreen(),
                     ),
                   );
-                }, color: Colors.orange,
+                },
+                color: Colors.orange,
               ),
               _buildDivider(),
               _buildSettingsItem(
@@ -1471,13 +1489,12 @@ class _MainScreenState extends State<MainScreen> {
                 title: 'حذف الحساب',
                 subtitle: 'حذف الحساب نهائياً من التطبيق',
                 onTap: () => _showDeleteAccountDialog(context),
-                color: Colors.red
+                color: Colors.red,
               ),
-              
             ],
           ),
         );
-      }
+      },
     );
   }
 
@@ -1487,7 +1504,8 @@ class _MainScreenState extends State<MainScreen> {
       dialogType: DialogType.warning,
       animType: AnimType.bottomSlide,
       title: 'تحذير',
-      desc: 'هل أنت متأكد من رغبتك في تعطيل حسابك؟\n\nسيتم تغيير كلمة المرور ولن تتمكن من الدخول، لكن بياناتك ستبقى محفوظة.',
+      desc:
+          'هل أنت متأكد من رغبتك في تعطيل حسابك؟\n\nسيتم تغيير كلمة المرور ولن تتمكن من الدخول، لكن بياناتك ستبقى محفوظة.',
       btnCancelText: 'إلغاء',
       btnOkText: 'تعطيل الحساب',
       btnCancelOnPress: () {},
@@ -1552,9 +1570,7 @@ class _MainScreenState extends State<MainScreen> {
               controller: deleteController,
               decoration: InputDecoration(
                 hintText: 'عطل حسابي',
-                hintStyle: GoogleFonts.cairo(
-                  color: Colors.grey[400],
-                ),
+                hintStyle: GoogleFonts.cairo(color: Colors.grey[400]),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(color: Colors.red),
@@ -1621,16 +1637,13 @@ class _MainScreenState extends State<MainScreen> {
           fontWeight: FontWeight.bold,
           color: Colors.blue,
         ),
-        descTextStyle: GoogleFonts.cairo(
-          fontSize: 14,
-          color: Colors.grey[600],
-        ),
+        descTextStyle: GoogleFonts.cairo(fontSize: 14, color: Colors.grey[600]),
       ).show();
 
       // Prepare API request
       final dio = Dio();
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      
+
       final requestData = {
         'action': 'disable_user_account',
         'user_id': authProvider.getUserId(),
@@ -1653,7 +1666,7 @@ class _MainScreenState extends State<MainScreen> {
 
       if (response.statusCode == 200) {
         final responseData = response.data;
-        
+
         if (responseData['success'] == true) {
           // Account deleted successfully
           AwesomeDialog(
@@ -1661,7 +1674,8 @@ class _MainScreenState extends State<MainScreen> {
             dialogType: DialogType.success,
             animType: AnimType.topSlide,
             title: 'تم تعطيل الحساب بنجاح',
-            desc: 'تم تعطيل حسابك من النظام. بياناتك محفوظة لكن لا يمكنك الدخول.\nشكراً لاستخدامك تطبيق QCEC.',
+            desc:
+                'تم تعطيل حسابك من النظام. بياناتك محفوظة لكن لا يمكنك الدخول.\nشكراً لاستخدامك تطبيق QCEC.',
             btnOkText: 'موافق',
             btnOkOnPress: () async {
               // Logout and clear all data
@@ -1689,7 +1703,10 @@ class _MainScreenState extends State<MainScreen> {
           ).show();
         } else {
           // Server returned error
-          _showErrorDialogx(context, responseData['message'] ?? 'خطأ في تعطيل الحساب');
+          _showErrorDialogx(
+            context,
+            responseData['message'] ?? 'خطأ في تعطيل الحساب',
+          );
         }
       } else {
         _showErrorDialogx(context, 'خطأ في الاتصال بالخادم');
@@ -1697,9 +1714,12 @@ class _MainScreenState extends State<MainScreen> {
     } catch (e) {
       // Close loading dialog if still open
       Navigator.of(context).pop();
-      
+
       print('Error disabling account: $e');
-      _showErrorDialogx(context, 'حدث خطأ أثناء تعطيل الحساب. يرجى المحاولة مرة أخرى.');
+      _showErrorDialogx(
+        context,
+        'حدث خطأ أثناء تعطيل الحساب. يرجى المحاولة مرة أخرى.',
+      );
     }
   }
 
@@ -1729,7 +1749,6 @@ class _MainScreenState extends State<MainScreen> {
       ),
     ).show();
   }
-
 
   Widget _buildSettingsItem({
     required IconData icon,
@@ -1889,7 +1908,9 @@ class _MainScreenState extends State<MainScreen> {
           notchSmoothness: NotchSmoothness.verySmoothEdge,
           leftCornerRadius: 32,
           rightCornerRadius: 32,
-          backgroundColor: themeProvider.isDarkMode ? AppColors.secondaryDark : AppColors.pureWhite,
+          backgroundColor: themeProvider.isDarkMode
+              ? AppColors.secondaryDark
+              : AppColors.pureWhite,
           activeColor: AppColors.primary,
           inactiveColor: Theme.of(context).brightness == Brightness.dark
               ? AppColors.textSecondaryDark
@@ -1898,7 +1919,7 @@ class _MainScreenState extends State<MainScreen> {
           onTap: (index) {
             int actualIndex = index >= 2 ? index + 1 : index;
             setState(() => _selectedIndex = actualIndex);
-        
+
             // If switching to projects tab and there's an active project, scroll to it
             if (actualIndex == 1 &&
                 _activeProjectId != null &&
@@ -1911,7 +1932,7 @@ class _MainScreenState extends State<MainScreen> {
             }
           },
         );
-      }
+      },
     );
   }
 
@@ -1932,7 +1953,9 @@ class _MainScreenState extends State<MainScreen> {
           notchSmoothness: NotchSmoothness.verySmoothEdge,
           leftCornerRadius: 32,
           rightCornerRadius: 32,
-          backgroundColor: themeProvider.isDarkMode ? AppColors.secondaryDark : AppColors.pureWhite,
+          backgroundColor: themeProvider.isDarkMode
+              ? AppColors.secondaryDark
+              : AppColors.pureWhite,
           activeColor: AppColors.primary,
           inactiveColor: Theme.of(context).brightness == Brightness.dark
               ? AppColors.textSecondaryDark
@@ -1940,9 +1963,11 @@ class _MainScreenState extends State<MainScreen> {
           splashColor: AppColors.primary.withAlpha(51),
           onTap: (index) {
             setState(() => _selectedIndex = index);
-        
+
             // If switching to projects tab and there's an active project, scroll to it
-            if (index == 1 && _activeProjectId != null && _projects.isNotEmpty) {
+            if (index == 1 &&
+                _activeProjectId != null &&
+                _projects.isNotEmpty) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 Future.delayed(const Duration(milliseconds: 400), () {
                   _scrollToActiveProject();
@@ -1951,7 +1976,7 @@ class _MainScreenState extends State<MainScreen> {
             }
           },
         );
-      }
+      },
     );
   }
 
@@ -2169,13 +2194,13 @@ class _MainScreenState extends State<MainScreen> {
   int _getPhotosCount(Map<String, dynamic> visit) {
     if (visit.containsKey('a8')) {
       final count = int.tryParse(visit['a8'].toString()) ?? 0;
-      return count > 0 ? count : 5;
+      return count > 0 ? count : 0;
     }
     if (visit.containsKey('photos') && visit['photos'] is List) {
       final count = (visit['photos'] as List).length;
-      return count > 0 ? count : 5;
+      return count > 0 ? count : 0;
     }
-    return 5;
+    return 0;
   }
 
   void _togglePhotosExpansion(int visitId) {
@@ -2841,7 +2866,11 @@ class _MainScreenState extends State<MainScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isSelected ? AppColors.primary.withAlpha(51) : themeProvider.isDarkMode ? AppColors.primaryDark : Colors.grey[50],
+              color: isSelected
+                  ? AppColors.primary.withAlpha(51)
+                  : themeProvider.isDarkMode
+                  ? AppColors.primaryDark
+                  : Colors.grey[50],
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isSelected
@@ -2901,7 +2930,8 @@ class _MainScreenState extends State<MainScreen> {
                           displayName,
                           style: GoogleFonts.cairo(
                             fontSize: 12,
-                            color: Theme.of(context).brightness == Brightness.dark
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
                                 ? AppColors.textSecondaryDark
                                 : Colors.grey[600],
                           ),
@@ -2925,7 +2955,7 @@ class _MainScreenState extends State<MainScreen> {
               ],
             ),
           );
-        }
+        },
       ),
     );
   }
@@ -2960,7 +2990,9 @@ class _MainScreenState extends State<MainScreen> {
             onPressed: () {
               setState(() {
                 _selectedDate = _selectedDate.subtract(const Duration(days: 1));
-                // Clear cache for old date to ensure fresh data
+
+                prox = "";
+
                 final oldDateKey = intlx.DateFormat(
                   'yyyy-MM-dd',
                 ).format(_selectedDate.add(const Duration(days: 1)));
@@ -3034,7 +3066,8 @@ class _MainScreenState extends State<MainScreen> {
                       _selectedDate = _selectedDate.add(
                         const Duration(days: 1),
                       );
-                      // Clear cache for old date to ensure fresh data
+                      prox = "";
+
                       final oldDateKey = intlx.DateFormat(
                         'yyyy-MM-dd',
                       ).format(_selectedDate.subtract(const Duration(days: 1)));
@@ -3254,7 +3287,9 @@ class _MainScreenState extends State<MainScreen> {
             key: projectKey,
             margin: const EdgeInsets.only(bottom: 16),
             decoration: BoxDecoration(
-              color: themeProvider.isDarkMode ? AppColors.secondaryDark : AppColors.pureWhite,
+              color: themeProvider.isDarkMode
+                  ? AppColors.secondaryDark
+                  : AppColors.pureWhite,
               borderRadius: BorderRadius.circular(16),
               border: isActive
                   ? Border.all(color: AppColors.primary, width: 3)
@@ -3358,7 +3393,8 @@ class _MainScreenState extends State<MainScreen> {
                           decoration: BoxDecoration(
                             color: isExpanded
                                 ? AppColors.primary.withAlpha(51)
-                                : Theme.of(context).brightness == Brightness.dark
+                                : Theme.of(context).brightness ==
+                                      Brightness.dark
                                 ? AppColors.surfaceDark
                                 : Colors.grey[100],
                             borderRadius: BorderRadius.circular(8),
@@ -3370,7 +3406,8 @@ class _MainScreenState extends State<MainScreen> {
                               Iconsax.arrow_down_1,
                               color: isExpanded
                                   ? AppColors.primary
-                                  : Theme.of(context).brightness == Brightness.dark
+                                  : Theme.of(context).brightness ==
+                                        Brightness.dark
                                   ? AppColors.textSecondaryDark
                                   : Colors.grey[600],
                               size: 18,
@@ -3381,7 +3418,7 @@ class _MainScreenState extends State<MainScreen> {
                     ],
                   ),
                   const SizedBox(height: 12),
-          
+
                   // 2 & 3. رقم العميل ورقم البطاقة
                   Row(
                     children: [
@@ -3391,7 +3428,9 @@ class _MainScreenState extends State<MainScreen> {
                             Icon(
                               Iconsax.call,
                               size: 16,
-                              color: Theme.of(context).brightness == Brightness.dark
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
                                   ? AppColors.textSecondaryDark
                                   : Colors.grey[600],
                             ),
@@ -3401,7 +3440,8 @@ class _MainScreenState extends State<MainScreen> {
                               style: GoogleFonts.cairo(
                                 fontSize: 14,
                                 color:
-                                    Theme.of(context).brightness == Brightness.dark
+                                    Theme.of(context).brightness ==
+                                        Brightness.dark
                                     ? AppColors.textPrimaryDark
                                     : Colors.grey[700],
                               ),
@@ -3415,7 +3455,9 @@ class _MainScreenState extends State<MainScreen> {
                             Icon(
                               Iconsax.card,
                               size: 16,
-                              color: Theme.of(context).brightness == Brightness.dark
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
                                   ? AppColors.textSecondaryDark
                                   : Colors.grey[600],
                             ),
@@ -3440,7 +3482,7 @@ class _MainScreenState extends State<MainScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-          
+
                   // 4. المقاول
                   if (project['cnname'] != null) ...[
                     Row(
@@ -3458,7 +3500,9 @@ class _MainScreenState extends State<MainScreen> {
                             '${AppLocalizations.of(context)!.contractorName}: ${project['cnname']}',
                             style: GoogleFonts.cairo(
                               fontSize: 14,
-                              color: Theme.of(context).brightness == Brightness.dark
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
                                   ? AppColors.textPrimaryDark
                                   : Colors.grey[700],
                             ),
@@ -3467,7 +3511,7 @@ class _MainScreenState extends State<MainScreen> {
                       ],
                     ),
                     const SizedBox(height: 8),
-          
+
                     // 5. رقم المقاول
                     Row(
                       children: [
@@ -3483,7 +3527,8 @@ class _MainScreenState extends State<MainScreen> {
                           '${AppLocalizations.of(context)!.contractorPhone}: ${project['cnphone'] ?? 'غير محدد'}',
                           style: GoogleFonts.cairo(
                             fontSize: 14,
-                            color: Theme.of(context).brightness == Brightness.dark
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
                                 ? AppColors.textPrimaryDark
                                 : Colors.grey[700],
                           ),
@@ -3492,7 +3537,7 @@ class _MainScreenState extends State<MainScreen> {
                     ),
                     const SizedBox(height: 8),
                   ],
-          
+
                   // 6. الاستشاري/المهندس
                   if (project['ename'] != null) ...[
                     Row(
@@ -3514,14 +3559,16 @@ class _MainScreenState extends State<MainScreen> {
                       ],
                     ),
                   ],
-          
+
                   // Expanded details (7-10)
                   if (isExpanded) ...[
                     const SizedBox(height: 16),
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: themeProvider.isDarkMode ? AppColors.primaryDark : Colors.grey[50],
+                        color: themeProvider.isDarkMode
+                            ? AppColors.primaryDark
+                            : Colors.grey[50],
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: Theme.of(context).brightness == Brightness.dark
@@ -3539,7 +3586,7 @@ class _MainScreenState extends State<MainScreen> {
                             project['projx'] ?? 'غير محدد',
                           ),
                           const SizedBox(height: 8),
-          
+
                           // 8. الموقع/المنطقة
                           _buildInfoRowWithIcon(
                             Iconsax.location,
@@ -3547,7 +3594,7 @@ class _MainScreenState extends State<MainScreen> {
                             project['place'] ?? 'غير محدد',
                           ),
                           const SizedBox(height: 8),
-          
+
                           // 9. الرقم المساحي
                           _buildInfoRowWithIcon(
                             Iconsax.document_text,
@@ -3555,7 +3602,7 @@ class _MainScreenState extends State<MainScreen> {
                             project['pin'] ?? 'غير محدد',
                           ),
                           const SizedBox(height: 8),
-          
+
                           // 10. تاريخ البدء
                           _buildInfoRowWithIcon(
                             Iconsax.calendar_1,
@@ -3563,15 +3610,52 @@ class _MainScreenState extends State<MainScreen> {
                             project['sdate'] ?? 'غير محدد',
                           ),
                           const SizedBox(height: 16),
-          
+
+                          // زر افتح الزيارات
+                          // الكود المُعدّل لزر "افتح الزيارات"
+                          // ضع هذا الكود مكان الكود القديم (السطور 3609-3642)
+
                           // زر افتح الزيارات
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
-                              onPressed: () => _showComingSoon('افتح الزيارات'),
+                              onPressed: () async {
+                                // 1️⃣ مسح الـ cache القديم عشان نحمل الداتا من جديد
+                                _visitsCache.clear();
+
+                                // 2️⃣ الانتقال لصفحة الزيارات
+                                setState(() {
+                                  _selectedIndex = 2;
+                                  prox = project['id'];
+                                  _showingStats =
+                                      false; // نتأكد إننا في صفحة الزيارات مش الإحصائيات
+                                });
+
+                                // 3️⃣ تحميل البيانات فوراً بعد الانتقال
+                                final authProvider = Provider.of<AuthProvider>(
+                                  context,
+                                  listen: false,
+                                );
+                                final dateKey = intlx.DateFormat(
+                                  'yyyy-MM-dd',
+                                ).format(_selectedDate);
+
+                                await _loadVisitsData(
+                                  authProvider,
+                                  dateKey,
+                                  proxId: prox,
+                                );
+
+                                // 4️⃣ تحديث الواجهة بعد تحميل البيانات
+                                if (mounted) {
+                                  setState(() {});
+                                }
+                              },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.green,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -3590,7 +3674,7 @@ class _MainScreenState extends State<MainScreen> {
                       ),
                     ),
                   ],
-          
+
                   // Visit info (always visible) - 11 & 12
                   const SizedBox(height: 12),
                   Row(
@@ -3629,7 +3713,7 @@ class _MainScreenState extends State<MainScreen> {
               ),
             ),
           );
-        }
+        },
       ),
     );
   }
@@ -3725,7 +3809,7 @@ class _MainScreenState extends State<MainScreen> {
 
     // If no cache, load from API
     return FutureBuilder<Map<String, dynamic>>(
-      future: _loadVisitsData(authProvider, dateKey),
+      future: _loadVisitsData(authProvider, dateKey, proxId: prox),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -3842,7 +3926,9 @@ class _MainScreenState extends State<MainScreen> {
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
-            color: themeProvider.isDarkMode ? AppColors.secondaryDark : AppColors.pureWhite,
+            color: themeProvider.isDarkMode
+                ? AppColors.secondaryDark
+                : AppColors.pureWhite,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
@@ -3864,9 +3950,11 @@ class _MainScreenState extends State<MainScreen> {
                     CircleAvatar(
                       radius: 20,
                       backgroundColor: AppColors.primary.withAlpha(51),
-                      backgroundImage: (authProvider?.isAdmin() ?? false) ? NetworkImage(
-                        'https://qcec.online/erp2025/assets/users/${visit['eid']}/images/1.jpg',
-                      ) : null,
+                      backgroundImage: (authProvider?.isAdmin() ?? false)
+                          ? NetworkImage(
+                              'https://qcec.online/erp2025/assets/users/${visit['eid']}/images/1.jpg',
+                            )
+                          : null,
                       child: (authProvider?.isAdmin() ?? false)
                           ? null
                           : Icon(
@@ -3885,7 +3973,9 @@ class _MainScreenState extends State<MainScreen> {
                             style: GoogleFonts.cairo(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: Theme.of(context).brightness == Brightness.dark
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
                                   ? AppColors.textPrimaryDark
                                   : Colors.grey[800],
                             ),
@@ -3897,7 +3987,8 @@ class _MainScreenState extends State<MainScreen> {
                               style: GoogleFonts.cairo(
                                 fontSize: 12,
                                 color:
-                                    Theme.of(context).brightness == Brightness.dark
+                                    Theme.of(context).brightness ==
+                                        Brightness.dark
                                     ? AppColors.textSecondaryDark
                                     : Colors.grey[600],
                               ),
@@ -3919,13 +4010,18 @@ class _MainScreenState extends State<MainScreen> {
                           decoration: BoxDecoration(
                             color:
                                 _expandedPhotos.contains(
-                                  int.tryParse(visit['vdid']?.toString() ?? '0') ??
+                                  int.tryParse(
+                                        visit['vdid']?.toString() ?? '0',
+                                      ) ??
                                       0,
                                 )
                                 ? AppColors.primary
                                 : AppColors.primary.withAlpha(51),
                             shape: BoxShape.circle,
-                            border: Border.all(color: AppColors.primary, width: 2),
+                            border: Border.all(
+                              color: AppColors.primary,
+                              width: 2,
+                            ),
                             boxShadow: [
                               BoxShadow(
                                 color: AppColors.primary.withAlpha(102),
@@ -3958,7 +4054,7 @@ class _MainScreenState extends State<MainScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-        
+
                 // Visit info in organized sections
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -3997,7 +4093,7 @@ class _MainScreenState extends State<MainScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-        
+
                       // Contractor section
                       GestureDetector(
                         onTap: () {
@@ -4005,7 +4101,11 @@ class _MainScreenState extends State<MainScreen> {
                         },
                         child: Row(
                           children: [
-                            Icon(Iconsax.building_4, size: 16, color: Colors.green),
+                            Icon(
+                              Iconsax.building_4,
+                              size: 16,
+                              color: Colors.green,
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
@@ -4037,7 +4137,7 @@ class _MainScreenState extends State<MainScreen> {
                   _buildMediaSection(visit),
                 ],
                 const SizedBox(height: 12),
-        
+
                 // Project info
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -4063,7 +4163,8 @@ class _MainScreenState extends State<MainScreen> {
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
                                 color:
-                                    Theme.of(context).brightness == Brightness.dark
+                                    Theme.of(context).brightness ==
+                                        Brightness.dark
                                     ? AppColors.textPrimaryDark
                                     : Colors.grey[800],
                               ),
@@ -4084,7 +4185,9 @@ class _MainScreenState extends State<MainScreen> {
                             visit['place'] ?? 'موقع غير محدد',
                             style: GoogleFonts.cairo(
                               fontSize: 14,
-                              color: Theme.of(context).brightness == Brightness.dark
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
                                   ? AppColors.textPrimaryDark
                                   : Colors.grey[700],
                             ),
@@ -4095,7 +4198,7 @@ class _MainScreenState extends State<MainScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-        
+
                 // Notes section
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -4174,14 +4277,15 @@ class _MainScreenState extends State<MainScreen> {
             ),
           ),
         );
-      }
+      },
     );
   }
 
   Future<Map<String, dynamic>> _loadVisitsData(
     AuthProvider authProvider,
-    String dateKey,
-  ) async {
+    String dateKey, {
+    String? proxId,
+  }) async {
     if (_isLoadingVisits) {
       // If already loading, wait and return cached data
       while (_isLoadingVisits) {
@@ -4194,6 +4298,7 @@ class _MainScreenState extends State<MainScreen> {
     try {
       final result = await authProvider.getFullVisitsData(
         selectedDate: dateKey,
+        proxId: proxId,
       );
       if (result['success'] == true) {
         _visitsCache[dateKey] = result;
@@ -4650,5 +4755,74 @@ class _MainScreenState extends State<MainScreen> {
         );
       },
     );
+  }
+
+  /// التحقق من وجود زيارات غير مكتملة عند فتح التطبيق
+  void _checkIncompleteVisits() async {
+    try {
+      // تأخير بسيط للسماح بتحميل الشاشة
+      await Future.delayed(const Duration(seconds: 2));
+
+      if (!mounted) return;
+
+      // التحقق من وجود زيارة غير مكتملة
+      final appService = AppLifecycleService();
+      bool hasIncomplete = await appService.hasIncompleteVisit();
+
+      if (hasIncomplete && mounted) {
+        // عرض نافذة التنبيه
+        IncompleteVisitDialog.show(
+          context,
+          onResume: () async {
+            // الحصول على معلومات الزيارة النشطة
+            Map<String, dynamic>? visitInfo = await appService
+                .getActiveVisitInfo();
+            if (visitInfo != null && mounted) {
+              int visitId = visitInfo['visitId'];
+
+              // البحث عن معرف المشروع من البيانات المحفوظة
+              final draftService = appService.draftService;
+              var draft = await draftService.getDraft(visitId);
+
+              if (draft != null && mounted) {
+                // الانتقال لشاشة الزيارة مع البيانات المحفوظة
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AddVisitScreen(
+                      visitId: visitId,
+                      projectId: draft.projectId,
+                      capturedImages: draft.images,
+                    ),
+                  ),
+                );
+              }
+            }
+          },
+          onCancel: () async {
+            // حذف الزيارة المعلقة
+            await appService.cancelIncompleteVisit();
+
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'تم حذف الزيارة غير المكتملة',
+                    style: GoogleFonts.cairo(),
+                  ),
+                  backgroundColor: Colors.orange,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              );
+            }
+          },
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Error checking incomplete visits: $e');
+    }
   }
 }
