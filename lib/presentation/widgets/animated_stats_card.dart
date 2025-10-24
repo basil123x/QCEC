@@ -1,6 +1,10 @@
+import 'package:QCEC/core/constants/app_colors.dart';
+import 'package:QCEC/presentation/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
+
+import 'package:provider/provider.dart';
 
 class AnimatedStatsCard extends StatefulWidget {
   final String title;
@@ -34,42 +38,38 @@ class _AnimatedStatsCardState extends State<AnimatedStatsCard>
   @override
   void initState() {
     super.initState();
-    
+
     // Animation controller for the circular progress
     _circleController = AnimationController(
       duration: widget.animationDuration,
       vsync: this,
     );
-    
+
     // Animation controller for the counter
     _countController = AnimationController(
       duration: widget.animationDuration,
       vsync: this,
     );
-    
+
     // Circular progress animation (0 to calculated percentage)
     double progressPercentage = 1.0; // Default to full circle
     if (widget.maxValue != null && widget.maxValue! > 0) {
       progressPercentage = (widget.value / widget.maxValue!).clamp(0.0, 1.0);
     }
-    
-    _circleAnimation = Tween<double>(
-      begin: 0.0,
-      end: progressPercentage,
-    ).animate(CurvedAnimation(
-      parent: _circleController,
-      curve: Curves.easeInOutCubic,
-    ));
-    
+
+    _circleAnimation = Tween<double>(begin: 0.0, end: progressPercentage)
+        .animate(
+          CurvedAnimation(
+            parent: _circleController,
+            curve: Curves.easeInOutCubic,
+          ),
+        );
+
     // Counter animation (0 to actual value)
-    _countAnimation = IntTween(
-      begin: 0,
-      end: widget.value,
-    ).animate(CurvedAnimation(
-      parent: _countController,
-      curve: Curves.easeOutCubic,
-    ));
-    
+    _countAnimation = IntTween(begin: 0, end: widget.value).animate(
+      CurvedAnimation(parent: _countController, curve: Curves.easeOutCubic),
+    );
+
     // Start animations
     _startAnimations();
   }
@@ -92,112 +92,120 @@ class _AnimatedStatsCardState extends State<AnimatedStatsCard>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _circleController,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: 0.95 + (0.05 * _circleAnimation.value),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: widget.color.withOpacity(0.1 + (0.1 * _circleAnimation.value)),
-                  blurRadius: 20 + (10 * _circleAnimation.value),
-                  offset: const Offset(0, 10),
-                ),
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Animated circular progress with icon
-          SizedBox(
-            width: 80,
-            height: 80,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Background circle
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: widget.color.withOpacity(0.1),
-                  ),
-                ),
-                // Animated progress circle
-                AnimatedBuilder(
-                  animation: _circleAnimation,
-                  builder: (context, child) {
-                    return CustomPaint(
-                      size: const Size(80, 80),
-                      painter: CircularProgressPainter(
-                        progress: _circleAnimation.value,
-                        color: widget.color,
-                        strokeWidth: 4.0,
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return AnimatedBuilder(
+          animation: _circleController,
+          builder: (context, child) {
+            return Transform.scale(
+              scale: 0.95 + (0.05 * _circleAnimation.value),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: themeProvider.isDarkMode
+                      ? AppColors.primaryDark
+                      : AppColors.pureWhite,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: widget.color.withOpacity(
+                        0.1 + (0.1 * _circleAnimation.value),
                       ),
-                    );
-                  },
+                      blurRadius: 20 + (10 * _circleAnimation.value),
+                      offset: const Offset(0, 10),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                // Icon in center
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: widget.color.withOpacity(0.15),
-                  ),
-                  child: Icon(
-                    widget.icon,
-                    color: widget.color,
-                    size: 20,
-                  ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Animated circular progress with icon
+                    SizedBox(
+                      width: 80,
+                      height: 80,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Background circle
+                          Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: widget.color.withOpacity(0.1),
+                            ),
+                          ),
+                          // Animated progress circle
+                          AnimatedBuilder(
+                            animation: _circleAnimation,
+                            builder: (context, child) {
+                              return CustomPaint(
+                                size: const Size(80, 80),
+                                painter: CircularProgressPainter(
+                                  progress: _circleAnimation.value,
+                                  color: widget.color,
+                                  strokeWidth: 4.0,
+                                ),
+                              );
+                            },
+                          ),
+                          // Icon in center
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: widget.color.withOpacity(0.15),
+                            ),
+                            child: Icon(
+                              widget.icon,
+                              color: widget.color,
+                              size: 20,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Animated counter
+                    AnimatedBuilder(
+                      animation: _countAnimation,
+                      builder: (context, child) {
+                        return Text(
+                          _formatNumber(_countAnimation.value),
+                          style: GoogleFonts.cairo(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: widget.color,
+                          ),
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Title
+                    Text(
+                      widget.title,
+                      style: GoogleFonts.cairo(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[700],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          
-          const SizedBox(height: 16),
-          
-          // Animated counter
-          AnimatedBuilder(
-            animation: _countAnimation,
-            builder: (context, child) {
-              return Text(
-                _formatNumber(_countAnimation.value),
-                style: GoogleFonts.cairo(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: widget.color,
-                ),
-              );
-            },
-          ),
-          
-          const SizedBox(height: 8),
-          
-          // Title
-          Text(
-            widget.title,
-            style: GoogleFonts.cairo(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[700],
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -228,7 +236,7 @@ class CircularProgressPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = (size.width - strokeWidth) / 2;
-    
+
     final paint = Paint()
       ..color = color
       ..strokeWidth = strokeWidth
@@ -238,7 +246,7 @@ class CircularProgressPainter extends CustomPainter {
     // Draw the progress arc
     const startAngle = -math.pi / 2; // Start from top
     final sweepAngle = 2 * math.pi * progress;
-    
+
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       startAngle,
@@ -251,7 +259,7 @@ class CircularProgressPainter extends CustomPainter {
   @override
   bool shouldRepaint(CircularProgressPainter oldDelegate) {
     return oldDelegate.progress != progress ||
-           oldDelegate.color != color ||
-           oldDelegate.strokeWidth != strokeWidth;
+        oldDelegate.color != color ||
+        oldDelegate.strokeWidth != strokeWidth;
   }
 }

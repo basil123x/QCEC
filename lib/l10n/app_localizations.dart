@@ -219,6 +219,13 @@ abstract class AppLocalizations {
   String get visitNumber;
   String get lastVisitDate;
   String get status;
+  String get hello;
+  String get helloContent;
+  String get pleaseEnterPhoneNumber;
+  String get pleaseEnterPassword;
+  String get writeYourPassword;
+  String get phoneNumber;
+  String get phoneNumberMustBe8Digits;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

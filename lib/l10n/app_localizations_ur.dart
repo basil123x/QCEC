@@ -350,7 +350,8 @@ class AppLocalizationsUr extends AppLocalizations {
   String get companyName => 'قطر کنسلٹنگ انجینئرنگ سینٹر';
 
   @override
-  String get companyDescription => 'انجینئرنگ کنسلٹنگ اور پروجیکٹ نگرانی میں پیشرو کمپنی';
+  String get companyDescription =>
+      'انجینئرنگ کنسلٹنگ اور پروجیکٹ نگرانی میں پیشرو کمپنی';
 
   @override
   String get companyAddress => 'دوحہ، قطر';
@@ -463,4 +464,26 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get status => 'حیثیت';
+
+  @override
+  String get hello => 'خوش آمدید!';
+
+  @override
+  String get helloContent =>
+      'آپ کی واپسی سے خوشی ہوئی، اپنے اکاؤنٹ میں لاگ ان کریں اور انجینئرنگ تخلیقی سفر شروع کریں';
+
+  @override
+  String get pleaseEnterPhoneNumber => 'براہ کرم فون نمبر درج کریں';
+
+  @override
+  String get pleaseEnterPassword => 'براہ کرم پاس ورڈ درج کریں';
+
+  @override
+  String get writeYourPassword => 'اپنا پاس ورڈ لکھیں';
+
+  @override
+  String get phoneNumber => 'فون نمبر';
+
+  @override
+  String get phoneNumberMustBe8Digits => 'فون نمبر 8 ہندسوں کا ہونا چاہیے';
 }

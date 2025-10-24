@@ -350,7 +350,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get companyName => 'المركز القطري للإستشارات الهندسية';
 
   @override
-  String get companyDescription => 'شركة رائدة في مجال الاستشارات الهندسية والإشراف على المشاريع';
+  String get companyDescription =>
+      'شركة رائدة في مجال الاستشارات الهندسية والإشراف على المشاريع';
 
   @override
   String get companyAddress => 'الدوحة، قطر';
@@ -463,4 +464,26 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get status => 'الموقف';
+
+  @override
+  String get hello => 'أهلاً بك من جديداً!';
+
+  @override
+  String get helloContent =>
+      'سعداء بعودتك، سجّل الدخول لحسابك وابدأ رحلة الإبداع الهندسي';
+
+  @override
+  String get pleaseEnterPhoneNumber => 'يرجى إدخال رقم الهاتف';
+
+  @override
+  String get pleaseEnterPassword => 'يرجى إدخال كلمة المرور';
+
+  @override
+  String get writeYourPassword => 'أكتب كلمة المرور الخاصة بك';
+
+  @override
+  String get phoneNumber => 'رقم الهاتف';
+
+  @override
+  String get phoneNumberMustBe8Digits => 'رقم الهاتف يجب أن يكون 8 أرقام';
 }

@@ -463,4 +463,25 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get status => 'स्थिति';
+
+  @override
+  String get hello => 'फिर से स्वागत है!';
+
+  @override
+  String get helloContent => 'आपकी वापसी से हमें खुशी हुई, अपने खाते में लॉग इन करें और इंजीनियरिंग रचनात्मकता की यात्रा शुरू करें';
+
+  @override
+  String get pleaseEnterPhoneNumber => 'कृपया फ़ोन नंबर दर्ज करें';
+
+  @override
+  String get pleaseEnterPassword => 'कृपया पासवर्ड दर्ज करें';
+
+  @override
+  String get writeYourPassword => 'अपना पासवर्ड लिखें';
+
+  @override
+  String get phoneNumber => 'फ़ोन नंबर';
+  
+  @override
+  String get phoneNumberMustBe8Digits => 'फ़ोन नंबर 8 अंकों का होना चाहिए';
 }

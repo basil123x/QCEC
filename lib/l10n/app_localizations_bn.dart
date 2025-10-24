@@ -350,7 +350,8 @@ class AppLocalizationsBn extends AppLocalizations {
   String get companyName => 'কাতার কনসালটিং ইঞ্জিনিয়ারিং সেন্টার';
 
   @override
-  String get companyDescription => 'ইঞ্জিনিয়ারিং পরামর্শ এবং প্রকল্প তত্ত্বাবধানে অগ্রণী কোম্পানি';
+  String get companyDescription =>
+      'ইঞ্জিনিয়ারিং পরামর্শ এবং প্রকল্প তত্ত্বাবধানে অগ্রণী কোম্পানি';
 
   @override
   String get companyAddress => 'দোহা, কাতার';
@@ -463,4 +464,26 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get status => 'অবস্থা';
+
+  @override
+  String get hello => 'আবার স্বাগতম!';
+
+  @override
+  String get helloContent =>
+      'আপনার ফিরে আসায় আমরা খুশি, আপনার অ্যাকাউন্টে লগ ইন করুন এবং প্রকৌশল সৃজনশীলতার যাত্রা শুরু করুন';
+
+  @override
+  String get pleaseEnterPhoneNumber => 'অনুগ্রহ করে ফোন নম্বর লিখুন';
+
+  @override
+  String get pleaseEnterPassword => 'অনুগ্রহ করে পাসওয়ার্ড লিখুন';
+
+  @override
+  String get writeYourPassword => 'আপনার পাসওয়ার্ড লিখুন';
+
+  @override
+  String get phoneNumber => 'ফোন নম্বর';
+
+  @override
+  String get phoneNumberMustBe8Digits => 'ফোন নম্বর অবশ্যই ৮ সংখ্যার হতে হবে';
 }

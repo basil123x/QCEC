@@ -128,6 +128,9 @@ switch ($action) {
     case 'get_total':
         handleGetTotal($input);
         break;
+    case 'disable_user_account':
+        disableUserAccount($input);
+        break;
     default:
         sendResponse(false, 'Invalid action');
 }
@@ -1246,12 +1249,120 @@ WHERE stx = '1'  $d1";
     exit; // إنهاء التنفيذ هنا
 }
 
+/**
+ * DISABLE USER ACCOUNT
+ * Disables user account by changing password to 1111 instead of deleting data
+ * Supports all user types: Admin (0), Customer (1), Engineer (2), Contractor (3)
+ */
+function disableUserAccount($input) {
+    global $conx;
+    
+    // Validate required parameters
+    if (!isset($input['user_id']) || !isset($input['user_type'])) {
+        sendResponse(false, 'معرف المستخدم ونوع المستخدم مطلوبان');
+        return;
+    }
+    
+    $userId = sanitize($input['user_id']);
+    $userType = (int)$input['user_type'];
+    $disabledPassword = '1111'; // Password to disable account
+    
+    // Log the disable attempt
+    error_log("Attempting to disable user account - ID: $userId, Type: $userType");
+    
+    // Start transaction for data integrity
+    mysqli_autocommit($conx, false);
+    
+    try {
+        $updatedTables = [];
+        $success = false;
+        
+        switch ($userType) {
+            case 0: // Admin
+            case 2: // Engineer
+                // Update password in users table (a6 column)
+                $query = "UPDATE users SET a6 = '$disabledPassword' WHERE id = '$userId'";
+                if (mysqli_query($conx, $query)) {
+                    if (mysqli_affected_rows($conx) > 0) {
+                        $updatedTables[] = "users";
+                        $success = true;
+                    }
+                }
+                break;
+                
+            case 1: // Customer
+                // For customers, update password in visitsx table (cpw column)
+                // First check if customer exists in customers table
+                $checkCustomer = "SELECT id FROM customers WHERE id = '$userId'";
+                $customerResult = mysqli_query($conx, $checkCustomer);
+                
+                if ($customerResult && mysqli_num_rows($customerResult) > 0) {
+                    // Update password in visitsx table for this customer
+                    $query = "UPDATE visitsx SET cpw = '$disabledPassword' WHERE a1 = '$userId'";
+                    if (mysqli_query($conx, $query)) {
+                        if (mysqli_affected_rows($conx) > 0) {
+                            $updatedTables[] = "visitsx (customer password)";
+                            $success = true;
+                        }
+                    }
+                }
+                break;
+                
+            case 3: // Contractor
+                // Update password in contractors table (a5 column)
+                $query = "UPDATE contractors SET a5 = '$disabledPassword' WHERE id = '$userId'";
+                if (mysqli_query($conx, $query)) {
+                    if (mysqli_affected_rows($conx) > 0) {
+                        $updatedTables[] = "contractors";
+                        $success = true;
+                    }
+                }
+                break;
+                
+            default:
+                mysqli_rollback($conx);
+                sendResponse(false, 'نوع المستخدم غير صحيح');
+                return;
+        }
+        
+        if ($success) {
+            // Commit the transaction
+            mysqli_commit($conx);
+            mysqli_autocommit($conx, true);
+            
+            // Log successful disable
+            error_log("Successfully disabled user account - ID: $userId, Type: $userType, Tables: " . implode(', ', $updatedTables));
+            
+            sendResponse(true, 'تم تعطيل الحساب بنجاح. البيانات محفوظة لكن لا يمكن الدخول للحساب', [
+                'user_id' => $userId,
+                'user_type' => $userType,
+                'updated_tables' => $updatedTables,
+                'new_password' => $disabledPassword,
+                'disable_time' => date('Y-m-d H:i:s'),
+                'note' => 'تم تغيير كلمة المرور إلى 1111 لتعطيل الحساب'
+            ]);
+        } else {
+            mysqli_rollback($conx);
+            mysqli_autocommit($conx, true);
+            sendResponse(false, 'لم يتم العثور على الحساب أو فشل في التعطيل');
+        }
+        
+    } catch (Exception $e) {
+        // Rollback transaction on error
+        mysqli_rollback($conx);
+        mysqli_autocommit($conx, true);
+        
+        error_log("Error disabling user account - ID: $userId, Type: $userType, Error: " . $e->getMessage());
+        sendResponse(false, 'خطأ في تعطيل الحساب: ' . $e->getMessage());
+    }
+}
+
 // If no action matched, return error
 echo json_encode([
     'success' => false,
     'message' => 'Invalid action',
     'received_action' => $action,
-    'available_actions' => ['login', 'get_all_transactions', 'get_full_visits_data', 'get_top_stats', 'get_total']
+    'available_actions' => ['login', 'get_all_transactions', 'get_full_visits_data', 'get_top_stats', 'get_total', 'disable_user_account']
 ], JSON_UNESCAPED_UNICODE);
 
 // Close connection

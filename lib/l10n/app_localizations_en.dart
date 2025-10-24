@@ -463,4 +463,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get status => 'Status';
+  
+  @override
+  String get hello => 'Welcome back!';
+
+  @override
+  String get helloContent => 'We\'re happy to have you back, log in to your account and start your engineering creativity journey';
+  
+  @override
+  String get pleaseEnterPhoneNumber => 'Please enter phone number';
+
+  @override
+  String get pleaseEnterPassword => 'Please enter password';
+
+  @override
+  String get writeYourPassword => 'Write your password';
+
+  @override
+  String get phoneNumber => 'Phone number';
+  
+  @override
+  String get phoneNumberMustBe8Digits => 'Phone number must be 8 digits';
 }

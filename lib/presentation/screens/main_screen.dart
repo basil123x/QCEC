@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:QCEC/presentation/screens/about_us_screen.dart';
+import 'package:QCEC/presentation/screens/contact_us_screen.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -98,7 +100,11 @@ class _MainScreenState extends State<MainScreen> {
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
                 'إلغاء',
-                style: GoogleFonts.cairo(color: Colors.grey[600]),
+                style: GoogleFonts.cairo(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.textSecondaryDark
+                      : Colors.grey[600],
+                ),
               ),
             ),
             TextButton(
@@ -150,14 +156,14 @@ class _MainScreenState extends State<MainScreen> {
                                   ? loadingProgress.cumulativeBytesLoaded /
                                         loadingProgress.expectedTotalBytes!
                                   : null,
-                              color: Colors.white,
+                              color: Theme.of(context).cardColor,
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'جاري تحميل الصورة...',
                               style: GoogleFonts.cairo(
                                 fontSize: 16,
-                                color: Colors.white,
+                                color: Theme.of(context).cardColor,
                               ),
                             ),
                           ],
@@ -179,7 +185,7 @@ class _MainScreenState extends State<MainScreen> {
                               'لا يمكن تحميل الصورة',
                               style: GoogleFonts.cairo(
                                 fontSize: 18,
-                                color: Colors.white,
+                                color: Theme.of(context).cardColor,
                               ),
                             ),
                             Text(
@@ -210,7 +216,7 @@ class _MainScreenState extends State<MainScreen> {
                     ),
                     child: Icon(
                       Iconsax.close_circle,
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       size: 24,
                     ),
                   ),
@@ -235,7 +241,7 @@ class _MainScreenState extends State<MainScreen> {
                     textAlign: TextAlign.center,
                     style: GoogleFonts.cairo(
                       fontSize: 16,
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -254,8 +260,6 @@ class _MainScreenState extends State<MainScreen> {
     _scrollController.dispose();
     super.dispose();
   }
-
- 
 
   @override
   void didUpdateWidget(MainScreen oldWidget) {
@@ -390,10 +394,7 @@ class _MainScreenState extends State<MainScreen> {
       debugPrint('Error refreshing projects: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'فشل في تحديث المشاريع',
-            style: GoogleFonts.cairo(),
-          ),
+          content: Text('فشل في تحديث المشاريع', style: GoogleFonts.cairo()),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -407,13 +408,13 @@ class _MainScreenState extends State<MainScreen> {
   Future<void> _refreshVisits(AuthProvider authProvider) async {
     try {
       final dateKey = intlx.DateFormat('yyyy-MM-dd').format(_selectedDate);
-      
+
       // Clear cache for current date to force reload
       _visitsCache.remove(dateKey);
-      
+
       // Reload visits data
       final result = await _loadVisitsData(authProvider, dateKey);
-      
+
       if (result['success'] && mounted) {
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
@@ -429,7 +430,7 @@ class _MainScreenState extends State<MainScreen> {
             ),
           ),
         );
-        
+
         // Trigger rebuild
         setState(() {});
       }
@@ -437,10 +438,7 @@ class _MainScreenState extends State<MainScreen> {
       debugPrint('Error refreshing visits: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'فشل في تحديث الزيارات',
-            style: GoogleFonts.cairo(),
-          ),
+          content: Text('فشل في تحديث الزيارات', style: GoogleFonts.cairo()),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -468,7 +466,7 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ),
       );
-      
+
       // Trigger rebuild
       setState(() {});
     } catch (e) {
@@ -591,33 +589,36 @@ class _MainScreenState extends State<MainScreen> {
           return const LoginScreen();
         }
 
-        return Scaffold(
-          backgroundColor: AppColors.background,
-          appBar: _buildAppBar(authProvider),
-          body: _buildBody(authProvider),
-          bottomNavigationBar: _buildBottomNavBar(authProvider),
-          floatingActionButton: _buildFloatingActionButton(authProvider),
-          floatingActionButtonLocation:
-              FloatingActionButtonLocation.centerDocked,
+        return Consumer<ThemeProvider>(
+          builder: (context, themeProvider, child) {
+            return Scaffold(
+              backgroundColor: themeProvider.isDarkMode ? AppColors.primaryDark : AppColors.pureWhite,
+              appBar: _buildAppBar(authProvider, themeProvider),
+              body: _buildBody(authProvider),
+              bottomNavigationBar: _buildBottomNavBar(authProvider),
+              floatingActionButton: _buildFloatingActionButton(authProvider),
+              floatingActionButtonLocation:
+                  FloatingActionButtonLocation.centerDocked,
+            );
+          }
         );
       },
     );
   }
 
-  PreferredSizeWidget _buildAppBar(AuthProvider authProvider) {
+  PreferredSizeWidget _buildAppBar(AuthProvider authProvider, ThemeProvider themeProvider) {
     // Show welcome message only on home screen
     if (_selectedIndex == 0) {
       return AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        backgroundColor: themeProvider.isDarkMode ? AppColors.secondaryDark : AppColors.pureWhite,
         elevation: 0,
         centerTitle: true,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             GestureDetector(
-
               child: Text(
-                'الرئيسية',
+                AppLocalizations.of(context)!.home,
                 style: GoogleFonts.cairo(
                   fontSize: 16,
                   color: Theme.of(context).textTheme.titleLarge?.color,
@@ -645,7 +646,7 @@ class _MainScreenState extends State<MainScreen> {
       );
     } else if (_selectedIndex == 2) {
       return AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        backgroundColor: themeProvider.isDarkMode ? AppColors.secondaryDark : AppColors.pureWhite,
         elevation: 0,
         centerTitle: true,
         title: Container(
@@ -685,7 +686,7 @@ class _MainScreenState extends State<MainScreen> {
                 ),
               Expanded(
                 child: Text(
-                  'الزيارات',
+                  AppLocalizations.of(context)!.allVisits,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.cairo(
                     fontSize: 24,
@@ -717,23 +718,38 @@ class _MainScreenState extends State<MainScreen> {
 
     // For other screens, show page title and search (for projects only)
     String pageTitle = '';
-    switch (_selectedIndex) {
-      case 1:
-        pageTitle = 'المشاريع';
-        break;
-      case 2:
-        pageTitle = 'الكاميرا';
-        break;
-      case 3:
-        pageTitle = 'الزيارات';
-        break;
-      case 4:
-        pageTitle = 'الملف الشخصي';
-        break;
-    }
+    
+
+    if (authProvider.isEngineer()) {
+      // For engineers: 0=Home, 1=Projects, 2=Camera, 3=Visits, 4=Profile
+      switch (_selectedIndex) {
+        case 0:
+          pageTitle = AppLocalizations.of(context)!.home;
+          break;
+        case 1:
+          pageTitle = AppLocalizations.of(context)!.allProjects;
+          break;
+        case 3:
+          pageTitle = AppLocalizations.of(context)!.visits;
+          break;
+        case 4:
+          pageTitle = AppLocalizations.of(context)!.profile;
+          break;
+      }
+      } else {
+        // For others: 0=Home, 1=Projects, 2=Visits, 3=Profile
+        switch (_selectedIndex) {
+          case 1:
+            pageTitle = AppLocalizations.of(context)!.allProjects;
+            break;
+          case 3:
+            pageTitle = AppLocalizations.of(context)!.profile;
+            break;
+        }
+      }
 
     return AppBar(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: themeProvider.isDarkMode ? AppColors.secondaryDark : AppColors.pureWhite,
       elevation: 0,
       centerTitle: !_isSearching && !_isSearchingVisits,
       title: _isSearching && _selectedIndex == 1
@@ -741,7 +757,7 @@ class _MainScreenState extends State<MainScreen> {
               controller: _searchController,
               autofocus: true,
               decoration: InputDecoration(
-                hintText: 'البحث في المشاريع...',
+                hintText: AppLocalizations.of(context)!.searchProjects,
                 hintStyle: GoogleFonts.cairo(
                   color: Theme.of(context).textTheme.bodyMedium?.color,
                   fontSize: 16,
@@ -749,7 +765,10 @@ class _MainScreenState extends State<MainScreen> {
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16),
               ),
-              style: GoogleFonts.cairo(fontSize: 16, color: Theme.of(context).textTheme.titleLarge?.color),
+              style: GoogleFonts.cairo(
+                fontSize: 16,
+                color: Theme.of(context).textTheme.titleLarge?.color,
+              ),
               onChanged: (value) {
                 setState(() {
                   _searchQuery = value;
@@ -763,7 +782,7 @@ class _MainScreenState extends State<MainScreen> {
               controller: _searchControllerVisits,
               autofocus: true,
               decoration: InputDecoration(
-                hintText: 'البحث في الزيارات...',
+                hintText: AppLocalizations.of(context)!.searchVisits,
                 hintStyle: GoogleFonts.cairo(
                   color: Theme.of(context).textTheme.bodyMedium?.color,
                   fontSize: 16,
@@ -771,7 +790,10 @@ class _MainScreenState extends State<MainScreen> {
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16),
               ),
-              style: GoogleFonts.cairo(fontSize: 16, color: Theme.of(context).textTheme.titleLarge?.color),
+              style: GoogleFonts.cairo(
+                fontSize: 16,
+                color: Theme.of(context).textTheme.titleLarge?.color,
+              ),
               onChanged: (value) {
                 setState(() {
                   _searchQueryVisits = value;
@@ -788,7 +810,10 @@ class _MainScreenState extends State<MainScreen> {
             ),
       leading: _isSearching
           ? IconButton(
-              icon: Icon(Iconsax.arrow_right_3, color: Theme.of(context).iconTheme.color),
+              icon: Icon(
+                Iconsax.arrow_right_3,
+                color: Theme.of(context).iconTheme.color,
+              ),
               onPressed: () {
                 setState(() {
                   _isSearching = false;
@@ -799,7 +824,10 @@ class _MainScreenState extends State<MainScreen> {
             )
           : _isSearchingVisits
           ? IconButton(
-              icon: Icon(Iconsax.arrow_right_3, color: Theme.of(context).iconTheme.color),
+              icon: Icon(
+                Iconsax.arrow_right_3,
+                color: Theme.of(context).iconTheme.color,
+              ),
               onPressed: () {
                 setState(() {
                   _isSearchingVisits = false;
@@ -922,74 +950,88 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildDashboard(AuthProvider authProvider) {
+    print(ThemeProvider().isDarkMode);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Welcome Card
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.primary, AppColors.secondary],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'مرحباً بك في تطبيق QCEC',
-                  style: GoogleFonts.cairo(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+          Consumer<ThemeProvider>(
+            builder: (context, themeProvider, child) {
+              return Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      themeProvider.isDarkMode
+                          ? AppColors.primaryDark
+                          : AppColors.primary,
+                      themeProvider.isDarkMode
+                          ? AppColors.secondaryDark
+                          : AppColors.secondary,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'المركز القطري للإستشارات الهندسية',
-                  style: GoogleFonts.cairo(
-                    fontSize: 14,
-                    color: Colors.white.withAlpha(229),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(51),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    'نوع المستخدم: ${authProvider.getUserTypeName()}',
-                    style: GoogleFonts.cairo(
-                      fontSize: 12,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppLocalizations.of(context)!.welcome,
+                      style: GoogleFonts.cairo(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 8),
+                    Text(
+                      AppLocalizations.of(context)!.companyName,
+                      style: GoogleFonts.cairo(
+                        fontSize: 14,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardColor.withAlpha(51),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${AppLocalizations.of(context)!.userType}: ${authProvider.getUserTypeName()}',
+                        style: GoogleFonts.cairo(
+                          fontSize: 12,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
 
           const SizedBox(height: 24),
 
           // Quick Actions
           Text(
-            'الإجراءات السريعة',
+            AppLocalizations.of(context)!.quickActions,
             style: GoogleFonts.cairo(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.grey[800],
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.textPrimaryDark
+                  : Colors.grey[800],
             ),
           ),
 
@@ -1021,8 +1063,8 @@ class _MainScreenState extends State<MainScreen> {
     actions.add(
       _buildActionCard(
         icon: Iconsax.folder_2,
-        title: 'المشاريع',
-        subtitle: 'عرض جميع المشاريع',
+        title: AppLocalizations.of(context)!.projects,
+        subtitle: AppLocalizations.of(context)!.viewAllProjects,
         color: Colors.blue,
         onTap: () => setState(() => _selectedIndex = 1),
       ),
@@ -1031,8 +1073,8 @@ class _MainScreenState extends State<MainScreen> {
     actions.add(
       _buildActionCard(
         icon: Iconsax.calendar,
-        title: 'الزيارات',
-        subtitle: 'جدولة ومتابعة الزيارات',
+        title: AppLocalizations.of(context)!.visits,
+        subtitle: AppLocalizations.of(context)!.scheduleVisits,
         color: Colors.green,
         onTap: () => setState(() => _selectedIndex = 2),
       ),
@@ -1043,11 +1085,10 @@ class _MainScreenState extends State<MainScreen> {
       actions.add(
         _buildActionCard(
           icon: Iconsax.camera,
-          title: 'زيارة جديدة',
-          subtitle: 'تسجيل زيارة جديدة',
+          title: AppLocalizations.of(context)!.newVisit,
+          subtitle: AppLocalizations.of(context)!.recordNewVisit,
           color: Colors.teal,
           onTap: () {
-            // TODO: Navigate to add visit screen
             _showComingSoon('تسجيل زيارة جديدة');
           },
         ),
@@ -1066,46 +1107,59 @@ class _MainScreenState extends State<MainScreen> {
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(13),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: themeProvider.isDarkMode
+                  ? AppColors.secondaryDark
+                  : AppColors.pureWhite,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(13),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withAlpha(51),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: color, size: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color.withAlpha(51),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, color: color, size: 24),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  title,
+                  style: GoogleFonts.cairo(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.textPrimaryDark
+                        : Colors.grey[800],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.cairo(
+                    fontSize: 10,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.textSecondaryDark
+                        : Colors.grey[600],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: GoogleFonts.cairo(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[800],
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: GoogleFonts.cairo(fontSize: 12, color: Colors.grey[600]),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -1149,7 +1203,11 @@ class _MainScreenState extends State<MainScreen> {
                 ),
               ],
             ),
-            child: Icon(Iconsax.camera, color: Colors.white, size: 50),
+            child: Icon(
+              Iconsax.camera,
+              color: Theme.of(context).cardColor,
+              size: 50,
+            ),
           ),
           const SizedBox(height: 24),
           Text(
@@ -1157,13 +1215,20 @@ class _MainScreenState extends State<MainScreen> {
             style: GoogleFonts.cairo(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.grey[800],
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.textPrimaryDark
+                  : Colors.grey[800],
             ),
           ),
           const SizedBox(height: 8),
           Text(
             subtitle,
-            style: GoogleFonts.cairo(fontSize: 16, color: Colors.grey[500]),
+            style: GoogleFonts.cairo(
+              fontSize: 16,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.textSecondaryDark
+                  : Colors.grey[500],
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -1198,179 +1263,473 @@ class _MainScreenState extends State<MainScreen> {
 
   Widget _buildProfile(AuthProvider authProvider) {
     return SafeArea(
-      child: SingleChildScrollView(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Profile Header
+                Consumer<ThemeProvider>(
+                  builder: (context, themeProvider, child) {
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            themeProvider.isDarkMode
+                                ? AppColors.primaryDark
+                                : AppColors.primary,
+                            themeProvider.isDarkMode
+                                ? AppColors.secondaryDark
+                                : AppColors.secondary,
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: themeProvider.isDarkMode
+                                ? AppColors.primaryDark.withAlpha(102)
+                                : AppColors.primary.withAlpha(102),
+                            blurRadius: 15,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          CircleAvatar(
+                            radius: 50,
+                            backgroundColor: Theme.of(
+                              context,
+                            ).cardColor.withAlpha(51),
+                            backgroundImage:
+                                authProvider.getUserImageUrl().isNotEmpty
+                                ? NetworkImage(authProvider.getUserImageUrl())
+                                : null,
+                            child: authProvider.getUserImageUrl().isEmpty
+                                ? Icon(
+                                    Iconsax.user,
+                                    color: Theme.of(context).cardColor,
+                                    size: 40,
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            authProvider.getUserName(),
+                            style: GoogleFonts.cairo(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).cardColor.withAlpha(51),
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                            child: Text(
+                              authProvider.getUserTypeName(),
+                              style: GoogleFonts.cairo(
+                                fontSize: 14,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+        
+                const SizedBox(height: 24),
+        
+                // Settings Options
+                _buildSettingsSection(authProvider),
+        
+                const SizedBox(height: 24),
+        
+                // Logout Button
+                Container(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      _logout(authProvider);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red[400],
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Iconsax.logout,
+                          color: Theme.of(context).cardColor,
+                          size: 22,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          AppLocalizations.of(context)!.logout,
+                          style: GoogleFonts.cairo(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).cardColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+  }
+
+  Widget _buildSettingsSection(AuthProvider authProvider) {
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return Container(
+          decoration: BoxDecoration(
+            color: themeProvider.isDarkMode
+                ? AppColors.secondaryDark
+                : AppColors.pureWhite,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(13),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Consumer<LanguageProvider>(
+                builder: (context, languageProvider, child) {
+                  final localizations = AppLocalizations.of(context)!;
+                  return _buildSettingsItem(
+                    icon: Iconsax.language_circle,
+                    title: localizations.changeLanguage,
+                    subtitle: languageProvider.currentLanguageName,
+                    onTap: () => _showLanguageDialog(),
+                    color: Colors.blue,
+                  );
+                },
+              ),
+              _buildDivider(),
+              Consumer<ThemeProvider>(
+                builder: (context, themeProvider, child) {
+                  return _buildThemeToggleItem(themeProvider);
+                },
+              ),
+              _buildDivider(),
+              _buildSettingsItem(
+                icon: Iconsax.info_circle,
+                title: 'من نحن',
+                subtitle: 'تعرف على المركز القطري للاستشارات الهندسية',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AboutUsScreen(),
+                    ),
+                  );
+                }, color: Colors.orange,
+              ),
+              _buildDivider(),
+              _buildSettingsItem(
+                icon: Iconsax.call,
+                title: 'تواصل معنا',
+                subtitle: 'طرق التواصل وبيانات الاتصال',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ContactUsScreen(),
+                    ),
+                  );
+                },
+                color: Colors.green,
+              ),
+              _buildDivider(),
+              _buildSettingsItem(
+                icon: Iconsax.trash,
+                title: 'حذف الحساب',
+                subtitle: 'حذف الحساب نهائياً من التطبيق',
+                onTap: () => _showDeleteAccountDialog(context),
+                color: Colors.red
+              ),
+              
+            ],
+          ),
+        );
+      }
+    );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context) {
+    AwesomeDialog(
+      context: context,
+      dialogType: DialogType.warning,
+      animType: AnimType.bottomSlide,
+      title: 'تحذير',
+      desc: 'هل أنت متأكد من رغبتك في تعطيل حسابك؟\n\nسيتم تغيير كلمة المرور ولن تتمكن من الدخول، لكن بياناتك ستبقى محفوظة.',
+      btnCancelText: 'إلغاء',
+      btnOkText: 'تعطيل الحساب',
+      btnCancelOnPress: () {},
+      btnOkOnPress: () {
+        _confirmDeleteAccount(context);
+      },
+      btnOkColor: Colors.red,
+      btnCancelColor: Colors.grey,
+      titleTextStyle: GoogleFonts.cairo(
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+        color: Colors.red,
+      ),
+      descTextStyle: GoogleFonts.cairo(
+        fontSize: 16,
+        color: Colors.grey[700],
+        height: 1.5,
+      ),
+      buttonsTextStyle: GoogleFonts.cairo(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+      ),
+      headerAnimationLoop: false,
+      showCloseIcon: true,
+    ).show();
+  }
+
+  void _confirmDeleteAccount(BuildContext context) {
+    TextEditingController deleteController = TextEditingController();
+    AwesomeDialog(
+      context: context,
+      dialogType: DialogType.error,
+      animType: AnimType.scale,
+      title: 'تأكيد التعطيل',
+      desc: 'اكتب "عطل حسابي" للتأكيد من عملية التعطيل',
+      body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Profile Header
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.primary, AppColors.secondary],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withAlpha(102),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundColor: Colors.white.withAlpha(51),
-                    backgroundImage: authProvider.getUserImageUrl().isNotEmpty
-                        ? NetworkImage(authProvider.getUserImageUrl())
-                        : null,
-                    child: authProvider.getUserImageUrl().isEmpty
-                        ? Icon(Iconsax.user, color: Colors.white, size: 40)
-                        : null,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    authProvider.getUserName(),
-                    style: GoogleFonts.cairo(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(51),
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    child: Text(
-                      authProvider.getUserTypeName(),
-                      style: GoogleFonts.cairo(
-                        fontSize: 14,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
+            Text(
+              'تأكيد التعطيل',
+              style: GoogleFonts.cairo(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.red,
               ),
             ),
-
-            const SizedBox(height: 24),
-
-            // Settings Options
-            _buildSettingsSection(authProvider),
-
-            const SizedBox(height: 24),
-
-            // Logout Button
-            Container(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  // _logout(authProvider)
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red[400],
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 0,
+            const SizedBox(height: 16),
+            Text(
+              'اكتب "عطل حسابي" للتأكيد من عملية التعطيل',
+              style: GoogleFonts.cairo(
+                fontSize: 16,
+                color: Colors.grey[700],
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              textAlign: TextAlign.center,
+              style: GoogleFonts.cairo(fontSize: 16),
+              controller: deleteController,
+              decoration: InputDecoration(
+                hintText: 'عطل حسابي',
+                hintStyle: GoogleFonts.cairo(
+                  color: Colors.grey[400],
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Iconsax.logout, color: Colors.white, size: 22),
-                    const SizedBox(width: 12),
-                    Text(
-                      'تسجيل الخروج',
-                      style: GoogleFonts.cairo(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.red),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.red, width: 2),
                 ),
               ),
+              onChanged: (value) {
+                // يمكن إضافة منطق التحقق هنا
+              },
             ),
           ],
         ),
       ),
-    );
+      btnCancelText: 'إلغاء',
+      btnOkText: 'تعطيل نهائي',
+      btnCancelOnPress: () {},
+      btnOkOnPress: () {
+        if (deleteController.text.trim() == 'عطل حسابي') {
+          _deleteAccount(context);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'لم يتم تأكيد التعطيل. يرجى كتابة "عطل حسابي" بشكل صحيح.',
+                style: GoogleFonts.cairo(),
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+      },
+      btnOkColor: Colors.red,
+      btnCancelColor: Colors.grey,
+      buttonsTextStyle: GoogleFonts.cairo(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+      ),
+      headerAnimationLoop: false,
+      showCloseIcon: true,
+    ).show();
   }
 
-  Widget _buildSettingsSection(AuthProvider authProvider) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(13),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Consumer<LanguageProvider>(
-            builder: (context, languageProvider, child) {
-              final localizations = AppLocalizations.of(context)!;
-              return _buildSettingsItem(
-                icon: Iconsax.language_circle,
-                title: localizations.changeLanguage,
-                subtitle: languageProvider.currentLanguageName,
-                onTap: () => _showLanguageDialog(),
-                color: Colors.blue,
-              );
+  void _deleteAccount(BuildContext context) async {
+    try {
+      // Show loading dialog
+      AwesomeDialog(
+        context: context,
+        dialogType: DialogType.info,
+        animType: AnimType.scale,
+        title: 'جاري تعطيل الحساب...',
+        desc: 'يرجى الانتظار، جاري تعطيل حسابك من النظام',
+        dismissOnTouchOutside: false,
+        dismissOnBackKeyPress: false,
+        showCloseIcon: false,
+        titleTextStyle: GoogleFonts.cairo(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Colors.blue,
+        ),
+        descTextStyle: GoogleFonts.cairo(
+          fontSize: 14,
+          color: Colors.grey[600],
+        ),
+      ).show();
+
+      // Prepare API request
+      final dio = Dio();
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      
+      final requestData = {
+        'action': 'disable_user_account',
+        'user_id': authProvider.getUserId(),
+        'user_type': authProvider.getUserTypeName(),
+      };
+
+      // Make API call to delete account
+      final response = await dio.post(
+        'https://qcec.online/app2026/sql.php',
+        data: requestData,
+        options: Options(
+          headers: {'Content-Type': 'application/json'},
+          sendTimeout: const Duration(seconds: 30),
+          receiveTimeout: const Duration(seconds: 30),
+        ),
+      );
+
+      // Close loading dialog
+      Navigator.of(context).pop();
+
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+        
+        if (responseData['success'] == true) {
+          // Account deleted successfully
+          AwesomeDialog(
+            context: context,
+            dialogType: DialogType.success,
+            animType: AnimType.topSlide,
+            title: 'تم تعطيل الحساب بنجاح',
+            desc: 'تم تعطيل حسابك من النظام. بياناتك محفوظة لكن لا يمكنك الدخول.\nشكراً لاستخدامك تطبيق QCEC.',
+            btnOkText: 'موافق',
+            btnOkOnPress: () async {
+              // Logout and clear all data
+              await authProvider.logout();
             },
-          ),
-          _buildDivider(),
-          Consumer<ThemeProvider>(
-            builder: (context, themeProvider, child) {
-              return _buildThemeToggleItem(themeProvider);
-            },
-          ),
-          _buildDivider(),
-          _buildSettingsItem(
-            icon: Iconsax.info_circle,
-            title: 'عن الشركة',
-            subtitle: 'قيد التطوير',
-            onTap: () => _showComingSoon('عن الشركة'),
-            color: Colors.green,
-          ),
-          _buildDivider(),
-          _buildSettingsItem(
-            icon: Iconsax.call,
-            title: 'اتصل بنا',
-            subtitle: 'قيد التطوير',
-            onTap: () => _showComingSoon('اتصل بنا'),
-            color: Colors.orange,
-          ),
-          _buildDivider(),
-          _buildSettingsItem(
-            icon: Iconsax.trash,
-            title: 'حذف حسابي',
-            subtitle: 'قيد التطوير',
-            onTap: () => _showComingSoon('حذف الحساب'),
-            color: Colors.red,
-          ),
-        ],
-      ),
-    );
+            btnOkColor: Colors.green,
+            titleTextStyle: GoogleFonts.cairo(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.green,
+            ),
+            descTextStyle: GoogleFonts.cairo(
+              fontSize: 16,
+              color: Colors.grey[700],
+              height: 1.5,
+            ),
+            buttonsTextStyle: GoogleFonts.cairo(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+            headerAnimationLoop: false,
+            showCloseIcon: false,
+            dismissOnTouchOutside: false,
+            dismissOnBackKeyPress: false,
+          ).show();
+        } else {
+          // Server returned error
+          _showErrorDialogx(context, responseData['message'] ?? 'خطأ في تعطيل الحساب');
+        }
+      } else {
+        _showErrorDialogx(context, 'خطأ في الاتصال بالخادم');
+      }
+    } catch (e) {
+      // Close loading dialog if still open
+      Navigator.of(context).pop();
+      
+      print('Error disabling account: $e');
+      _showErrorDialogx(context, 'حدث خطأ أثناء تعطيل الحساب. يرجى المحاولة مرة أخرى.');
+    }
   }
+
+  void _showErrorDialogx(BuildContext context, String message) {
+    AwesomeDialog(
+      context: context,
+      dialogType: DialogType.error,
+      animType: AnimType.scale,
+      title: 'خطأ',
+      desc: message,
+      btnOkText: 'موافق',
+      btnOkOnPress: () {},
+      btnOkColor: Colors.red,
+      titleTextStyle: GoogleFonts.cairo(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: Colors.red,
+      ),
+      descTextStyle: GoogleFonts.cairo(
+        fontSize: 14,
+        color: Colors.grey[700],
+        height: 1.5,
+      ),
+      buttonsTextStyle: GoogleFonts.cairo(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+      ),
+    ).show();
+  }
+
 
   Widget _buildSettingsItem({
     required IconData icon,
@@ -1400,13 +1759,14 @@ class _MainScreenState extends State<MainScreen> {
       subtitle: Text(
         subtitle,
         style: GoogleFonts.cairo(
-          fontSize: 14, 
+          fontSize: 14,
           color: Theme.of(context).textTheme.bodyMedium?.color,
         ),
+        maxLines: 1,
       ),
       trailing: Icon(
-        Iconsax.arrow_left_2, 
-        color: Theme.of(context).iconTheme.color?.withOpacity(0.6), 
+        Iconsax.arrow_left_2,
+        color: Theme.of(context).iconTheme.color?.withOpacity(0.6),
         size: 20,
       ),
     );
@@ -1414,11 +1774,11 @@ class _MainScreenState extends State<MainScreen> {
 
   Widget _buildThemeToggleItem(ThemeProvider themeProvider) {
     final localizations = AppLocalizations.of(context)!;
-    
+
     return ListTile(
       onTap: () async {
         await themeProvider.toggleTheme();
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -1446,7 +1806,9 @@ class _MainScreenState extends State<MainScreen> {
         ),
       ),
       title: Text(
-        themeProvider.isDarkMode ? localizations.lightMode : localizations.darkMode,
+        themeProvider.isDarkMode
+            ? localizations.lightMode
+            : localizations.darkMode,
         style: GoogleFonts.cairo(
           fontSize: 16,
           fontWeight: FontWeight.w600,
@@ -1454,9 +1816,11 @@ class _MainScreenState extends State<MainScreen> {
         ),
       ),
       subtitle: Text(
-        themeProvider.isDarkMode ? localizations.enableLightMode : localizations.enableDarkMode,
+        themeProvider.isDarkMode
+            ? localizations.enableLightMode
+            : localizations.enableDarkMode,
         style: GoogleFonts.cairo(
-          fontSize: 14, 
+          fontSize: 14,
           color: Theme.of(context).textTheme.bodyMedium?.color,
         ),
       ),
@@ -1464,7 +1828,7 @@ class _MainScreenState extends State<MainScreen> {
         value: themeProvider.isDarkMode,
         onChanged: (value) async {
           await themeProvider.toggleTheme();
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -1488,7 +1852,9 @@ class _MainScreenState extends State<MainScreen> {
     return Divider(
       height: 1,
       thickness: 1,
-      color: Colors.grey[200],
+      color: Theme.of(context).brightness == Brightness.dark
+          ? AppColors.surfaceDark.withOpacity(0.8)
+          : Colors.grey[200],
       indent: 16,
       endIndent: 16,
     );
@@ -1514,32 +1880,38 @@ class _MainScreenState extends State<MainScreen> {
     if (_selectedIndex > 2) displayIndex = _selectedIndex - 1;
     if (displayIndex >= iconList.length) displayIndex = 0;
 
-    return AnimatedBottomNavigationBar(
-      icons: iconList,
-      activeIndex: displayIndex,
-      gapLocation: GapLocation.center,
-      notchSmoothness: NotchSmoothness.verySmoothEdge,
-      leftCornerRadius: 32,
-      rightCornerRadius: 32,
-      backgroundColor: Colors.white,
-      activeColor: AppColors.primary,
-      inactiveColor: Colors.grey[600],
-      splashColor: AppColors.primary.withAlpha(51),
-      onTap: (index) {
-        int actualIndex = index >= 2 ? index + 1 : index;
-        setState(() => _selectedIndex = actualIndex);
-
-        // If switching to projects tab and there's an active project, scroll to it
-        if (actualIndex == 1 &&
-            _activeProjectId != null &&
-            _projects.isNotEmpty) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            Future.delayed(const Duration(milliseconds: 400), () {
-              _scrollToActiveProject();
-            });
-          });
-        }
-      },
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return AnimatedBottomNavigationBar(
+          icons: iconList,
+          activeIndex: displayIndex,
+          gapLocation: GapLocation.center,
+          notchSmoothness: NotchSmoothness.verySmoothEdge,
+          leftCornerRadius: 32,
+          rightCornerRadius: 32,
+          backgroundColor: themeProvider.isDarkMode ? AppColors.secondaryDark : AppColors.pureWhite,
+          activeColor: AppColors.primary,
+          inactiveColor: Theme.of(context).brightness == Brightness.dark
+              ? AppColors.textSecondaryDark
+              : Colors.grey[600],
+          splashColor: AppColors.primary.withAlpha(51),
+          onTap: (index) {
+            int actualIndex = index >= 2 ? index + 1 : index;
+            setState(() => _selectedIndex = actualIndex);
+        
+            // If switching to projects tab and there's an active project, scroll to it
+            if (actualIndex == 1 &&
+                _activeProjectId != null &&
+                _projects.isNotEmpty) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                Future.delayed(const Duration(milliseconds: 400), () {
+                  _scrollToActiveProject();
+                });
+              });
+            }
+          },
+        );
+      }
     );
   }
 
@@ -1551,29 +1923,35 @@ class _MainScreenState extends State<MainScreen> {
       Iconsax.profile_circle,
     ];
 
-    return AnimatedBottomNavigationBar(
-      icons: iconList,
-      activeIndex: _selectedIndex,
-      gapLocation: GapLocation.none,
-      notchSmoothness: NotchSmoothness.verySmoothEdge,
-      leftCornerRadius: 32,
-      rightCornerRadius: 32,
-      backgroundColor: Colors.white,
-      activeColor: AppColors.primary,
-      inactiveColor: Colors.grey[600],
-      splashColor: AppColors.primary.withAlpha(51),
-      onTap: (index) {
-        setState(() => _selectedIndex = index);
-
-        // If switching to projects tab and there's an active project, scroll to it
-        if (index == 1 && _activeProjectId != null && _projects.isNotEmpty) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            Future.delayed(const Duration(milliseconds: 400), () {
-              _scrollToActiveProject();
-            });
-          });
-        }
-      },
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return AnimatedBottomNavigationBar(
+          icons: iconList,
+          activeIndex: _selectedIndex,
+          gapLocation: GapLocation.none,
+          notchSmoothness: NotchSmoothness.verySmoothEdge,
+          leftCornerRadius: 32,
+          rightCornerRadius: 32,
+          backgroundColor: themeProvider.isDarkMode ? AppColors.secondaryDark : AppColors.pureWhite,
+          activeColor: AppColors.primary,
+          inactiveColor: Theme.of(context).brightness == Brightness.dark
+              ? AppColors.textSecondaryDark
+              : Colors.grey[600],
+          splashColor: AppColors.primary.withAlpha(51),
+          onTap: (index) {
+            setState(() => _selectedIndex = index);
+        
+            // If switching to projects tab and there's an active project, scroll to it
+            if (index == 1 && _activeProjectId != null && _projects.isNotEmpty) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                Future.delayed(const Duration(milliseconds: 400), () {
+                  _scrollToActiveProject();
+                });
+              });
+            }
+          },
+        );
+      }
     );
   }
 
@@ -1582,7 +1960,7 @@ class _MainScreenState extends State<MainScreen> {
       return FloatingActionButton(
         onPressed: () => _handleCameraButtonPress(authProvider),
         backgroundColor: AppColors.primary,
-        child: Icon(Iconsax.camera, color: Colors.white),
+        child: Icon(Iconsax.camera, color: Theme.of(context).cardColor),
       );
     }
     return null;
@@ -1656,7 +2034,12 @@ class _MainScreenState extends State<MainScreen> {
               const SizedBox(height: 16),
               Text(
                 message,
-                style: GoogleFonts.cairo(fontSize: 16, color: Colors.grey[800]),
+                style: GoogleFonts.cairo(
+                  fontSize: 16,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.textPrimaryDark
+                      : Colors.grey[800],
+                ),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -1692,7 +2075,12 @@ class _MainScreenState extends State<MainScreen> {
           ),
           content: Text(
             message,
-            style: GoogleFonts.cairo(fontSize: 16, color: Colors.grey[700]),
+            style: GoogleFonts.cairo(
+              fontSize: 16,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.textPrimaryDark
+                  : Colors.grey[700],
+            ),
           ),
           actions: [
             TextButton(
@@ -1762,22 +2150,6 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  String _formatDateTime(String? dateTimeString) {
-    if (dateTimeString == null || dateTimeString.isEmpty) {
-      return 'تاريخ غير محدد';
-    }
-
-    try {
-      final dateTime = DateTime.parse(dateTimeString);
-      final dateFormat = intlx.DateFormat('yyyy-MM-dd');
-      final timeFormat = intlx.DateFormat('h:mm a');
-
-      return '${dateFormat.format(dateTime)} - ${timeFormat.format(dateTime)}';
-    } catch (e) {
-      return dateTimeString;
-    }
-  }
-
   String _formatDateAndTime(String? dateTimeString) {
     if (dateTimeString == null || dateTimeString.isEmpty) {
       return 'تاريخ غير محدد';
@@ -1821,16 +2193,6 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
-  void _toggleNotesExpansion(int visitId) {
-    setState(() {
-      if (_expandedNotes.contains(visitId)) {
-        _expandedNotes.remove(visitId);
-      } else {
-        _expandedNotes.add(visitId);
-      }
-    });
-  }
-
   Widget _buildExpandableText(
     String text,
     int visitId,
@@ -1846,7 +2208,9 @@ class _MainScreenState extends State<MainScreen> {
           text,
           style: GoogleFonts.cairo(
             fontSize: 14,
-            color: Colors.grey[800],
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppColors.textPrimaryDark
+                : Colors.grey[800],
             height: 1.4,
           ),
           maxLines: maxLines,
@@ -1878,79 +2242,6 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  void _showEngineersStats() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withAlpha(51),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(Iconsax.chart_2, color: Colors.blue, size: 24),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'إحصائيات المهندسين',
-                style: GoogleFonts.cairo(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
-            ],
-          ),
-          content: Container(
-            width: double.maxFinite,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildEngineerStatItem(
-                  'م/ أحمد محمد',
-                  85,
-                  'https://qcec.online/erp2025/assets/users/1/images/1.jpg',
-                ),
-                const SizedBox(height: 12),
-                _buildEngineerStatItem(
-                  'م/ سارة أحمد',
-                  72,
-                  'https://qcec.online/erp2025/assets/users/2/images/1.jpg',
-                ),
-                const SizedBox(height: 12),
-                _buildEngineerStatItem(
-                  'م/ محمد علي',
-                  68,
-                  'https://qcec.online/erp2025/assets/users/3/images/1.jpg',
-                ),
-                const SizedBox(height: 12),
-                _buildEngineerStatItem(
-                  'م/ فاطمة خالد',
-                  45,
-                  'https://qcec.online/erp2025/assets/users/4/images/1.jpg',
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'إغلاق',
-                style: GoogleFonts.cairo(color: Colors.grey[600]),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   Widget _buildEngineersStatsFullScreen(AuthProvider authProvider) {
     final dateKey = intlx.DateFormat('yyyy-MM-dd').format(_selectedDate);
 
@@ -1969,13 +2260,21 @@ class _MainScreenState extends State<MainScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Iconsax.warning_2, size: 48, color: Colors.grey[400]),
+                  Icon(
+                    Iconsax.warning_2,
+                    size: 48,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.textHintDark
+                        : Colors.grey[400],
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'حدث خطأ في جلب الإحصائيات',
                     style: GoogleFonts.cairo(
                       fontSize: 16,
-                      color: Colors.grey[600],
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppColors.textSecondaryDark
+                          : Colors.grey[600],
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -1994,13 +2293,21 @@ class _MainScreenState extends State<MainScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Iconsax.chart_fail, size: 48, color: Colors.grey[400]),
+                  Icon(
+                    Iconsax.chart_fail,
+                    size: 48,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.textHintDark
+                        : Colors.grey[400],
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'حدث خطأ في جلب الإحصائيات',
                     style: GoogleFonts.cairo(
                       fontSize: 16,
-                      color: Colors.grey[600],
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppColors.textSecondaryDark
+                          : Colors.grey[600],
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -2020,13 +2327,21 @@ class _MainScreenState extends State<MainScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Iconsax.chart_fail, size: 48, color: Colors.grey[400]),
+                  Icon(
+                    Iconsax.chart_fail,
+                    size: 48,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.textHintDark
+                        : Colors.grey[400],
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'لا توجد إحصائيات في هذا التاريخ',
                     style: GoogleFonts.cairo(
                       fontSize: 16,
-                      color: Colors.grey[600],
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppColors.textSecondaryDark
+                          : Colors.grey[600],
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -2034,7 +2349,9 @@ class _MainScreenState extends State<MainScreen> {
                     'جرب تاريخ آخر أو تأكد من وجود زيارات',
                     style: GoogleFonts.cairo(
                       fontSize: 14,
-                      color: Colors.grey[500],
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppColors.textSecondaryDark
+                          : Colors.grey[500],
                     ),
                   ),
                 ],
@@ -2075,11 +2392,15 @@ class _MainScreenState extends State<MainScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'إحصائيات المهندسين',
+                              AppLocalizations.of(context)!.engineersStats,
                               style: GoogleFonts.cairo(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 22,
-                                color: Colors.grey[800],
+                                color:
+                                    Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? AppColors.textPrimaryDark
+                                    : Colors.grey[800],
                               ),
                             ),
                             Text(
@@ -2088,7 +2409,11 @@ class _MainScreenState extends State<MainScreen> {
                               ).format(_selectedDate),
                               style: GoogleFonts.cairo(
                                 fontSize: 14,
-                                color: Colors.grey[600],
+                                color:
+                                    Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? AppColors.textSecondaryDark
+                                    : Colors.grey[600],
                               ),
                             ),
                           ],
@@ -2145,7 +2470,7 @@ class _MainScreenState extends State<MainScreen> {
                   style: GoogleFonts.cairo(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Theme.of(context).cardColor,
                   ),
                 ),
               ),
@@ -2156,13 +2481,20 @@ class _MainScreenState extends State<MainScreen> {
               style: GoogleFonts.cairo(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey[700],
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.textPrimaryDark
+                    : Colors.grey[700],
               ),
             ),
             const SizedBox(height: 8),
             Text(
               authProvider.getUserName(),
-              style: GoogleFonts.cairo(fontSize: 16, color: Colors.grey[600]),
+              style: GoogleFonts.cairo(
+                fontSize: 16,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.textSecondaryDark
+                    : Colors.grey[600],
+              ),
             ),
           ],
         ),
@@ -2177,11 +2509,22 @@ class _MainScreenState extends State<MainScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Iconsax.chart, size: 64, color: Colors.grey[300]),
+              Icon(
+                Iconsax.chart,
+                size: 64,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.borderDark
+                    : Colors.grey[300],
+              ),
               const SizedBox(height: 16),
               Text(
                 'الإحصائيات غير متاحة',
-                style: GoogleFonts.cairo(fontSize: 16, color: Colors.grey[500]),
+                style: GoogleFonts.cairo(
+                  fontSize: 16,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.textSecondaryDark
+                      : Colors.grey[500],
+                ),
               ),
             ],
           ),
@@ -2200,7 +2543,7 @@ class _MainScreenState extends State<MainScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -2233,7 +2576,9 @@ class _MainScreenState extends State<MainScreen> {
                     style: GoogleFonts.cairo(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.grey[800],
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppColors.textPrimaryDark
+                          : Colors.grey[800],
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -2241,7 +2586,9 @@ class _MainScreenState extends State<MainScreen> {
                     '$visitsCount من $totalAssigned زيارة',
                     style: GoogleFonts.cairo(
                       fontSize: 14,
-                      color: Colors.grey[600],
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppColors.textSecondaryDark
+                          : Colors.grey[600],
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -2252,7 +2599,10 @@ class _MainScreenState extends State<MainScreen> {
                         child: Container(
                           height: 8,
                           decoration: BoxDecoration(
-                            color: Colors.grey[200],
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                ? AppColors.surfaceDark.withOpacity(0.8)
+                                : Colors.grey[200],
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: FractionallySizedBox(
@@ -2317,7 +2667,11 @@ class _MainScreenState extends State<MainScreen> {
       decoration: BoxDecoration(
         color: Colors.grey[50],
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppColors.surfaceDark.withOpacity(0.8)
+              : Colors.grey[200]!,
+        ),
       ),
       child: Row(
         children: [
@@ -2336,7 +2690,9 @@ class _MainScreenState extends State<MainScreen> {
                   style: GoogleFonts.cairo(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey[800],
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.textPrimaryDark
+                        : Colors.grey[800],
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -2345,7 +2701,10 @@ class _MainScreenState extends State<MainScreen> {
                     Expanded(
                       child: LinearProgressIndicator(
                         value: progress / 100,
-                        backgroundColor: Colors.grey[300],
+                        backgroundColor:
+                            Theme.of(context).brightness == Brightness.dark
+                            ? AppColors.borderDark
+                            : Colors.grey[300],
                         valueColor: AlwaysStoppedAnimation<Color>(
                           progress > 80
                               ? Colors.green
@@ -2380,14 +2739,16 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _showLanguageDialog() {
-    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    final languageProvider = Provider.of<LanguageProvider>(
+      context,
+      listen: false,
+    );
     final localizations = AppLocalizations.of(context)!;
-    
+
     AwesomeDialog(
       context: context,
       dialogType: DialogType.noHeader,
       animType: AnimType.scale,
-      width: MediaQuery.of(context).size.width * 0.85,
       body: Container(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -2415,17 +2776,20 @@ class _MainScreenState extends State<MainScreen> {
                     style: GoogleFonts.cairo(
                       fontWeight: FontWeight.bold,
                       fontSize: 20,
-                      color: Colors.grey[800],
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppColors.textPrimaryDark
+                          : Colors.grey[800],
                     ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 24),
-            
+
             // Language Options
             ...languageProvider.getSupportedLanguages().map((language) {
-              final isSelected = languageProvider.currentLanguageCode == language['code'];
+              final isSelected =
+                  languageProvider.currentLanguageCode == language['code'];
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 child: _buildLanguageOption(
@@ -2453,9 +2817,9 @@ class _MainScreenState extends State<MainScreen> {
     return GestureDetector(
       onTap: () async {
         Navigator.of(context).pop();
-        
+
         await languageProvider.changeLanguage(languageCode);
-        
+
         final localizations = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -2471,81 +2835,101 @@ class _MainScreenState extends State<MainScreen> {
           ),
         );
       },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withAlpha(51) : Colors.grey[50],
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : Colors.grey[300]!,
-            width: isSelected ? 2 : 1,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: AppColors.primary.withAlpha(25),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withAlpha(25),
-                borderRadius: BorderRadius.circular(12),
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isSelected ? AppColors.primary.withAlpha(51) : themeProvider.isDarkMode ? AppColors.primaryDark : Colors.grey[50],
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isSelected
+                    ? AppColors.primary
+                    : Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.borderDark
+                    : Colors.grey[300]!,
+                width: isSelected ? 2 : 1,
               ),
-              child: Center(
-                child: Text(
-                  _getLanguageFlag(languageCode),
-                  style: const TextStyle(fontSize: 20),
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    nativeName,
-                    style: GoogleFonts.cairo(
-                      fontSize: 16,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                      color: isSelected ? AppColors.primary : Colors.grey[800],
-                    ),
-                  ),
-                  if (displayName != nativeName)
-                    Text(
-                      displayName,
-                      style: GoogleFonts.cairo(
-                        fontSize: 12,
-                        color: Colors.grey[600],
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: AppColors.primary.withAlpha(25),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
-                    ),
-                ],
-              ),
+                    ]
+                  : null,
             ),
-            if (isSelected)
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withAlpha(25),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(
+                    child: Text(
+                      _getLanguageFlag(languageCode),
+                      style: const TextStyle(fontSize: 20),
+                    ),
+                  ),
                 ),
-                child: Icon(Iconsax.tick_circle, color: Colors.white, size: 16),
-              ),
-          ],
-        ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        nativeName,
+                        style: GoogleFonts.cairo(
+                          fontSize: 16,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.w600,
+                          color: isSelected
+                              ? AppColors.primary
+                              : Theme.of(context).brightness == Brightness.dark
+                              ? AppColors.textPrimaryDark
+                              : Colors.grey[800],
+                        ),
+                      ),
+                      if (displayName != nativeName)
+                        Text(
+                          displayName,
+                          style: GoogleFonts.cairo(
+                            fontSize: 12,
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? AppColors.textSecondaryDark
+                                : Colors.grey[600],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                if (isSelected)
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Iconsax.tick_circle,
+                      color: Theme.of(context).cardColor,
+                      size: 16,
+                    ),
+                  ),
+              ],
+            ),
+          );
+        }
       ),
     );
   }
-  
+
   String _getLanguageFlag(String languageCode) {
     switch (languageCode) {
       case 'ar':
@@ -2586,7 +2970,7 @@ class _MainScreenState extends State<MainScreen> {
             icon: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(8),
                 boxShadow: [
                   BoxShadow(
@@ -2607,7 +2991,7 @@ class _MainScreenState extends State<MainScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
@@ -2634,7 +3018,9 @@ class _MainScreenState extends State<MainScreen> {
                     style: GoogleFonts.cairo(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.grey[800],
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppColors.textPrimaryDark
+                          : Colors.grey[800],
                     ),
                   ),
                 ],
@@ -2659,7 +3045,11 @@ class _MainScreenState extends State<MainScreen> {
             icon: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: _isBeforeToday() ? Colors.white : Colors.grey[300],
+                color: _isBeforeToday()
+                    ? Colors.white
+                    : Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.borderDark
+                    : Colors.grey[300],
                 borderRadius: BorderRadius.circular(8),
                 boxShadow: _isBeforeToday()
                     ? [
@@ -2673,7 +3063,11 @@ class _MainScreenState extends State<MainScreen> {
               ),
               child: Icon(
                 Iconsax.arrow_left_2,
-                color: _isBeforeToday() ? AppColors.primary : Colors.grey[500],
+                color: _isBeforeToday()
+                    ? AppColors.primary
+                    : Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.textSecondaryDark
+                    : Colors.grey[500],
                 size: 16,
               ),
             ),
@@ -2726,11 +3120,22 @@ class _MainScreenState extends State<MainScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Iconsax.folder_minus, size: 48, color: Colors.grey[400]),
+            Icon(
+              Iconsax.folder_minus,
+              size: 48,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.textHintDark
+                  : Colors.grey[400],
+            ),
             const SizedBox(height: 16),
             Text(
               'لا توجد مشاريع',
-              style: GoogleFonts.cairo(fontSize: 16, color: Colors.grey[600]),
+              style: GoogleFonts.cairo(
+                fontSize: 16,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.textSecondaryDark
+                    : Colors.grey[600],
+              ),
             ),
           ],
         ),
@@ -2786,14 +3191,21 @@ class _MainScreenState extends State<MainScreen> {
                   ? Iconsax.folder_minus
                   : Iconsax.search_normal,
               size: 48,
-              color: Colors.grey[400],
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.textHintDark
+                  : Colors.grey[400],
             ),
             const SizedBox(height: 16),
             Text(
               _searchQuery.isEmpty
                   ? 'لا توجد مشاريع في هذا التاريخ'
                   : 'لا توجد نتائج للبحث عن "$_searchQuery"',
-              style: GoogleFonts.cairo(fontSize: 16, color: Colors.grey[600]),
+              style: GoogleFonts.cairo(
+                fontSize: 16,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.textSecondaryDark
+                    : Colors.grey[600],
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -2836,326 +3248,388 @@ class _MainScreenState extends State<MainScreen> {
 
         // No need to scroll here, will auto-scroll when loading
       },
-      child: Container(
-        key: projectKey,
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: isActive
-              ? Border.all(color: AppColors.primary, width: 3)
-              : Border.all(color: Colors.grey[200]!, width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: isActive
-                  ? AppColors.primary.withAlpha(76)
-                  : Colors.black.withAlpha(25),
-              blurRadius: isActive ? 15 : 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header with serial number and expand button
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(12),
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return Container(
+            key: projectKey,
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: themeProvider.isDarkMode ? AppColors.secondaryDark : AppColors.pureWhite,
+              borderRadius: BorderRadius.circular(16),
+              border: isActive
+                  ? Border.all(color: AppColors.primary, width: 3)
+                  : Border.all(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppColors.surfaceDark.withOpacity(0.8)
+                          : Colors.grey[200]!,
+                      width: 1,
                     ),
-                    child: Center(
-                      child: Text(
-                        '$serialNumber',
-                        style: GoogleFonts.cairo(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: isActive
+                      ? AppColors.primary.withAlpha(76)
+                      : Colors.black.withAlpha(25),
+                  blurRadius: isActive ? 15 : 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header with serial number and expand button
+                  Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Center(
+                          child: Text(
+                            '$serialNumber',
+                            style: GoogleFonts.cairo(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).cardColor,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // 1. اسم العميل
-                        Row(
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(
-                              Iconsax.user,
-                              size: 16,
-                              color: Colors.grey[600],
-                            ),
-                            const SizedBox(width: 8),
-                            SizedBox(
-                              width: 170,
-                              child: Text(
-                                project['cname'] ?? 'عميل غير محدد',
-                                style: GoogleFonts.cairo(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey[800],
+                            // 1. اسم العميل
+                            Row(
+                              children: [
+                                Icon(
+                                  Iconsax.user,
+                                  size: 16,
+                                  color:
+                                      Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? AppColors.textSecondaryDark
+                                      : Colors.grey[600],
                                 ),
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                              ),
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  width: 170,
+                                  child: Text(
+                                    project['cname'] ?? 'عميل غير محدد',
+                                    style: GoogleFonts.cairo(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color:
+                                          Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? AppColors.textPrimaryDark
+                                          : Colors.grey[800],
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
-                  // Expand/Collapse button
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        if (isExpanded) {
-                          _expandedProjects.remove(projectId);
-                        } else {
-                          _expandedProjects.add(projectId);
-                        }
-                      });
-                      // Save expanded projects state
-                      _saveExpandedProjects();
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: isExpanded
-                            ? AppColors.primary.withAlpha(51)
-                            : Colors.grey[100],
-                        borderRadius: BorderRadius.circular(8),
                       ),
-                      child: AnimatedRotation(
-                        turns: isExpanded ? 0.5 : 0,
-                        duration: const Duration(milliseconds: 300),
-                        child: Icon(
-                          Iconsax.arrow_down_1,
-                          color: isExpanded
-                              ? AppColors.primary
-                              : Colors.grey[600],
-                          size: 18,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // 2 & 3. رقم العميل ورقم البطاقة
-              Row(
-                children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Icon(Iconsax.call, size: 16, color: Colors.grey[600]),
-                        const SizedBox(width: 8),
-                        Text(
-                          project['cphone'] ?? 'غير محدد',
-                          style: GoogleFonts.cairo(
-                            fontSize: 14,
-                            color: Colors.grey[700],
+                      // Expand/Collapse button
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            if (isExpanded) {
+                              _expandedProjects.remove(projectId);
+                            } else {
+                              _expandedProjects.add(projectId);
+                            }
+                          });
+                          // Save expanded projects state
+                          _saveExpandedProjects();
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: isExpanded
+                                ? AppColors.primary.withAlpha(51)
+                                : Theme.of(context).brightness == Brightness.dark
+                                ? AppColors.surfaceDark
+                                : Colors.grey[100],
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Icon(Iconsax.card, size: 16, color: Colors.grey[600]),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            project['cqid'] ?? 'غير محدد',
-                            style: GoogleFonts.cairo(
-                              fontSize: 12,
-                              color: Colors.grey[700],
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-
-              // 4. المقاول
-              if (project['cnname'] != null) ...[
-                Row(
-                  children: [
-                    Icon(Iconsax.building_4, size: 16, color: Colors.grey[600]),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'المقاول: ${project['cnname']}',
-                        style: GoogleFonts.cairo(
-                          fontSize: 14,
-                          color: Colors.grey[700],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-
-                // 5. رقم المقاول
-                Row(
-                  children: [
-                    Icon(Iconsax.call, size: 16, color: Colors.grey[600]),
-                    const SizedBox(width: 8),
-                    Text(
-                      'رقم المقاول: ${project['cnphone'] ?? 'غير محدد'}',
-                      style: GoogleFonts.cairo(
-                        fontSize: 14,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-              ],
-
-              // 6. الاستشاري/المهندس
-              if (project['ename'] != null) ...[
-                Row(
-                  children: [
-                    Icon(
-                      Iconsax.user_octagon,
-                      size: 16,
-                      color: Colors.blue[600],
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'الاستشاري: م/ ${project['ename']}',
-                      style: GoogleFonts.cairo(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.blue[700],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-
-              // Expanded details (7-10)
-              if (isExpanded) ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[50],
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[200]!),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // 7. اسم المشروع
-                      _buildInfoRowWithIcon(
-                        Iconsax.briefcase,
-                        'المشروع:',
-                        project['projx'] ?? 'غير محدد',
-                      ),
-                      const SizedBox(height: 8),
-
-                      // 8. الموقع/المنطقة
-                      _buildInfoRowWithIcon(
-                        Iconsax.location,
-                        'الموقع:',
-                        project['place'] ?? 'غير محدد',
-                      ),
-                      const SizedBox(height: 8),
-
-                      // 9. الرقم المساحي
-                      _buildInfoRowWithIcon(
-                        Iconsax.document_text,
-                        'الرقم المساحي:',
-                        project['pin'] ?? 'غير محدد',
-                      ),
-                      const SizedBox(height: 8),
-
-                      // 10. تاريخ البدء
-                      _buildInfoRowWithIcon(
-                        Iconsax.calendar_1,
-                        'تاريخ البدء:',
-                        project['sdate'] ?? 'غير محدد',
-                      ),
-                      const SizedBox(height: 16),
-
-                      // زر افتح الزيارات
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () => _showComingSoon('افتح الزيارات'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: Text(
-                            'افتح الزيارات',
-                            style: GoogleFonts.cairo(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                          child: AnimatedRotation(
+                            turns: isExpanded ? 0.5 : 0,
+                            duration: const Duration(milliseconds: 300),
+                            child: Icon(
+                              Iconsax.arrow_down_1,
+                              color: isExpanded
+                                  ? AppColors.primary
+                                  : Theme.of(context).brightness == Brightness.dark
+                                  ? AppColors.textSecondaryDark
+                                  : Colors.grey[600],
+                              size: 18,
                             ),
                           ),
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
-
-              // Visit info (always visible) - 11 & 12
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'آخر زيارة: ${project['ldate'] ?? 'غير محدد'}',
-                    style: GoogleFonts.cairo(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
+                  const SizedBox(height: 12),
+          
+                  // 2 & 3. رقم العميل ورقم البطاقة
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Icon(
+                              Iconsax.call,
+                              size: 16,
+                              color: Theme.of(context).brightness == Brightness.dark
+                                  ? AppColors.textSecondaryDark
+                                  : Colors.grey[600],
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              project['cphone'] ?? 'غير محدد',
+                              style: GoogleFonts.cairo(
+                                fontSize: 14,
+                                color:
+                                    Theme.of(context).brightness == Brightness.dark
+                                    ? AppColors.textPrimaryDark
+                                    : Colors.grey[700],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Icon(
+                              Iconsax.card,
+                              size: 16,
+                              color: Theme.of(context).brightness == Brightness.dark
+                                  ? AppColors.textSecondaryDark
+                                  : Colors.grey[600],
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                project['cqid'] ?? 'غير محدد',
+                                style: GoogleFonts.cairo(
+                                  fontSize: 12,
+                                  color:
+                                      Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? AppColors.textPrimaryDark
+                                      : Colors.grey[700],
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
+                  const SizedBox(height: 8),
+          
+                  // 4. المقاول
+                  if (project['cnname'] != null) ...[
+                    Row(
+                      children: [
+                        Icon(
+                          Iconsax.building_4,
+                          size: 16,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? AppColors.textSecondaryDark
+                              : Colors.grey[600],
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${AppLocalizations.of(context)!.contractorName}: ${project['cnname']}',
+                            style: GoogleFonts.cairo(
+                              fontSize: 14,
+                              color: Theme.of(context).brightness == Brightness.dark
+                                  ? AppColors.textPrimaryDark
+                                  : Colors.grey[700],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withAlpha(51),
-                      borderRadius: BorderRadius.circular(12),
+                    const SizedBox(height: 8),
+          
+                    // 5. رقم المقاول
+                    Row(
+                      children: [
+                        Icon(
+                          Iconsax.call,
+                          size: 16,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? AppColors.textSecondaryDark
+                              : Colors.grey[600],
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${AppLocalizations.of(context)!.contractorPhone}: ${project['cnphone'] ?? 'غير محدد'}',
+                          style: GoogleFonts.cairo(
+                            fontSize: 14,
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? AppColors.textPrimaryDark
+                                : Colors.grey[700],
+                          ),
+                        ),
+                      ],
                     ),
-                    child: Text(
-                      'عدد الزيارات: ${project['cntx'] ?? 0}',
-                      style: GoogleFonts.cairo(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                    const SizedBox(height: 8),
+                  ],
+          
+                  // 6. الاستشاري/المهندس
+                  if (project['ename'] != null) ...[
+                    Row(
+                      children: [
+                        Icon(
+                          Iconsax.user_octagon,
+                          size: 16,
+                          color: Colors.blue[600],
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${AppLocalizations.of(context)!.engineerName}: م/ ${project['ename']}',
+                          style: GoogleFonts.cairo(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blue[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+          
+                  // Expanded details (7-10)
+                  if (isExpanded) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: themeProvider.isDarkMode ? AppColors.primaryDark : Colors.grey[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? AppColors.surfaceDark.withOpacity(0.8)
+                              : Colors.grey[200]!,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 7. اسم المشروع
+                          _buildInfoRowWithIcon(
+                            Iconsax.briefcase,
+                            '${AppLocalizations.of(context)!.projectType}:',
+                            project['projx'] ?? 'غير محدد',
+                          ),
+                          const SizedBox(height: 8),
+          
+                          // 8. الموقع/المنطقة
+                          _buildInfoRowWithIcon(
+                            Iconsax.location,
+                            '${AppLocalizations.of(context)!.location}:',
+                            project['place'] ?? 'غير محدد',
+                          ),
+                          const SizedBox(height: 8),
+          
+                          // 9. الرقم المساحي
+                          _buildInfoRowWithIcon(
+                            Iconsax.document_text,
+                            '${AppLocalizations.of(context)!.surveyNumber}:',
+                            project['pin'] ?? 'غير محدد',
+                          ),
+                          const SizedBox(height: 8),
+          
+                          // 10. تاريخ البدء
+                          _buildInfoRowWithIcon(
+                            Iconsax.calendar_1,
+                            '${AppLocalizations.of(context)!.startDate}:',
+                            project['sdate'] ?? 'غير محدد',
+                          ),
+                          const SizedBox(height: 16),
+          
+                          // زر افتح الزيارات
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: () => _showComingSoon('افتح الزيارات'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: Text(
+                                AppLocalizations.of(context)!.openVisits,
+                                style: GoogleFonts.cairo(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).cardColor,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                  ],
+          
+                  // Visit info (always visible) - 11 & 12
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${AppLocalizations.of(context)!.lastVisit}: ${project['ldate'] ?? 'غير محدد'}',
+                        style: GoogleFonts.cairo(
+                          fontSize: 12,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? AppColors.textSecondaryDark
+                              : Colors.grey[600],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withAlpha(51),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${AppLocalizations.of(context)!.visitCount}: ${project['cntx'] ?? 0}',
+                          style: GoogleFonts.cairo(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        }
       ),
     );
   }
@@ -3164,21 +3638,34 @@ class _MainScreenState extends State<MainScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: Colors.grey[600]),
+        Icon(
+          icon,
+          size: 16,
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppColors.textSecondaryDark
+              : Colors.grey[600],
+        ),
         const SizedBox(width: 8),
         Text(
           label,
           style: GoogleFonts.cairo(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.grey[600],
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppColors.textSecondaryDark
+                : Colors.grey[600],
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             value,
-            style: GoogleFonts.cairo(fontSize: 14, color: Colors.grey[800]),
+            style: GoogleFonts.cairo(
+              fontSize: 14,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.textPrimaryDark
+                  : Colors.grey[800],
+            ),
           ),
         ),
       ],
@@ -3194,14 +3681,21 @@ class _MainScreenState extends State<MainScreen> {
           style: GoogleFonts.cairo(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.grey[600],
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppColors.textSecondaryDark
+                : Colors.grey[600],
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             value,
-            style: GoogleFonts.cairo(fontSize: 14, color: Colors.grey[800]),
+            style: GoogleFonts.cairo(
+              fontSize: 14,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.textPrimaryDark
+                  : Colors.grey[800],
+            ),
           ),
         ),
       ],
@@ -3242,13 +3736,21 @@ class _MainScreenState extends State<MainScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Iconsax.warning_2, size: 48, color: Colors.grey[400]),
+                Icon(
+                  Iconsax.warning_2,
+                  size: 48,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.textHintDark
+                      : Colors.grey[400],
+                ),
                 const SizedBox(height: 16),
                 Text(
                   'حدث خطأ في جلب الزيارات',
                   style: GoogleFonts.cairo(
                     fontSize: 16,
-                    color: Colors.grey[600],
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.textSecondaryDark
+                        : Colors.grey[600],
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -3270,14 +3772,18 @@ class _MainScreenState extends State<MainScreen> {
                 Icon(
                   Iconsax.calendar_remove,
                   size: 48,
-                  color: Colors.grey[400],
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.textHintDark
+                      : Colors.grey[400],
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'لا توجد زيارات في هذا التاريخ',
                   style: GoogleFonts.cairo(
                     fontSize: 16,
-                    color: Colors.grey[600],
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.textSecondaryDark
+                        : Colors.grey[600],
                   ),
                 ),
               ],
@@ -3295,14 +3801,18 @@ class _MainScreenState extends State<MainScreen> {
                 Icon(
                   Iconsax.calendar_remove,
                   size: 48,
-                  color: Colors.grey[400],
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.textHintDark
+                      : Colors.grey[400],
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'لا توجد زيارات في هذا التاريخ',
                   style: GoogleFonts.cairo(
                     fontSize: 16,
-                    color: Colors.grey[600],
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.textSecondaryDark
+                        : Colors.grey[600],
                   ),
                 ),
               ],
@@ -3327,328 +3837,344 @@ class _MainScreenState extends State<MainScreen> {
     int serialNumber,
     AuthProvider? authProvider,
   ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(25),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: themeProvider.isDarkMode ? AppColors.secondaryDark : AppColors.pureWhite,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(25),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with serial number and engineer info
-            Row(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Engineer image or logo
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: AppColors.primary.withAlpha(51),
-                  backgroundImage: NetworkImage(
-                    'https://qcec.online/erp2025/assets/users/${visit['eid']}/images/1.jpg',
-                  ),
-                  child: (authProvider?.isAdmin() ?? false)
-                      ? null
-                      : Icon(
-                          Iconsax.user_octagon,
-                          color: AppColors.primary,
-                          size: 16,
+                // Header with serial number and engineer info
+                Row(
+                  children: [
+                    // Engineer image or logo
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundColor: AppColors.primary.withAlpha(51),
+                      backgroundImage: (authProvider?.isAdmin() ?? false) ? NetworkImage(
+                        'https://qcec.online/erp2025/assets/users/${visit['eid']}/images/1.jpg',
+                      ) : null,
+                      child: (authProvider?.isAdmin() ?? false)
+                          ? null
+                          : Icon(
+                              Iconsax.user_octagon,
+                              color: AppColors.primary,
+                              size: 16,
+                            ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "م/ ${visit['ename']}",
+                            style: GoogleFonts.cairo(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).brightness == Brightness.dark
+                                  ? AppColors.textPrimaryDark
+                                  : Colors.grey[800],
+                            ),
+                          ),
+                          Directionality(
+                            textDirection: TextDirection.ltr,
+                            child: Text(
+                              _formatDateAndTime(visit['a10'] ?? ""),
+                              style: GoogleFonts.cairo(
+                                fontSize: 12,
+                                color:
+                                    Theme.of(context).brightness == Brightness.dark
+                                    ? AppColors.textSecondaryDark
+                                    : Colors.grey[600],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Photos count - also clickable
+                    Tooltip(
+                      message: 'اضغط لعرض الصور',
+                      child: GestureDetector(
+                        onTap: () => _togglePhotosExpansion(
+                          int.tryParse(visit['vdid']?.toString() ?? '0') ?? 0,
                         ),
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color:
+                                _expandedPhotos.contains(
+                                  int.tryParse(visit['vdid']?.toString() ?? '0') ??
+                                      0,
+                                )
+                                ? AppColors.primary
+                                : AppColors.primary.withAlpha(51),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: AppColors.primary, width: 2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withAlpha(102),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${_getPhotosCount(visit)}',
+                              style: GoogleFonts.cairo(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color:
+                                    _expandedPhotos.contains(
+                                      int.tryParse(
+                                            visit['vdid']?.toString() ?? '0',
+                                          ) ??
+                                          0,
+                                    )
+                                    ? Colors.white
+                                    : AppColors.primary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Expanded(
+                const SizedBox(height: 16),
+        
+                // Visit info in organized sections
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withAlpha(25),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        "م/ ${visit['ename']}",
-                        style: GoogleFonts.cairo(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey[800],
+                      // Customer section
+                      GestureDetector(
+                        onTap: () {
+                          launchUrl(Uri.parse('tel:${visit['cmob'] ?? ''}'));
+                        },
+                        child: Row(
+                          children: [
+                            Icon(Iconsax.user, size: 16, color: Colors.blue),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                visit['cname'] ?? 'عميل غير محدد',
+                                style: GoogleFonts.cairo(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.blue,
+                                  textStyle: TextStyle(
+                                    decoration: TextDecoration.underline,
+                                    decorationColor: Colors.blue.withAlpha(102),
+                                    decorationThickness: 1.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      Directionality(
-                        textDirection: TextDirection.ltr,
-                        child: Text(
-                          _formatDateAndTime(visit['a10'] ?? ""),
-                          style: GoogleFonts.cairo(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
+                      const SizedBox(height: 8),
+        
+                      // Contractor section
+                      GestureDetector(
+                        onTap: () {
+                          launchUrl(Uri.parse('tel:${visit['cnmob'] ?? ''}'));
+                        },
+                        child: Row(
+                          children: [
+                            Icon(Iconsax.building_4, size: 16, color: Colors.green),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                visit['cn_name'] ?? 'عميل غير محدد',
+                                style: GoogleFonts.cairo(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.blue,
+                                  textStyle: TextStyle(
+                                    decoration: TextDecoration.underline,
+                                    decorationColor: Colors.blue.withAlpha(102),
+                                    decorationThickness: 1.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                  ),
+                ),
+                // Photos section (expandable)
+                if (_expandedPhotos.contains(
+                  int.tryParse(visit['vdid']?.toString() ?? '0') ?? 0,
+                )) ...[
+                  const SizedBox(height: 12),
+                  _buildMediaSection(visit),
+                ],
+                const SizedBox(height: 12),
+        
+                // Project info
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withAlpha(25),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Iconsax.building,
+                            size: 16,
+                            color: AppColors.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              visit['proj'] ?? 'مشروع غير محدد',
+                              style: GoogleFonts.cairo(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color:
+                                    Theme.of(context).brightness == Brightness.dark
+                                    ? AppColors.textPrimaryDark
+                                    : Colors.grey[800],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            Iconsax.location,
+                            size: 16,
+                            color: AppColors.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            visit['place'] ?? 'موقع غير محدد',
+                            style: GoogleFonts.cairo(
+                              fontSize: 14,
+                              color: Theme.of(context).brightness == Brightness.dark
+                                  ? AppColors.textPrimaryDark
+                                  : Colors.grey[700],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                // Photos count - also clickable
-                Tooltip(
-                  message: 'اضغط لعرض الصور',
-                  child: GestureDetector(
-                    onTap: () => _togglePhotosExpansion(
-                      int.tryParse(visit['vdid']?.toString() ?? '0') ?? 0,
-                    ),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color:
-                            _expandedPhotos.contains(
-                              int.tryParse(visit['vdid']?.toString() ?? '0') ??
-                                  0,
-                            )
-                            ? AppColors.primary
-                            : AppColors.primary.withAlpha(51),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.primary, width: 2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withAlpha(102),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+                const SizedBox(height: 12),
+        
+                // Notes section
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withAlpha(25),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.amber.withAlpha(102)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Iconsax.note_text,
+                            size: 16,
+                            color: Colors.amber[700],
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${AppLocalizations.of(context)!.description}:',
+                            style: GoogleFonts.cairo(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.amber[700],
+                            ),
                           ),
                         ],
                       ),
-                      child: Center(
-                        child: Text(
-                          '${_getPhotosCount(visit)}',
-                          style: GoogleFonts.cairo(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color:
-                                _expandedPhotos.contains(
-                                  int.tryParse(
-                                        visit['vdid']?.toString() ?? '0',
-                                      ) ??
-                                      0,
-                                )
-                                ? Colors.white
-                                : AppColors.primary,
-                          ),
+                      const SizedBox(height: 8),
+                      Text(
+                        visit['a2'] ?? "",
+                        style: GoogleFonts.cairo(
+                          fontSize: 14,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? AppColors.textPrimaryDark
+                              : Colors.grey[800],
+                          height: 1.4,
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            Iconsax.note_text,
+                            size: 16,
+                            color: Colors.amber[700],
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${AppLocalizations.of(context)!.notes}:',
+                            style: GoogleFonts.cairo(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.amber[700],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      StatefulBuilder(
+                        builder: (context, setLocalState) {
+                          return _buildExpandableText(
+                            visit['a4'] ?? "لا توجد ملاحظات",
+                            int.tryParse(visit['vdid']?.toString() ?? '0') ?? 0,
+                            setLocalState,
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-
-            // Visit info in organized sections
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Customer section
-                  GestureDetector(
-                    onTap: () {
-                      launchUrl(Uri.parse('tel:${visit['cmob'] ?? ''}'));
-                    },
-                    child: Row(
-                      children: [
-                        Icon(Iconsax.user, size: 16, color: Colors.blue),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            visit['cname'] ?? 'عميل غير محدد',
-                            style: GoogleFonts.cairo(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.blue,
-                              textStyle: TextStyle(
-                                decoration: TextDecoration.underline,
-                                decorationColor: Colors.blue.withAlpha(102),
-                                decorationThickness: 1.5,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Contractor section
-                  GestureDetector(
-                    onTap: () {
-                      launchUrl(Uri.parse('tel:${visit['cnmob'] ?? ''}'));
-                    },
-                    child: Row(
-                      children: [
-                        Icon(Iconsax.building_4, size: 16, color: Colors.green),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            visit['cn_name'] ?? 'عميل غير محدد',
-                            style: GoogleFonts.cairo(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.blue,
-                              textStyle: TextStyle(
-                                decoration: TextDecoration.underline,
-                                decorationColor: Colors.blue.withAlpha(102),
-                                decorationThickness: 1.5,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                ],
-              ),
-            ),
-            // Photos section (expandable)
-            if (_expandedPhotos.contains(
-              int.tryParse(visit['vdid']?.toString() ?? '0') ?? 0,
-            )) ...[
-              const SizedBox(height: 12),
-              _buildMediaSection(visit),
-            ],
-            const SizedBox(height: 12),
-
-            // Project info
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withAlpha(25),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Iconsax.building,
-                        size: 16,
-                        color: AppColors.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          visit['proj'] ?? 'مشروع غير محدد',
-                          style: GoogleFonts.cairo(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey[800],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(
-                        Iconsax.location,
-                        size: 16,
-                        color: AppColors.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        visit['place'] ?? 'موقع غير محدد',
-                        style: GoogleFonts.cairo(
-                          fontSize: 14,
-                          color: Colors.grey[700],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Notes section
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.amber.withAlpha(25),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.amber.withAlpha(102)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Iconsax.note_text,
-                        size: 16,
-                        color: Colors.amber[700],
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'الوصف:',
-                        style: GoogleFonts.cairo(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.amber[700],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    visit['a2'] ?? "",
-                    style: GoogleFonts.cairo(
-                      fontSize: 14,
-                      color: Colors.grey[800],
-                      height: 1.4,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(
-                        Iconsax.note_text,
-                        size: 16,
-                        color: Colors.amber[700],
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'الملاحظات:',
-                        style: GoogleFonts.cairo(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.amber[700],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  StatefulBuilder(
-                    builder: (context, setLocalState) {
-                      return _buildExpandableText(
-                        visit['a4'] ?? "لا توجد ملاحظات",
-                        int.tryParse(visit['vdid']?.toString() ?? '0') ?? 0,
-                        setLocalState,
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      }
     );
   }
 
@@ -3685,11 +4211,22 @@ class _MainScreenState extends State<MainScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Iconsax.calendar_remove, size: 48, color: Colors.grey[400]),
+            Icon(
+              Iconsax.calendar_remove,
+              size: 48,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.textHintDark
+                  : Colors.grey[400],
+            ),
             const SizedBox(height: 16),
             Text(
               'لا توجد زيارات في هذا التاريخ',
-              style: GoogleFonts.cairo(fontSize: 16, color: Colors.grey[600]),
+              style: GoogleFonts.cairo(
+                fontSize: 16,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.textSecondaryDark
+                    : Colors.grey[600],
+              ),
             ),
           ],
         ),
@@ -3745,14 +4282,21 @@ class _MainScreenState extends State<MainScreen> {
                   ? Iconsax.calendar_remove
                   : Iconsax.search_normal,
               size: 48,
-              color: Colors.grey[400],
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.textHintDark
+                  : Colors.grey[400],
             ),
             const SizedBox(height: 16),
             Text(
               _searchQueryVisits.isEmpty
                   ? 'لا توجد زيارات في هذا التاريخ'
                   : 'لا توجد نتائج للبحث عن "$_searchQueryVisits"',
-              style: GoogleFonts.cairo(fontSize: 16, color: Colors.grey[600]),
+              style: GoogleFonts.cairo(
+                fontSize: 16,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.textSecondaryDark
+                    : Colors.grey[600],
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -3777,9 +4321,13 @@ class _MainScreenState extends State<MainScreen> {
     print(mediaCount);
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: AppColors.primary.withAlpha(51),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppColors.surfaceDark.withOpacity(0.8)
+              : Colors.grey[200]!,
+        ),
       ),
       child: Column(
         children: [
@@ -3795,7 +4343,9 @@ class _MainScreenState extends State<MainScreen> {
                   style: GoogleFonts.cairo(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Colors.grey[800],
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.textPrimaryDark
+                        : Colors.grey[800],
                   ),
                 ),
                 const Spacer(),
@@ -3863,9 +4413,17 @@ class _MainScreenState extends State<MainScreen> {
           );
         }
         return Container(
-          color: Colors.grey[300],
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppColors.borderDark
+              : Colors.grey[300],
           child: Center(
-            child: Icon(Iconsax.video, size: 40, color: Colors.grey[600]),
+            child: Icon(
+              Iconsax.video,
+              size: 40,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.textSecondaryDark
+                  : Colors.grey[600],
+            ),
           ),
         );
       },
@@ -3908,9 +4466,9 @@ class _MainScreenState extends State<MainScreen> {
   //           backgroundColor: Colors.black,
   //           title: Text(
   //             'صورة $index',
-  //             style: GoogleFonts.cairo(color: Colors.white),
+  //             style: GoogleFonts.cairo(color: Theme.of(context).cardColor),
   //           ),
-  //           iconTheme: const IconThemeData(color: Colors.white),
+  //           iconTheme: const IconThemeData(color: Theme.of(context).cardColor),
   //         ),
   //         body: Center(
   //           child: InteractiveViewer(
@@ -3920,12 +4478,12 @@ class _MainScreenState extends State<MainScreen> {
   //               loadingBuilder: (context, child, loadingProgress) {
   //                 if (loadingProgress == null) return child;
   //                 return const Center(
-  //                   child: CircularProgressIndicator(color: Colors.white),
+  //                   child: CircularProgressIndicator(color: Theme.of(context).cardColor),
   //                 );
   //               },
   //               errorBuilder: (context, error, stackTrace) {
   //                 return const Center(
-  //                   child: Icon(Iconsax.image, color: Colors.white, size: 64),
+  //                   child: Icon(Iconsax.image, color: Theme.of(context).cardColor, size: 64),
   //                 );
   //               },
   //             ),
@@ -3961,7 +4519,9 @@ class _MainScreenState extends State<MainScreen> {
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.surfaceDark
+                  : Colors.grey[100],
               borderRadius: BorderRadius.circular(8),
               boxShadow: [
                 BoxShadow(
@@ -4003,7 +4563,11 @@ class _MainScreenState extends State<MainScreen> {
                                 'جاري تحميل ${isVideo ? "الفيديو" : "الصورة"}...',
                                 style: GoogleFonts.cairo(
                                   fontSize: 12,
-                                  color: Colors.grey[600],
+                                  color:
+                                      Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? AppColors.textSecondaryDark
+                                      : Colors.grey[600],
                                 ),
                               ),
                             ],
@@ -4018,21 +4582,33 @@ class _MainScreenState extends State<MainScreen> {
                               Icon(
                                 isVideo ? Iconsax.video : Iconsax.image,
                                 size: 40,
-                                color: Colors.grey[400],
+                                color:
+                                    Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? AppColors.textHintDark
+                                    : Colors.grey[400],
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 'لا توجد ${isVideo ? "فيديو" : "صورة"}',
                                 style: GoogleFonts.cairo(
                                   fontSize: 14,
-                                  color: Colors.grey[600],
+                                  color:
+                                      Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? AppColors.textSecondaryDark
+                                      : Colors.grey[600],
                                 ),
                               ),
                               Text(
                                 '${isVideo ? "فيديو" : "صورة"} ${index + 1}',
                                 style: GoogleFonts.cairo(
                                   fontSize: 12,
-                                  color: Colors.grey[500],
+                                  color:
+                                      Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? AppColors.textSecondaryDark
+                                      : Colors.grey[500],
                                 ),
                               ),
                             ],
@@ -4053,7 +4629,9 @@ class _MainScreenState extends State<MainScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.9),
+                              color: Theme.of(
+                                context,
+                              ).cardColor.withOpacity(0.9),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(

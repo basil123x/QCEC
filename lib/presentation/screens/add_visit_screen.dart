@@ -1,3 +1,4 @@
+import 'package:QCEC/presentation/screens/main_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
@@ -152,10 +153,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
             'حذف الصورة',
             style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
           ),
-          content: Text(
-            'هل تريد حذف هذه الصورة؟',
-            style: GoogleFonts.cairo(),
-          ),
+          content: Text('هل تريد حذف هذه الصورة؟', style: GoogleFonts.cairo()),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -169,7 +167,8 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                 Navigator.of(context).pop();
                 setState(() {
                   _images.removeAt(index);
-                  if (_currentImageIndex >= _images.length && _images.isNotEmpty) {
+                  if (_currentImageIndex >= _images.length &&
+                      _images.isNotEmpty) {
                     _currentImageIndex = _images.length - 1;
                     _pageController.animateToPage(
                       _currentImageIndex,
@@ -180,21 +179,15 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                   _showEditIcons = false;
                   _isLongPressed = false;
                 });
-                
+
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(
-                      'تم حذف الصورة',
-                      style: GoogleFonts.cairo(),
-                    ),
+                    content: Text('تم حذف الصورة', style: GoogleFonts.cairo()),
                     backgroundColor: Colors.green,
                   ),
                 );
               },
-              child: Text(
-                'حذف',
-                style: GoogleFonts.cairo(color: Colors.red),
-              ),
+              child: Text('حذف', style: GoogleFonts.cairo(color: Colors.red)),
             ),
           ],
         );
@@ -206,20 +199,20 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
   Future<void> _editImage(int index) async {
     try {
       final result = await FlutterPhotoEditor().editImage(_images[index]);
-      
+
       if (result == true) {
         // The image was edited successfully, but the path remains the same
         // flutter_photo_editor modifies the original file
-        
+
         // Save updated images to SharedPreferences
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setStringList("imagesSaved_${widget.visitId}", _images);
-        
+
         // Force UI refresh to show the edited image
         setState(() {
           // Trigger rebuild to reload the image
         });
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -237,10 +230,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'تم إلغاء التعديل',
-              style: GoogleFonts.cairo(),
-            ),
+            content: Text('تم إلغاء التعديل', style: GoogleFonts.cairo()),
             backgroundColor: Colors.orange,
             duration: const Duration(seconds: 1),
             behavior: SnackBarBehavior.floating,
@@ -287,11 +277,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
             ),
           ],
         ),
-        child: const Icon(
-          Iconsax.edit,
-          color: Colors.white,
-          size: 20,
-        ),
+        child: Icon(Iconsax.edit, color: Theme.of(context).cardColor, size: 20),
       ),
     );
   }
@@ -307,11 +293,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
           color: Colors.grey.withOpacity(0.7),
           shape: BoxShape.circle,
         ),
-        child: const Icon(
-          Iconsax.lock,
-          color: Colors.white,
-          size: 20,
-        ),
+        child: Icon(Iconsax.lock, color: Theme.of(context).cardColor, size: 20),
       );
     }
 
@@ -331,9 +313,9 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
             ),
           ],
         ),
-        child: const Icon(
+        child: Icon(
           Iconsax.trash,
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           size: 20,
         ),
       ),
@@ -373,7 +355,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                   color: Colors.black,
                   child: Icon(
                     Iconsax.video_play,
-                    color: Colors.white,
+                    color: Theme.of(context).cardColor,
                     size: 64,
                   ),
                 );
@@ -390,7 +372,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
               onPressed: () => _playVideo(videoPath),
               icon: Icon(
                 Iconsax.play,
-                color: Colors.white,
+                color: Theme.of(context).cardColor,
                 size: 32,
               ),
             ),
@@ -404,17 +386,24 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
               decoration: BoxDecoration(
                 color: Colors.purple.withOpacity(0.9),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white, width: 1),
+                border: Border.all(
+                  color: Theme.of(context).cardColor,
+                  width: 1,
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Iconsax.video, color: Colors.white, size: 12),
+                  Icon(
+                    Iconsax.video,
+                    color: Theme.of(context).cardColor,
+                    size: 12,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     'فيديو 15 ث',
                     style: GoogleFonts.cairo(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
@@ -423,7 +412,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
               ),
             ),
           ),
-          
+
           // Duration indicator
           Positioned(
             bottom: 12,
@@ -437,7 +426,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
               child: Text(
                 '0:15',
                 style: GoogleFonts.cairo(
-                  color: Colors.white,
+                  color: Theme.of(context).cardColor,
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                 ),
@@ -475,7 +464,6 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
     );
   }
 
-
   /// Show camera options bottom sheet
   void _showCameraOptions() {
     showModalBottomSheet(
@@ -483,7 +471,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         padding: const EdgeInsets.all(24),
@@ -495,12 +483,14 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.borderDark
+                    : Colors.grey[300],
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // Title
             Text(
               'اختر نوع الوسائط',
@@ -511,7 +501,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            
+
             // Photo option
             _buildBottomSheetOption(
               icon: Iconsax.camera,
@@ -523,9 +513,9 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                 _captureImageFromCamera();
               },
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Video option
             _buildBottomSheetOption(
               icon: Iconsax.video,
@@ -537,7 +527,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                 _captureVideoFromCamera();
               },
             ),
-            
+
             const SizedBox(height: 24),
           ],
         ),
@@ -552,7 +542,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         padding: const EdgeInsets.all(24),
@@ -564,12 +554,14 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.borderDark
+                    : Colors.grey[300],
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // Title
             Text(
               'اختر من المعرض',
@@ -580,7 +572,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            
+
             // Photos option
             _buildBottomSheetOption(
               icon: Iconsax.gallery,
@@ -592,9 +584,9 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                 _pickImagesFromGallery();
               },
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Videos option
             _buildBottomSheetOption(
               icon: Iconsax.video_play,
@@ -606,7 +598,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                 _pickVideoFromGallery();
               },
             ),
-            
+
             const SizedBox(height: 24),
           ],
         ),
@@ -639,11 +631,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                 color: color,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                icon,
-                color: Colors.white,
-                size: 24,
-              ),
+              child: Icon(icon, color: Theme.of(context).cardColor, size: 24),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -663,17 +651,15 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                     subtitle,
                     style: GoogleFonts.cairo(
                       fontSize: 12,
-                      color: Colors.grey[600],
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppColors.textSecondaryDark
+                          : Colors.grey[600],
                     ),
                   ),
                 ],
               ),
             ),
-            Icon(
-              Iconsax.arrow_left_2,
-              color: color,
-              size: 20,
-            ),
+            Icon(Iconsax.arrow_left_2, color: color, size: 20),
           ],
         ),
       ),
@@ -699,12 +685,12 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
           ),
         ),
       );
-      
+
       if (result != null && result.isNotEmpty) {
         setState(() {
           _images.addAll(result);
         });
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -719,10 +705,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
       debugPrint('Error capturing image: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'فشل في التقاط الصورة',
-            style: GoogleFonts.cairo(),
-          ),
+          content: Text('فشل في التقاط الصورة', style: GoogleFonts.cairo()),
           backgroundColor: Colors.red,
         ),
       );
@@ -737,16 +720,16 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
         source: ImageSource.camera,
         maxDuration: const Duration(seconds: 15), // حد أقصى 15 ثانية
       );
-      
+
       if (video != null) {
         setState(() {
           _images.add(video.path); // Add video to images list for display
         });
-        
+
         // Save to SharedPreferences
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setStringList("imagesSaved_${widget.visitId}", _images);
-        
+
         // Move to the new video in the slider
         Future.delayed(const Duration(milliseconds: 100), () {
           _pageController.animateToPage(
@@ -755,7 +738,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
             curve: Curves.easeInOut,
           );
         });
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -790,16 +773,16 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
     try {
       final picker = ImagePicker();
       final XFile? video = await picker.pickVideo(source: ImageSource.gallery);
-      
+
       if (video != null) {
         setState(() {
           _images.add(video.path); // Add video to images list for display
         });
-        
+
         // Save to SharedPreferences
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setStringList("imagesSaved_${widget.visitId}", _images);
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -835,25 +818,27 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
       final List<XFile> pickedFiles = await _picker.pickMultiImage(
         imageQuality: 85,
       );
-      
+
       if (pickedFiles.isNotEmpty) {
-        final directory = Directory('/data/data/com.example.qcec/app_flutter/visits/${widget.visitId}');
+        final directory = Directory(
+          '/data/data/com.example.qcec/app_flutter/visits/${widget.visitId}',
+        );
         if (!await directory.exists()) {
           await directory.create(recursive: true);
         }
-        
+
         for (int i = 0; i < pickedFiles.length; i++) {
           final fileName = '${_images.length + i + 1}.jpg';
           final newPath = '${directory.path}/$fileName';
-          
+
           // نسخ الملف للمجلد المطلوب
           await File(pickedFiles[i].path).copy(newPath);
-          
+
           setState(() {
             _images.add(newPath);
           });
         }
-        
+
         // انتقال للصورة الأخيرة
         Future.delayed(const Duration(milliseconds: 100), () {
           _pageController.animateToPage(
@@ -862,7 +847,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
             curve: Curves.easeInOut,
           );
         });
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -877,10 +862,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
       debugPrint('Error picking images: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'فشل في اختيار الصور',
-            style: GoogleFonts.cairo(),
-          ),
+          content: Text('فشل في اختيار الصور', style: GoogleFonts.cairo()),
           backgroundColor: Colors.red,
         ),
       );
@@ -894,304 +876,339 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
         // Hide keyboard when tapping outside
         FocusScope.of(context).unfocus();
       },
-      child: Scaffold(
-        backgroundColor: Colors.grey[50],
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          leading: IconButton(
-            onPressed: _deleteVisitAndExit,
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.red.withAlpha(51),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(Iconsax.close_circle, color: Colors.red, size: 20),
-            ),
-            tooltip: 'حذف الزيارة والخروج',
-          ),
-          title: _isLoadingDetails
-              ? Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'جاري التحميل...',
-                      style: GoogleFonts.cairo(
-                        color: Colors.grey[600],
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                )
-              : GestureDetector(
-                  onTap: _showCustomersBottomSheet,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withAlpha(51),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: AppColors.primary.withAlpha(102),
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            _customerName.isNotEmpty
-                                ? _customerName
-                                : 'اختر العميل',
-                            style: GoogleFonts.cairo(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          Iconsax.arrow_down_1,
-                          color: AppColors.primary,
-                          size: 14,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-          centerTitle: true,
-          actions: [
-            IconButton(
-              onPressed: _saveVisit,
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Scaffold(
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppColors.surfaceDark.withOpacity(0.5)
+              : Colors.grey[50],
+          appBar: AppBar(
+            backgroundColor: Theme.of(context).cardColor,
+            elevation: 0,
+            leading: IconButton(
+              onPressed: _deleteVisitAndExit,
               icon: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.green.withAlpha(51),
+                  color: Colors.red.withAlpha(51),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(Iconsax.save_2, color: Colors.green, size: 20),
+                child: Icon(Iconsax.close_circle, color: Colors.red, size: 20),
               ),
-              tooltip: 'حفظ الزيارة',
+              tooltip: 'حذف الزيارة والخروج',
             ),
-          ],
-        ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Description Field with dropdown
-              _buildDescriptionField(),
-              const SizedBox(height: 16),
-              _buildInputField(
-                controller: _notesController,
-                icon: Iconsax.note,
-                maxLines: 3,
-              ),
-      
-              const SizedBox(height: 24),
-      
-              // Images Section
-              if (_images.isNotEmpty) ...[
-                Container(
-                  height: 200,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withAlpha(25),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+            title: _isLoadingDetails
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'جاري التحميل...',
+                        style: GoogleFonts.cairo(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? AppColors.textSecondaryDark
+                              : Colors.grey[600],
+                          fontSize: 16,
+                        ),
                       ),
                     ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Stack(
-                      children: [
-                        GestureDetector(
-                          onTap: _toggleEditIcons,
-                          onLongPress: _handleLongPress,
-                          child: PageView.builder(
-                            controller: _pageController,
-                            onPageChanged: (index) {
-                              setState(() {
-                                _currentImageIndex = index;
-                              });
-                            },
-                            itemCount: _images.length,
-                            itemBuilder: (context, index) {
-                              return Stack(
-                                children: [
-                                  _isVideoFile(_images[index])
-                                      ? _buildVideoPlayer(_images[index])
-                                      : Image.file(
-                                          File(_images[index]),
-                                          fit: BoxFit.cover,
-                                          width: double.infinity,
-                                          height: double.infinity,
-                                        ),
-                                  // Edit/Delete icons overlay for each image
-                                  if (_showEditIcons && index == _currentImageIndex)
-                                    Positioned(
-                                      top: 12,
-                                      right: 12,
-                                      child: AnimatedContainer(
-                                        duration: const Duration(milliseconds: 300),
-                                        child: _isLongPressed
-                                            ? _buildDeleteIcon(index)
-                                            : _buildEditIcon(index),
-                                      ),
-                                    ),
-                                ],
-                              );
-                            },
-                          ),
+                  )
+                : GestureDetector(
+                    onTap: _showCustomersBottomSheet,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withAlpha(51),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: AppColors.primary.withAlpha(102),
+                          width: 1,
                         ),
-                        // Image counter
-                        Positioned(
-                          bottom: 12,
-                          right: 12,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black54,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Expanded(
                             child: Text(
-                              '${_currentImageIndex + 1} / ${_images.length}',
+                              _customerName.isNotEmpty
+                                  ? _customerName
+                                  : 'اختر العميل',
                               style: GoogleFonts.cairo(
-                                color: Colors.white,
-                                fontSize: 12,
+                                color: AppColors.primary,
                                 fontWeight: FontWeight.bold,
+                                fontSize: 16,
                               ),
                             ),
                           ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            Iconsax.arrow_down_1,
+                            color: AppColors.primary,
+                            size: 14,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+            centerTitle: true,
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Description Field with dropdown
+                _buildDescriptionField(),
+                const SizedBox(height: 16),
+                _buildInputField(
+                  controller: _notesController,
+                  icon: Iconsax.note,
+                  maxLines: 3,
+                ),
+
+                const SizedBox(height: 24),
+
+                // Images Section
+                if (_images.isNotEmpty) ...[
+                  Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardColor,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(25),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
                         ),
-                        // Edit mode indicator
-                        if (_showEditIcons)
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Stack(
+                        children: [
+                          GestureDetector(
+                            onTap: _toggleEditIcons,
+                            onLongPress: _handleLongPress,
+                            child: PageView.builder(
+                              controller: _pageController,
+                              onPageChanged: (index) {
+                                setState(() {
+                                  _currentImageIndex = index;
+                                });
+                              },
+                              itemCount: _images.length,
+                              itemBuilder: (context, index) {
+                                return Stack(
+                                  children: [
+                                    _isVideoFile(_images[index])
+                                        ? _buildVideoPlayer(_images[index])
+                                        : Image.file(
+                                            File(_images[index]),
+                                            fit: BoxFit.cover,
+                                            width: double.infinity,
+                                            height: double.infinity,
+                                          ),
+                                    // Edit/Delete icons overlay for each image
+                                    if (_showEditIcons &&
+                                        index == _currentImageIndex)
+                                      Positioned(
+                                        top: 12,
+                                        right: 12,
+                                        child: AnimatedContainer(
+                                          duration: const Duration(
+                                            milliseconds: 300,
+                                          ),
+                                          child: _isLongPressed
+                                              ? _buildDeleteIcon(index)
+                                              : _buildEditIcon(index),
+                                        ),
+                                      ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
+                          // Image counter
                           Positioned(
-                            top: 12,
-                            left: 12,
+                            bottom: 12,
+                            right: 12,
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
+                                horizontal: 12,
+                                vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: _isLongPressed ? Colors.red.withOpacity(0.8) : Colors.blue.withOpacity(0.8),
-                                borderRadius: BorderRadius.circular(12),
+                                color: Colors.black54,
+                                borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
-                                _isLongPressed ? 'وضع الحذف' : 'وضع التعديل',
+                                '${_currentImageIndex + 1} / ${_images.length}',
                                 style: GoogleFonts.cairo(
-                                  color: Colors.white,
-                                  fontSize: 10,
+                                  color: Theme.of(context).cardColor,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
                           ),
-                      ],
+                          // Edit mode indicator
+                          if (_showEditIcons)
+                            Positioned(
+                              top: 12,
+                              left: 12,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _isLongPressed
+                                      ? Colors.red.withOpacity(0.8)
+                                      : Colors.blue.withOpacity(0.8),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  _isLongPressed ? 'وضع الحذف' : 'وضع التعديل',
+                                  style: GoogleFonts.cairo(
+                                    color: Theme.of(context).cardColor,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-      
-                const SizedBox(height: 8),
-      
-                // Dots Indicator and Counter
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    _images.length,
-                    (index) => GestureDetector(
-                      onTap: () {
-                        _pageController.animateToPage(
-                          index,
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                        );
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: _currentImageIndex == index ? 12 : 8,
-                        height: _currentImageIndex == index ? 12 : 8,
-                        decoration: BoxDecoration(
-                          color: _currentImageIndex == index
-                              ? AppColors.primary
-                              : Colors.grey[400],
-                          shape: BoxShape.circle,
+
+                  const SizedBox(height: 8),
+
+                  // Dots Indicator and Counter
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(
+                      _images.length,
+                      (index) => GestureDetector(
+                        onTap: () {
+                          _pageController.animateToPage(
+                            index,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          width: _currentImageIndex == index ? 12 : 8,
+                          height: _currentImageIndex == index ? 12 : 8,
+                          decoration: BoxDecoration(
+                            color: _currentImageIndex == index
+                                ? AppColors.primary
+                                : Theme.of(context).brightness ==
+                                      Brightness.dark
+                                ? AppColors.textHintDark
+                                : Colors.grey[400],
+                            shape: BoxShape.circle,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-      
-                const SizedBox(height: 16),
-      
-                // أزرار إضافة الصور
-                _buildAddImageButtons(),
-      
-                const SizedBox(height: 16),
-      
-                // Contact Checkboxes
-                _buildMessagingOptions(),
-              ] else ...[
-                // No images placeholder
-                Container(
-                  height: 200,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Colors.grey[300]!,
-                      style: BorderStyle.solid,
-                      width: 2,
+
+                  const SizedBox(height: 16),
+
+                  // أزرار إضافة الصور
+                  _buildAddImageButtons(),
+
+                  const SizedBox(height: 16),
+
+                  // Contact Checkboxes
+                  _buildMessagingOptions(),
+
+                  SizedBox(height: 10),
+
+                  Container(
+                    width: double.maxFinite,
+                    child: ElevatedButton(
+                      onPressed: _saveVisit,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 3,
+                      ),
+                      child: Text(
+                        'حفظ الزيارة',
+                        style: GoogleFonts.cairo(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Iconsax.gallery_slash,
-                          color: Colors.grey[400],
-                          size: 48,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'لا توجد صور',
-                          style: GoogleFonts.cairo(
-                            color: Colors.grey[500],
-                            fontSize: 16,
+                ] else ...[
+                  // No images placeholder
+                  Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardColor,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? AppColors.borderDark
+                            : Colors.grey[300]!,
+                        style: BorderStyle.solid,
+                        width: 2,
+                      ),
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Iconsax.gallery_slash,
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                ? AppColors.textHintDark
+                                : Colors.grey[400],
+                            size: 48,
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 12),
+                          Text(
+                            'لا توجد صور',
+                            style: GoogleFonts.cairo(
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? AppColors.textSecondaryDark
+                                  : Colors.grey[500],
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
+                ],
+
+                const SizedBox(height: 32),
               ],
-      
-              const SizedBox(height: 32),
-            ],
+            ),
           ),
         ),
       ),
@@ -1206,11 +1223,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
         Expanded(
           child: ElevatedButton.icon(
             onPressed: _showCameraOptions,
-            icon: const Icon(
-              Iconsax.camera,
-              color: Colors.white,
-              size: 24,
-            ),
+            icon: Icon(Iconsax.camera, color: Colors.white, size: 24),
             label: Text(
               'وسائط من الكاميرا',
               style: GoogleFonts.cairo(
@@ -1231,16 +1244,12 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
           ),
         ),
         const SizedBox(width: 16),
-        
+
         // زر وسائط من الجاليري
         Expanded(
           child: ElevatedButton.icon(
             onPressed: _showGalleryOptions,
-            icon: const Icon(
-              Iconsax.gallery,
-              color: Colors.white,
-              size: 24,
-            ),
+            icon: Icon(Iconsax.gallery, color: Colors.white, size: 24),
             label: Text(
               'وسائط من الجاليري',
               style: GoogleFonts.cairo(
@@ -1250,9 +1259,9 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
               ),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.secondary,
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -1267,7 +1276,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
   Widget _buildMessagingOptions() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -1295,6 +1304,8 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                         fontSize: 12,
                         color: _contactCustomer
                             ? Colors.green[600]
+                            : Theme.of(context).brightness == Brightness.dark
+                            ? AppColors.textSecondaryDark
                             : Colors.grey[600],
                       ),
                     )
@@ -1320,6 +1331,8 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                         fontSize: 12,
                         color: _contactContractor
                             ? Colors.green[600]
+                            : Theme.of(context).brightness == Brightness.dark
+                            ? AppColors.textSecondaryDark
                             : Colors.grey[600],
                       ),
                     )
@@ -1334,16 +1347,20 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
   }
 
   Widget _buildDescriptionField() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? AppColors.cardBackgroundDark : Colors.white,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withAlpha(25),
+                color: isDark
+                    ? Colors.black.withAlpha(50)
+                    : Colors.black.withAlpha(25),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -1352,12 +1369,15 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
           child: TextField(
             controller: _descriptionController,
             maxLines: 3,
-            style: GoogleFonts.cairo(fontSize: 14, color: Colors.grey[800]),
+            style: GoogleFonts.cairo(
+              fontSize: 14,
+              color: isDark ? AppColors.textPrimaryDark : Colors.grey[800],
+            ),
             onChanged: (value) => _updateDescription(value),
             decoration: InputDecoration(
               hintText: 'الوصف',
               hintStyle: GoogleFonts.cairo(
-                color: Colors.grey[500],
+                color: isDark ? AppColors.textHintDark : Colors.grey[500],
                 fontSize: 14,
               ),
               prefixIcon: Icon(
@@ -1378,7 +1398,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                 borderSide: BorderSide.none,
               ),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: isDark ? AppColors.cardBackgroundDark : Colors.white,
               contentPadding: const EdgeInsets.all(16),
             ),
           ),
@@ -1392,16 +1412,20 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
     required IconData icon,
     int maxLines = 1,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? AppColors.cardBackgroundDark : Colors.white,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withAlpha(25),
+                color: isDark
+                    ? Colors.black.withAlpha(50)
+                    : Colors.black.withAlpha(25),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -1410,12 +1434,15 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
           child: TextField(
             controller: controller,
             maxLines: maxLines,
-            style: GoogleFonts.cairo(fontSize: 14, color: Colors.grey[800]),
+            style: GoogleFonts.cairo(
+              fontSize: 14,
+              color: isDark ? AppColors.textPrimaryDark : Colors.grey[800],
+            ),
             onChanged: (value) => _updateNotes(value),
             decoration: InputDecoration(
               hintText: "الملاحظات",
               hintStyle: GoogleFonts.cairo(
-                color: Colors.grey[500],
+                color: isDark ? AppColors.textHintDark : Colors.grey[500],
                 fontSize: 14,
               ),
               prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
@@ -1424,7 +1451,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                 borderSide: BorderSide.none,
               ),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: isDark ? AppColors.cardBackgroundDark : Colors.white,
               contentPadding: const EdgeInsets.all(16),
             ),
           ),
@@ -1506,7 +1533,9 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                     style: GoogleFonts.cairo(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.grey[800],
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppColors.textPrimaryDark
+                          : Colors.grey[800],
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -1521,7 +1550,9 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                           ),
                           onTap: () {
                             _descriptionController.text = vlistData[index];
-                            _updateDescription(vlistData[index]); // تحديث في قاعدة البيانات
+                            _updateDescription(
+                              vlistData[index],
+                            ); // تحديث في قاعدة البيانات
                             Navigator.pop(context);
                           },
                         );
@@ -1583,9 +1614,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1603,18 +1632,26 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
     try {
       // Save visit data to SharedPreferences
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString("visit_${widget.visitId}_description", _descriptionController.text);
-      await prefs.setString("visit_${widget.visitId}_notes", _notesController.text);
+      await prefs.setString(
+        "visit_${widget.visitId}_description",
+        _descriptionController.text,
+      );
+      await prefs.setString(
+        "visit_${widget.visitId}_notes",
+        _notesController.text,
+      );
       await prefs.setStringList("visit_${widget.visitId}_images", _images);
 
       // بدء رفع الوسائط (صور وفيديوهات) في الخلفية
       if (_images.isNotEmpty) {
-        debugPrint('📤 Starting background upload for ${_images.length} media files');
+        debugPrint(
+          '📤 Starting background upload for ${_images.length} media files',
+        );
         UploadService.uploadVisitMediaInBackground(
           visitId: widget.visitId,
           mediaPaths: _images,
         );
-        
+
         // بدء إرسال التقارير في الخلفية (بعد رفع الصور)
         if (_contactCustomer || _contactContractor) {
           debugPrint('📊 Starting background report generation');
@@ -1636,22 +1673,22 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
       // Show success message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _images.isNotEmpty 
-                ? (_contactCustomer || _contactContractor)
-                    ? 'تم حفظ الزيارة وبدء رفع ${_images.length} صورة وإرسال التقارير في الخلفية'
-                    : 'تم حفظ الزيارة وبدء رفع ${_images.length} صورة في الخلفية'
-                : 'تم حفظ الزيارة بنجاح',
-            style: GoogleFonts.cairo(),
+          SnackBar(
+            content: Text(
+              _images.isNotEmpty
+                  ? (_contactCustomer || _contactContractor)
+                        ? 'تم حفظ الزيارة وبدء رفع ${_images.length} صورة وإرسال التقارير في الخلفية'
+                        : 'تم حفظ الزيارة وبدء رفع ${_images.length} صورة في الخلفية'
+                  : 'تم حفظ الزيارة بنجاح',
+              style: GoogleFonts.cairo(),
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 4),
           ),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          duration: const Duration(seconds: 4),
-        ),
         );
       }
 
@@ -1664,14 +1701,14 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
       // Show error message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('خطأ في حفظ الزيارة: $e', style: GoogleFonts.cairo()),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+          SnackBar(
+            content: Text('خطأ في حفظ الزيارة: $e', style: GoogleFonts.cairo()),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
-        ),
         );
       }
     }
@@ -1704,13 +1741,15 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
             onPressed: () => Navigator.pop(context),
             child: Text(
               'إلغاء',
-              style: GoogleFonts.cairo(color: Colors.grey[600]),
+              style: GoogleFonts.cairo(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.textSecondaryDark
+                    : Colors.grey[600],
+              ),
             ),
           ),
           ElevatedButton(
             onPressed: () async {
-              Navigator.pop(context); // Close dialog
-
               // Show loading
               showDialog(
                 context: context,
@@ -1719,7 +1758,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
@@ -1769,8 +1808,10 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
 
               // Close loading dialog and return to main screen immediately
               if (mounted) {
-                // Close loading dialog
-                Navigator.of(context, rootNavigator: true).pop();
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => MainScreen()),
+                );
 
                 // Show success message
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -1793,7 +1834,10 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                 );
 
                 // Return to main screen immediately
-                Navigator.of(context).pop(false);
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => MainScreen()),
+                );
               }
             },
             style: ElevatedButton.styleFrom(
@@ -1805,7 +1849,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
             child: Text(
               'حذف',
               style: GoogleFonts.cairo(
-                color: Colors.white,
+                color: Theme.of(context).cardColor,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -1826,7 +1870,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
         maxChildSize: 0.95,
         builder: (context, scrollController) => Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
@@ -1837,7 +1881,9 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.borderDark
+                      : Colors.grey[300],
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -1854,7 +1900,9 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                       style: GoogleFonts.cairo(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? AppColors.textPrimaryDark
+                            : Colors.grey[800],
                       ),
                     ),
                     const Spacer(),
@@ -1885,7 +1933,11 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                               'جاري تحميل العملاء...',
                               style: GoogleFonts.cairo(
                                 fontSize: 16,
-                                color: Colors.grey[600],
+                                color:
+                                    Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? AppColors.textSecondaryDark
+                                    : Colors.grey[600],
                               ),
                             ),
                           ],
@@ -1902,7 +1954,11 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                           children: [
                             Icon(
                               Iconsax.info_circle,
-                              color: Colors.grey[400],
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? AppColors.textHintDark
+                                  : Colors.grey[400],
                               size: 48,
                             ),
                             const SizedBox(height: 16),
@@ -1911,7 +1967,11 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                               style: GoogleFonts.cairo(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.grey[600],
+                                color:
+                                    Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? AppColors.textSecondaryDark
+                                    : Colors.grey[600],
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -1919,7 +1979,11 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                               'لم يتم العثور على عملاء لهذا المهندس',
                               style: GoogleFonts.cairo(
                                 fontSize: 14,
-                                color: Colors.grey[500],
+                                color:
+                                    Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? AppColors.textSecondaryDark
+                                    : Colors.grey[500],
                               ),
                             ),
                           ],
@@ -1938,10 +2002,14 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).cardColor,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: Colors.grey[200]!,
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? AppColors.surfaceDark.withOpacity(0.8)
+                                  : Colors.grey[200]!,
                               width: 1,
                             ),
                             boxShadow: [
@@ -1971,7 +2039,11 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                               style: GoogleFonts.cairo(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.grey[800],
+                                color:
+                                    Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? AppColors.textPrimaryDark
+                                    : Colors.grey[800],
                               ),
                             ),
                             subtitle: Column(
@@ -1991,7 +2063,11 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                                         customer['customer_phone'],
                                         style: GoogleFonts.cairo(
                                           fontSize: 14,
-                                          color: Colors.grey[600],
+                                          color:
+                                              Theme.of(context).brightness ==
+                                                  Brightness.dark
+                                              ? AppColors.textSecondaryDark
+                                              : Colors.grey[600],
                                         ),
                                       ),
                                     ],
@@ -2012,7 +2088,11 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                                           'مقاول: ${customer['contractor_name']}',
                                           style: GoogleFonts.cairo(
                                             fontSize: 14,
-                                            color: Colors.grey[600],
+                                            color:
+                                                Theme.of(context).brightness ==
+                                                    Brightness.dark
+                                                ? AppColors.textSecondaryDark
+                                                : Colors.grey[600],
                                           ),
                                         ),
                                       ),
@@ -2030,7 +2110,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                                   child: Container(
                                     padding: const EdgeInsets.all(20),
                                     decoration: BoxDecoration(
-                                      color: Colors.white,
+                                      color: Theme.of(context).cardColor,
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Column(

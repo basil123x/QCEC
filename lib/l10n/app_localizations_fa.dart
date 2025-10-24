@@ -463,6 +463,26 @@ class AppLocalizationsFa extends AppLocalizations {
   String get allStatistics => 'تمام آمار';
 
   @override
-  // TODO: implement allData
   String get allData => 'kkkkk';
+
+  @override
+  String get hello => 'خوش آمدید!';
+
+  @override
+  String get helloContent => 'از بازگشت شما خوشحالیم، وارد حساب خود شوید و سفر خلاقیت مهندسی را آغاز کنید';
+
+  @override
+  String get pleaseEnterPhoneNumber => 'لطفاً شماره تلفن را وارد کنید';
+
+  @override
+  String get pleaseEnterPassword => 'لطفاً رمز عبور را وارد کنید';
+
+  @override
+  String get writeYourPassword => 'رمز عبور خود را بنویسید';
+
+  @override
+  String get phoneNumber => 'شماره تلفن';
+
+  @override
+  String get phoneNumberMustBe8Digits => 'شماره تلفن باید 8 رقم باشد';
 }

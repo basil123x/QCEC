@@ -1,3 +1,4 @@
+import 'package:QCEC/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
@@ -29,7 +30,6 @@ class ProjectCard extends StatefulWidget {
 }
 
 class _ProjectCardState extends State<ProjectCard> {
-  
   Future<void> _saveActiveProject(int? projectId) async {
     final prefs = await SharedPreferences.getInstance();
     if (projectId != null) {
@@ -41,7 +41,9 @@ class _ProjectCardState extends State<ProjectCard> {
 
   Future<void> _saveExpandedProjects() async {
     final prefs = await SharedPreferences.getInstance();
-    final expandedList = widget.expandedProjects.map((id) => id.toString()).toList();
+    final expandedList = widget.expandedProjects
+        .map((id) => id.toString())
+        .toList();
     await prefs.setStringList('expanded_projects', expandedList);
   }
 
@@ -50,7 +52,7 @@ class _ProjectCardState extends State<ProjectCard> {
     final projectId = int.tryParse(widget.project['id'].toString()) ?? 0;
     bool isExpanded = widget.expandedProjects.contains(projectId);
     bool isActive = widget.activeProjectId == projectId;
-    
+
     // Create or get GlobalKey for this project
     if (!widget.projectKeys.containsKey(projectId)) {
       widget.projectKeys[projectId] = GlobalKey();
@@ -61,7 +63,7 @@ class _ProjectCardState extends State<ProjectCard> {
       onTap: () {
         final newActiveId = isActive ? null : projectId;
         widget.onActiveProjectChange(newActiveId);
-        
+
         // Save to SharedPreferences
         _saveActiveProject(newActiveId);
         debugPrint('💾 Active project saved: $newActiveId');
@@ -137,7 +139,7 @@ class _ProjectCardState extends State<ProjectCard> {
                                 overflow: TextOverflow.ellipsis,
                                 maxLines: 1,
                               ),
-                            )
+                            ),
                           ],
                         ),
                       ],
@@ -146,7 +148,9 @@ class _ProjectCardState extends State<ProjectCard> {
                   // Expand/Collapse button
                   GestureDetector(
                     onTap: () {
-                      Set<int> newExpandedProjects = Set.from(widget.expandedProjects);
+                      Set<int> newExpandedProjects = Set.from(
+                        widget.expandedProjects,
+                      );
                       if (isExpanded) {
                         newExpandedProjects.remove(projectId);
                       } else {
@@ -183,7 +187,7 @@ class _ProjectCardState extends State<ProjectCard> {
 
               // Basic project info
               _buildBasicInfo(),
-              
+
               // Expanded content
               if (isExpanded) ...[
                 const SizedBox(height: 16),
@@ -247,7 +251,7 @@ class _ProjectCardState extends State<ProjectCard> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'المقاول: ${widget.project['cnname']}',
+                  '${AppLocalizations.of(context)!.contractor}: ${widget.project['cnname']}',
                   style: GoogleFonts.cairo(
                     fontSize: 14,
                     color: Colors.grey[700],
@@ -281,7 +285,7 @@ class _ProjectCardState extends State<ProjectCard> {
             ),
           ),
           const SizedBox(height: 8),
-          
+
           // Additional project details can be added here
           if (widget.project['place'] != null) ...[
             Row(
@@ -301,7 +305,7 @@ class _ProjectCardState extends State<ProjectCard> {
             ),
             const SizedBox(height: 4),
           ],
-          
+
           if (widget.project['ename'] != null) ...[
             Row(
               children: [
@@ -309,7 +313,7 @@ class _ProjectCardState extends State<ProjectCard> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'المهندس: ${widget.project['ename']}',
+                    '${AppLocalizations.of(context)!.engineer}: ${widget.project['ename']}',
                     style: GoogleFonts.cairo(
                       fontSize: 13,
                       color: Colors.grey[700],
