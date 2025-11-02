@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:QCEC/presentation/screens/about_us_screen.dart';
@@ -9,8 +10,11 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart' as intlx;
+import 'package:restart_app/restart_app.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
+import 'package:shorebird_code_push/shorebird_code_push.dart';
+import 'package:terminate_restart/terminate_restart.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'package:video_thumbnail/video_thumbnail.dart';
@@ -946,7 +950,7 @@ class _MainScreenState extends State<MainScreen> {
         case 3:
           return _buildVisits(authProvider);
         case 4:
-          return _buildProfile(authProvider);
+          return ProfileScreen();
         default:
           return _buildDashboard(authProvider);
       }
@@ -960,7 +964,7 @@ class _MainScreenState extends State<MainScreen> {
         case 2:
           return _buildVisits(authProvider);
         case 3:
-          return _buildProfile(authProvider);
+          return ProfileScreen();
         default:
           return _buildDashboard(authProvider);
       }
@@ -1278,614 +1282,6 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildProfile(AuthProvider authProvider) {
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // Profile Header
-            Consumer<ThemeProvider>(
-              builder: (context, themeProvider, child) {
-                return Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        themeProvider.isDarkMode
-                            ? AppColors.primaryDark
-                            : AppColors.primary,
-                        themeProvider.isDarkMode
-                            ? AppColors.secondaryDark
-                            : AppColors.secondary,
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: themeProvider.isDarkMode
-                            ? AppColors.primaryDark.withAlpha(102)
-                            : AppColors.primary.withAlpha(102),
-                        blurRadius: 15,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      CircleAvatar(
-                        radius: 50,
-                        backgroundColor: Theme.of(
-                          context,
-                        ).cardColor.withAlpha(51),
-                        backgroundImage:
-                            authProvider.getUserImageUrl().isNotEmpty
-                            ? NetworkImage(authProvider.getUserImageUrl())
-                            : null,
-                        child: authProvider.getUserImageUrl().isEmpty
-                            ? Icon(
-                                Iconsax.user,
-                                color: Theme.of(context).cardColor,
-                                size: 40,
-                              )
-                            : null,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        authProvider.getUserName(),
-                        style: GoogleFonts.cairo(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).cardColor.withAlpha(51),
-                          borderRadius: BorderRadius.circular(25),
-                        ),
-                        child: Text(
-                          authProvider.getUserTypeName(),
-                          style: GoogleFonts.cairo(
-                            fontSize: 14,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-
-            const SizedBox(height: 24),
-
-            // Settings Options
-            _buildSettingsSection(authProvider),
-
-            const SizedBox(height: 24),
-
-            // Logout Button
-            Consumer<ThemeProvider>(
-              builder: (context, themeProvider, child) {
-                return Container(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      _logout(authProvider);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Iconsax.logout, color: Colors.white, size: 22),
-                        const SizedBox(width: 12),
-                        Text(
-                          AppLocalizations.of(context)!.logout,
-                          style: GoogleFonts.cairo(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSettingsSection(AuthProvider authProvider) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return Consumer<LanguageProvider>(
-          builder: (context, languageProvider, child) {
-            final localizations = AppLocalizations.of(context)!;
-            return Container(
-              decoration: BoxDecoration(
-                color: themeProvider.isDarkMode
-                    ? AppColors.secondaryDark
-                    : AppColors.pureWhite,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(13),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  _buildSettingsItem(
-                    icon: Iconsax.language_circle,
-                    title: localizations.changeLanguage,
-                    subtitle: languageProvider.currentLanguageName,
-                    onTap: () => _showLanguageDialog(),
-                    color: Colors.blue,
-                  ),
-                  _buildDivider(),
-                  Consumer<ThemeProvider>(
-                    builder: (context, themeProvider, child) {
-                      return _buildThemeToggleItem(themeProvider);
-                    },
-                  ),
-                  _buildDivider(),
-                  _buildSettingsItem(
-                    icon: Iconsax.info_circle,
-                    title: localizations.aboutUs,
-                    subtitle: localizations.learnAboutQCEC,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AboutUsScreen(),
-                        ),
-                      );
-                    },
-                    color: Colors.orange,
-                  ),
-                  _buildDivider(),
-                  _buildSettingsItem(
-                    icon: Iconsax.call,
-                    title: localizations.contactUs,
-                    subtitle:
-                        "${localizations.contactMethods}\n ${localizations.contactInfo}",
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ContactUsScreen(),
-                        ),
-                      );
-                    },
-                    color: Colors.green,
-                  ),
-                  _buildDivider(),
-                  _buildSettingsItem(
-                    icon: Iconsax.trash,
-                    title: localizations.deleteAccount,
-                    subtitle: localizations.deleteAccountPermanently,
-                    onTap: () =>
-                        _showDeleteAccountDialog(context, localizations),
-                    color: Colors.red,
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _showDeleteAccountDialog(
-    BuildContext context,
-    AppLocalizations localizations,
-  ) {
-    AwesomeDialog(
-      context: context,
-      dialogType: DialogType.warning,
-      animType: AnimType.bottomSlide,
-      title: localizations.warning,
-      desc: localizations.disableAccountConfirmationMessage,
-      btnCancelText: localizations.cancel,
-      btnOkText: localizations.disableAccount,
-      btnCancelOnPress: () {},
-      btnOkOnPress: () {
-        _confirmDeleteAccount(context, localizations);
-      },
-      btnOkColor: Colors.red,
-      btnCancelColor: Colors.grey,
-      titleTextStyle: GoogleFonts.cairo(
-        fontSize: 20,
-        fontWeight: FontWeight.bold,
-        color: Colors.red,
-      ),
-      descTextStyle: GoogleFonts.cairo(
-        fontSize: 16,
-        color: Colors.grey[700],
-        height: 1.5,
-      ),
-      buttonsTextStyle: GoogleFonts.cairo(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-      ),
-      headerAnimationLoop: false,
-      showCloseIcon: true,
-    ).show();
-  }
-
-  void _confirmDeleteAccount(
-    BuildContext context,
-    AppLocalizations localizations,
-  ) {
-    TextEditingController deleteController = TextEditingController();
-    AwesomeDialog(
-      context: context,
-      dialogType: DialogType.error,
-      animType: AnimType.scale,
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Text(
-              localizations.confirmDisable,
-              style: GoogleFonts.cairo(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.red,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              localizations.typeDisableMyAccount,
-              style: GoogleFonts.cairo(
-                fontSize: 16,
-                color: Colors.grey[700],
-                height: 1.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              textAlign: TextAlign.center,
-              style: GoogleFonts.cairo(fontSize: 16),
-              controller: deleteController,
-              decoration: InputDecoration(
-                hintText: localizations.disableMyAccount,
-                hintStyle: GoogleFonts.cairo(color: Colors.grey[400]),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.red),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.red, width: 2),
-                ),
-              ),
-              onChanged: (value) {
-                // يمكن إضافة منطق التحقق هنا
-              },
-            ),
-          ],
-        ),
-      ),
-      btnCancelText: localizations.cancel,
-      btnOkText: localizations.permanentDisable,
-      btnCancelOnPress: () {},
-      btnOkOnPress: () {
-        if (deleteController.text.trim() == localizations.disableMyAccount) {
-          _deleteAccount(context, localizations);
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                localizations.disableNotConfirmed,
-                style: GoogleFonts.cairo(),
-              ),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          );
-        }
-      },
-      btnOkColor: Colors.red,
-      btnCancelColor: Colors.grey,
-      buttonsTextStyle: GoogleFonts.cairo(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-      ),
-      headerAnimationLoop: false,
-      showCloseIcon: true,
-    ).show();
-  }
-
-  void _deleteAccount(
-    BuildContext context,
-    AppLocalizations localizations,
-  ) async {
-    try {
-      // Show loading dialog
-      AwesomeDialog(
-        context: context,
-        dialogType: DialogType.info,
-        animType: AnimType.scale,
-        title: localizations.disablingAccount,
-        desc: localizations.pleaseWaitDisablingAccount,
-        dismissOnTouchOutside: false,
-        dismissOnBackKeyPress: false,
-        showCloseIcon: false,
-        titleTextStyle: GoogleFonts.cairo(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: Colors.blue,
-        ),
-        descTextStyle: GoogleFonts.cairo(fontSize: 14, color: Colors.grey[600]),
-      ).show();
-
-      // Prepare API request
-      final dio = Dio();
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
-      final requestData = {
-        'action': 'disable_user_account',
-        'user_id': authProvider.getUserId(),
-        'user_type': authProvider.getUserTypeName(),
-      };
-
-      // Make API call to delete account
-      final response = await dio.post(
-        'https://qcec.online/app2026/sql.php',
-        data: requestData,
-        options: Options(
-          headers: {'Content-Type': 'application/json'},
-          sendTimeout: const Duration(seconds: 30),
-          receiveTimeout: const Duration(seconds: 30),
-        ),
-      );
-
-      // Close loading dialog
-      Navigator.of(context).pop();
-
-      if (response.statusCode == 200) {
-        final responseData = response.data;
-
-        if (responseData['success'] == true) {
-          // Account deleted successfully
-          AwesomeDialog(
-            context: context,
-            dialogType: DialogType.success,
-            animType: AnimType.topSlide,
-            title: localizations.accountDisabledSuccessfully,
-            desc: localizations.accountDisabledMessage,
-            btnOkText: localizations.ok,
-            btnOkOnPress: () async {
-              // Logout and clear all data
-              await authProvider.logout();
-            },
-            btnOkColor: Colors.green,
-            titleTextStyle: GoogleFonts.cairo(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.green,
-            ),
-            descTextStyle: GoogleFonts.cairo(
-              fontSize: 16,
-              color: Colors.grey[700],
-              height: 1.5,
-            ),
-            buttonsTextStyle: GoogleFonts.cairo(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-            headerAnimationLoop: false,
-            showCloseIcon: false,
-            dismissOnTouchOutside: false,
-            dismissOnBackKeyPress: false,
-          ).show();
-        } else {
-          // Server returned error
-          _showErrorDialogx(
-            context,
-            responseData['message'] ?? 'خطأ في تعطيل الحساب',
-          );
-        }
-      } else {
-        _showErrorDialogx(context, 'خطأ في الاتصال بالخادم');
-      }
-    } catch (e) {
-      // Close loading dialog if still open
-      Navigator.of(context).pop();
-
-      print('Error disabling account: $e');
-      _showErrorDialogx(
-        context,
-        'حدث خطأ أثناء تعطيل الحساب. يرجى المحاولة مرة أخرى.',
-      );
-    }
-  }
-
-  void _showErrorDialogx(BuildContext context, String message) {
-    AwesomeDialog(
-      context: context,
-      dialogType: DialogType.error,
-      animType: AnimType.scale,
-      title: 'خطأ',
-      desc: message,
-      btnOkText: 'موافق',
-      btnOkOnPress: () {},
-      btnOkColor: Colors.red,
-      titleTextStyle: GoogleFonts.cairo(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-        color: Colors.red,
-      ),
-      descTextStyle: GoogleFonts.cairo(
-        fontSize: 14,
-        color: Colors.grey[700],
-        height: 1.5,
-      ),
-      buttonsTextStyle: GoogleFonts.cairo(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-      ),
-    ).show();
-  }
-
-  Widget _buildSettingsItem({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-    required Color color,
-  }) {
-    return ListTile(
-      onTap: onTap,
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: color.withAlpha(51),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(icon, color: color, size: 24),
-      ),
-      title: Text(
-        title,
-        style: GoogleFonts.cairo(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: Theme.of(context).textTheme.titleLarge?.color,
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: GoogleFonts.cairo(
-          fontSize: 14,
-          color: Theme.of(context).textTheme.bodyMedium?.color,
-        ),
-        maxLines: 1,
-      ),
-      trailing: Icon(
-        Iconsax.arrow_left_2,
-        color: Theme.of(context).iconTheme.color?.withOpacity(0.6),
-        size: 20,
-      ),
-    );
-  }
-
-  Widget _buildThemeToggleItem(ThemeProvider themeProvider) {
-    final localizations = AppLocalizations.of(context)!;
-
-    return ListTile(
-      onTap: () async {
-        await themeProvider.toggleTheme();
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              localizations.themeChanged,
-              style: GoogleFonts.cairo(),
-            ),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
-      },
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.purple.withAlpha(51),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(
-          themeProvider.isDarkMode ? Iconsax.sun_1 : Iconsax.moon,
-          color: Colors.purple,
-          size: 24,
-        ),
-      ),
-      title: Text(
-        themeProvider.isDarkMode
-            ? localizations.lightMode
-            : localizations.darkMode,
-        style: GoogleFonts.cairo(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: Theme.of(context).textTheme.titleLarge?.color,
-        ),
-      ),
-      subtitle: Text(
-        themeProvider.isDarkMode
-            ? localizations.enableLightMode
-            : localizations.enableDarkMode,
-        style: GoogleFonts.cairo(
-          fontSize: 14,
-          color: Theme.of(context).textTheme.bodyMedium?.color,
-        ),
-      ),
-      trailing: Switch(
-        value: themeProvider.isDarkMode,
-        onChanged: (value) async {
-          await themeProvider.toggleTheme();
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                localizations.themeChanged,
-                style: GoogleFonts.cairo(),
-              ),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          );
-        },
-        activeColor: AppColors.primary,
-      ),
-    );
-  }
-
-  Widget _buildDivider() {
-    return Divider(
-      height: 1,
-      thickness: 1,
-      color: Theme.of(context).brightness == Brightness.dark
-          ? AppColors.surfaceDark.withOpacity(0.8)
-          : Colors.grey[200],
-      indent: 16,
-      endIndent: 16,
     );
   }
 
@@ -2842,222 +2238,6 @@ class _MainScreenState extends State<MainScreen> {
         ],
       ),
     );
-  }
-
-  void _showLanguageDialog() {
-    final languageProvider = Provider.of<LanguageProvider>(
-      context,
-      listen: false,
-    );
-    final localizations = AppLocalizations.of(context)!;
-
-    AwesomeDialog(
-      context: context,
-      dialogType: DialogType.noHeader,
-      animType: AnimType.scale,
-      body: Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withAlpha(51),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Iconsax.language_circle,
-                    color: Colors.blue,
-                    size: 28,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    localizations.changeLanguage,
-                    style: GoogleFonts.cairo(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? AppColors.textPrimaryDark
-                          : Colors.grey[800],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // Language Options
-            ...languageProvider.getSupportedLanguages().map((language) {
-              final isSelected =
-                  languageProvider.currentLanguageCode == language['code'];
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: _buildLanguageOption(
-                  language['name']!,
-                  language['nativeName']!,
-                  language['code']!,
-                  isSelected,
-                  languageProvider,
-                ),
-              );
-            }).toList(),
-          ],
-        ),
-      ),
-    ).show();
-  }
-
-  Widget _buildLanguageOption(
-    String displayName,
-    String nativeName,
-    String languageCode,
-    bool isSelected,
-    LanguageProvider languageProvider,
-  ) {
-    return GestureDetector(
-      onTap: () async {
-        Navigator.of(context).pop();
-
-        await languageProvider.changeLanguage(languageCode);
-
-        final localizations = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              localizations.languageChanged,
-              style: GoogleFonts.cairo(),
-            ),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
-      },
-      child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, child) {
-          return Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? AppColors.primary.withAlpha(51)
-                  : themeProvider.isDarkMode
-                  ? AppColors.primaryDark
-                  : Colors.grey[50],
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isSelected
-                    ? AppColors.primary
-                    : Theme.of(context).brightness == Brightness.dark
-                    ? AppColors.borderDark
-                    : Colors.grey[300]!,
-                width: isSelected ? 2 : 1,
-              ),
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: AppColors.primary.withAlpha(25),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withAlpha(25),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Text(
-                      _getLanguageFlag(languageCode),
-                      style: const TextStyle(fontSize: 20),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        nativeName,
-                        style: GoogleFonts.cairo(
-                          fontSize: 16,
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.w600,
-                          color: isSelected
-                              ? AppColors.primary
-                              : Theme.of(context).brightness == Brightness.dark
-                              ? AppColors.textPrimaryDark
-                              : Colors.grey[800],
-                        ),
-                      ),
-                      if (displayName != nativeName)
-                        Text(
-                          displayName,
-                          style: GoogleFonts.cairo(
-                            fontSize: 12,
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                ? AppColors.textSecondaryDark
-                                : Colors.grey[600],
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                if (isSelected)
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Iconsax.tick_circle,
-                      color: Theme.of(context).cardColor,
-                      size: 16,
-                    ),
-                  ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  String _getLanguageFlag(String languageCode) {
-    switch (languageCode) {
-      case 'ar':
-        return '🇸🇦';
-      case 'en':
-        return '🇺🇸';
-      case 'ur':
-        return '🇵🇰';
-      case 'fa':
-        return '🇮🇷';
-      case 'bn':
-        return '🇧🇩';
-      case 'hi':
-        return '🇮🇳';
-      default:
-        return '🌐';
-    }
   }
 
   Widget _buildDateNavigationBar() {
@@ -5029,6 +4209,1000 @@ class _MainScreenState extends State<MainScreen> {
       }
     } catch (e) {
       debugPrint('❌ Error checking incomplete visits: $e');
+    }
+  }
+}
+
+class ProfileScreen extends StatefulWidget {
+  const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  Timer? timerx;
+  int currentPatchx = 0;
+  final updater = ShorebirdUpdater();
+  static const _lastPatchKey = "last_applied_patch";
+  bool hasUpdate = false;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchUpdate();
+    checkForUpdates();
+
+    timerx = Timer.periodic(const Duration(seconds: 5), (_) => fetchUpdate());
+  }
+
+  void fetchUpdate() async {
+    final currentPatch = await updater.readCurrentPatch();
+    if (!mounted) return;
+    setState(() {
+      currentPatchx = currentPatch?.number ?? 0;
+    });
+  }
+
+  Future<void> checkForUpdates() async {
+    final status = await updater.checkForUpdate();
+    if (!mounted) return;
+    if (status == UpdateStatus.outdated) {
+      setState(() {
+        hasUpdate = true;
+      });
+    }
+  }
+
+  Future<void> applyUpdate() async {
+    try {
+      final loc = AppLocalizations.of(context)!;
+      await updater.update();
+      final prefs = await SharedPreferences.getInstance();
+      final currentPatch = await updater.readCurrentPatch();
+      if (currentPatch != null) {
+        await prefs.setInt(_lastPatchKey, currentPatch.number - 1);
+      }
+
+      if (Platform.isIOS) {
+        Restart.restartApp(
+          notificationBody: loc.importantNotification,
+          notificationTitle: loc.updatePrompt,
+        );
+      } else {
+        await TerminateRestart.instance.restartApp(
+          options: const TerminateRestartOptions(terminate: true),
+        );
+      }
+    } on UpdateException catch (error) {
+      print("Update failed: $error");
+    }
+  }
+
+  @override
+  void dispose() {
+    timerx?.cancel();
+    super.dispose();
+  }
+
+  void _logout(AuthProvider authProvider) {
+    // هنا ممكن تضيف أي عملية تسجيل خروج
+    authProvider.logout();
+    Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return Scaffold(
+          backgroundColor: themeProvider.isDarkMode
+              ? AppColors.primaryDark
+              : AppColors.pureWhite,
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  // Profile Header
+                  Consumer<ThemeProvider>(
+                    builder: (context, themeProvider, child) {
+                      return Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              themeProvider.isDarkMode
+                                  ? AppColors.primaryDark
+                                  : AppColors.primary,
+                              themeProvider.isDarkMode
+                                  ? AppColors.secondaryDark
+                                  : AppColors.secondary,
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: themeProvider.isDarkMode
+                                  ? AppColors.primaryDark.withAlpha(102)
+                                  : AppColors.primary.withAlpha(102),
+                              blurRadius: 15,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            CircleAvatar(
+                              radius: 50,
+                              backgroundColor: Theme.of(
+                                context,
+                              ).cardColor.withAlpha(51),
+                              backgroundImage:
+                                  authProvider.getUserImageUrl().isNotEmpty
+                                  ? NetworkImage(authProvider.getUserImageUrl())
+                                  : null,
+                              child: authProvider.getUserImageUrl().isEmpty
+                                  ? Icon(
+                                      Iconsax.user,
+                                      color: Theme.of(context).cardColor,
+                                      size: 40,
+                                    )
+                                  : null,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              authProvider.getUserName(),
+                              style: GoogleFonts.cairo(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(
+                                  context,
+                                ).cardColor.withAlpha(51),
+                                borderRadius: BorderRadius.circular(25),
+                              ),
+                              child: Text(
+                                authProvider.getUserTypeName(),
+                                style: GoogleFonts.cairo(
+                                  fontSize: 14,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Container(
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                              ),
+                              width: double.maxFinite,
+                              child: Card(
+                                color: themeProvider.isDarkMode
+                                    ? AppColors.secondaryDark
+                                    : Colors.white,
+                                elevation: 0,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Column(
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            "1.$currentPatchx",
+                                            style: TextStyle(
+                                              color: themeProvider.isDarkMode
+                                                  ? Colors.white
+                                                  : AppColors.primaryDark,
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      if (hasUpdate) const SizedBox(height: 20),
+                                      if (hasUpdate)
+                                        ElevatedButton(
+                                          onPressed: () async {
+                                            setState(() => hasUpdate = false);
+                                            try {
+                                              await updater.update();
+                                              final prefs =
+                                                  await SharedPreferences.getInstance();
+                                              final currentPatch = await updater
+                                                  .readCurrentPatch();
+                                              if (currentPatch != null) {
+                                                await prefs.setInt(
+                                                  _lastPatchKey,
+                                                  currentPatch.number,
+                                                );
+                                              }
+                                              if (Platform.isIOS) {
+                                                Restart.restartApp(
+                                                  notificationTitle:
+                                                      "تم تحميل تحديث جديد",
+                                                  notificationBody:
+                                                      "سيتم إعادة فتح التطبيق لتحميل الباتش",
+                                                );
+                                              } else {
+                                                await TerminateRestart.instance
+                                                    .restartApp(
+                                                      options:
+                                                          const TerminateRestartOptions(
+                                                            terminate: true,
+                                                          ),
+                                                    );
+                                              }
+                                            } on UpdateException catch (e) {
+                                              print("Update failed: $e");
+                                            }
+                                          },
+                                          child: Text("Update Now"),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Settings Section
+                  _buildSettingsSection(authProvider),
+
+                  const SizedBox(height: 24),
+
+                  // Logout Button
+                  Consumer<ThemeProvider>(
+                    builder: (context, themeProvider, child) {
+                      return Container(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () => _logout(authProvider),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Iconsax.logout,
+                                color: Colors.white,
+                                size: 22,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                AppLocalizations.of(context)!.logout,
+                                style: GoogleFonts.cairo(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSettingsSection(AuthProvider authProvider) {
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return Consumer<LanguageProvider>(
+          builder: (context, languageProvider, child) {
+            final localizations = AppLocalizations.of(context)!;
+            return Container(
+              decoration: BoxDecoration(
+                color: themeProvider.isDarkMode
+                    ? AppColors.secondaryDark
+                    : AppColors.pureWhite,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(13),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  _buildSettingsItem(
+                    icon: Iconsax.language_circle,
+                    title: localizations.changeLanguage,
+                    subtitle: languageProvider.currentLanguageName,
+                    onTap: () => _showLanguageDialog(),
+                    color: Colors.blue,
+                  ),
+                  _buildDivider(),
+                  Consumer<ThemeProvider>(
+                    builder: (context, themeProvider, child) {
+                      return _buildThemeToggleItem(themeProvider);
+                    },
+                  ),
+                  _buildDivider(),
+                  _buildSettingsItem(
+                    icon: Iconsax.info_circle,
+                    title: localizations.aboutUs,
+                    subtitle: localizations.learnAboutQCEC,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AboutUsScreen(),
+                        ),
+                      );
+                    },
+                    color: Colors.orange,
+                  ),
+                  _buildDivider(),
+                  _buildSettingsItem(
+                    icon: Iconsax.call,
+                    title: localizations.contactUs,
+                    subtitle:
+                        "${localizations.contactMethods}\n ${localizations.contactInfo}",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ContactUsScreen(),
+                        ),
+                      );
+                    },
+                    color: Colors.green,
+                  ),
+                  _buildDivider(),
+                  _buildSettingsItem(
+                    icon: Iconsax.trash,
+                    title: localizations.deleteAccount,
+                    subtitle: localizations.deleteAccountPermanently,
+                    onTap: () =>
+                        _showDeleteAccountDialog(context, localizations),
+                    color: Colors.red,
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showDeleteAccountDialog(
+    BuildContext context,
+    AppLocalizations localizations,
+  ) {
+    AwesomeDialog(
+      context: context,
+      dialogType: DialogType.warning,
+      animType: AnimType.bottomSlide,
+      title: localizations.warning,
+      desc: localizations.disableAccountConfirmationMessage,
+      btnCancelText: localizations.cancel,
+      btnOkText: localizations.disableAccount,
+      btnCancelOnPress: () {},
+      btnOkOnPress: () {
+        _confirmDeleteAccount(context, localizations);
+      },
+      btnOkColor: Colors.red,
+      btnCancelColor: Colors.grey,
+      titleTextStyle: GoogleFonts.cairo(
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+        color: Colors.red,
+      ),
+      descTextStyle: GoogleFonts.cairo(
+        fontSize: 16,
+        color: Colors.grey[700],
+        height: 1.5,
+      ),
+      buttonsTextStyle: GoogleFonts.cairo(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+      ),
+      headerAnimationLoop: false,
+      showCloseIcon: true,
+    ).show();
+  }
+
+  void _confirmDeleteAccount(
+    BuildContext context,
+    AppLocalizations localizations,
+  ) {
+    TextEditingController deleteController = TextEditingController();
+    AwesomeDialog(
+      context: context,
+      dialogType: DialogType.error,
+      animType: AnimType.scale,
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Text(
+              localizations.confirmDisable,
+              style: GoogleFonts.cairo(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.red,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              localizations.typeDisableMyAccount,
+              style: GoogleFonts.cairo(
+                fontSize: 16,
+                color: Colors.grey[700],
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              textAlign: TextAlign.center,
+              style: GoogleFonts.cairo(fontSize: 16),
+              controller: deleteController,
+              decoration: InputDecoration(
+                hintText: localizations.disableMyAccount,
+                hintStyle: GoogleFonts.cairo(color: Colors.grey[400]),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.red),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.red, width: 2),
+                ),
+              ),
+              onChanged: (value) {
+                // يمكن إضافة منطق التحقق هنا
+              },
+            ),
+          ],
+        ),
+      ),
+      btnCancelText: localizations.cancel,
+      btnOkText: localizations.permanentDisable,
+      btnCancelOnPress: () {},
+      btnOkOnPress: () {
+        if (deleteController.text.trim() == localizations.disableMyAccount) {
+          _deleteAccount(context, localizations);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                localizations.disableNotConfirmed,
+                style: GoogleFonts.cairo(),
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+      },
+      btnOkColor: Colors.red,
+      btnCancelColor: Colors.grey,
+      buttonsTextStyle: GoogleFonts.cairo(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+      ),
+      headerAnimationLoop: false,
+      showCloseIcon: true,
+    ).show();
+  }
+
+  void _deleteAccount(
+    BuildContext context,
+    AppLocalizations localizations,
+  ) async {
+    try {
+      // Show loading dialog
+      AwesomeDialog(
+        context: context,
+        dialogType: DialogType.info,
+        animType: AnimType.scale,
+        title: localizations.disablingAccount,
+        desc: localizations.pleaseWaitDisablingAccount,
+        dismissOnTouchOutside: false,
+        dismissOnBackKeyPress: false,
+        showCloseIcon: false,
+        titleTextStyle: GoogleFonts.cairo(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Colors.blue,
+        ),
+        descTextStyle: GoogleFonts.cairo(fontSize: 14, color: Colors.grey[600]),
+      ).show();
+
+      // Prepare API request
+      final dio = Dio();
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+      final requestData = {
+        'action': 'disable_user_account',
+        'user_id': authProvider.getUserId(),
+        'user_type': authProvider.getUserTypeName(),
+      };
+
+      // Make API call to delete account
+      final response = await dio.post(
+        'https://qcec.online/app2026/sql.php',
+        data: requestData,
+        options: Options(
+          headers: {'Content-Type': 'application/json'},
+          sendTimeout: const Duration(seconds: 30),
+          receiveTimeout: const Duration(seconds: 30),
+        ),
+      );
+
+      // Close loading dialog
+      Navigator.of(context).pop();
+
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+
+        if (responseData['success'] == true) {
+          // Account deleted successfully
+          AwesomeDialog(
+            context: context,
+            dialogType: DialogType.success,
+            animType: AnimType.topSlide,
+            title: localizations.accountDisabledSuccessfully,
+            desc: localizations.accountDisabledMessage,
+            btnOkText: localizations.ok,
+            btnOkOnPress: () async {
+              // Logout and clear all data
+              await authProvider.logout();
+            },
+            btnOkColor: Colors.green,
+            titleTextStyle: GoogleFonts.cairo(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.green,
+            ),
+            descTextStyle: GoogleFonts.cairo(
+              fontSize: 16,
+              color: Colors.grey[700],
+              height: 1.5,
+            ),
+            buttonsTextStyle: GoogleFonts.cairo(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+            headerAnimationLoop: false,
+            showCloseIcon: false,
+            dismissOnTouchOutside: false,
+            dismissOnBackKeyPress: false,
+          ).show();
+        } else {
+          // Server returned error
+          _showErrorDialogx(
+            context,
+            responseData['message'] ?? 'خطأ في تعطيل الحساب',
+          );
+        }
+      } else {
+        _showErrorDialogx(context, 'خطأ في الاتصال بالخادم');
+      }
+    } catch (e) {
+      // Close loading dialog if still open
+      Navigator.of(context).pop();
+
+      print('Error disabling account: $e');
+      _showErrorDialogx(
+        context,
+        'حدث خطأ أثناء تعطيل الحساب. يرجى المحاولة مرة أخرى.',
+      );
+    }
+  }
+
+  void _showErrorDialogx(BuildContext context, String message) {
+    AwesomeDialog(
+      context: context,
+      dialogType: DialogType.error,
+      animType: AnimType.scale,
+      title: 'خطأ',
+      desc: message,
+      btnOkText: 'موافق',
+      btnOkOnPress: () {},
+      btnOkColor: Colors.red,
+      titleTextStyle: GoogleFonts.cairo(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: Colors.red,
+      ),
+      descTextStyle: GoogleFonts.cairo(
+        fontSize: 14,
+        color: Colors.grey[700],
+        height: 1.5,
+      ),
+      buttonsTextStyle: GoogleFonts.cairo(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+      ),
+    ).show();
+  }
+
+  Widget _buildSettingsItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    required Color color,
+  }) {
+    return ListTile(
+      onTap: onTap,
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: color.withAlpha(51),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, color: color, size: 24),
+      ),
+      title: Text(
+        title,
+        style: GoogleFonts.cairo(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: Theme.of(context).textTheme.titleLarge?.color,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: GoogleFonts.cairo(
+          fontSize: 14,
+          color: Theme.of(context).textTheme.bodyMedium?.color,
+        ),
+        maxLines: 1,
+      ),
+      trailing: Icon(
+        Iconsax.arrow_left_2,
+        color: Theme.of(context).iconTheme.color?.withOpacity(0.6),
+        size: 20,
+      ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Divider(
+      height: 1,
+      thickness: 1,
+      color: Theme.of(context).brightness == Brightness.dark
+          ? AppColors.surfaceDark.withOpacity(0.8)
+          : Colors.grey[200],
+      indent: 16,
+      endIndent: 16,
+    );
+  }
+
+  void _showLanguageDialog() {
+    final languageProvider = Provider.of<LanguageProvider>(
+      context,
+      listen: false,
+    );
+    final localizations = AppLocalizations.of(context)!;
+
+    AwesomeDialog(
+      context: context,
+      dialogType: DialogType.noHeader,
+      animType: AnimType.scale,
+      body: Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withAlpha(51),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Iconsax.language_circle,
+                    color: Colors.blue,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    localizations.changeLanguage,
+                    style: GoogleFonts.cairo(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppColors.textPrimaryDark
+                          : Colors.grey[800],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // Language Options
+            ...languageProvider.getSupportedLanguages().map((language) {
+              final isSelected =
+                  languageProvider.currentLanguageCode == language['code'];
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: _buildLanguageOption(
+                  language['name']!,
+                  language['nativeName']!,
+                  language['code']!,
+                  isSelected,
+                  languageProvider,
+                ),
+              );
+            }).toList(),
+          ],
+        ),
+      ),
+    ).show();
+  }
+
+  Widget _buildThemeToggleItem(ThemeProvider themeProvider) {
+    final localizations = AppLocalizations.of(context)!;
+
+    return ListTile(
+      onTap: () async {
+        await themeProvider.toggleTheme();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              localizations.themeChanged,
+              style: GoogleFonts.cairo(),
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      },
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.purple.withAlpha(51),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(
+          themeProvider.isDarkMode ? Iconsax.sun_1 : Iconsax.moon,
+          color: Colors.purple,
+          size: 24,
+        ),
+      ),
+      title: Text(
+        themeProvider.isDarkMode
+            ? localizations.lightMode
+            : localizations.darkMode,
+        style: GoogleFonts.cairo(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: Theme.of(context).textTheme.titleLarge?.color,
+        ),
+      ),
+      subtitle: Text(
+        themeProvider.isDarkMode
+            ? localizations.enableLightMode
+            : localizations.enableDarkMode,
+        style: GoogleFonts.cairo(
+          fontSize: 14,
+          color: Theme.of(context).textTheme.bodyMedium?.color,
+        ),
+      ),
+      trailing: Switch(
+        value: themeProvider.isDarkMode,
+        onChanged: (value) async {
+          await themeProvider.toggleTheme();
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                localizations.themeChanged,
+                style: GoogleFonts.cairo(),
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        },
+        activeColor: AppColors.primary,
+      ),
+    );
+  }
+
+  Widget _buildLanguageOption(
+    String displayName,
+    String nativeName,
+    String languageCode,
+    bool isSelected,
+    LanguageProvider languageProvider,
+  ) {
+    return GestureDetector(
+      onTap: () async {
+        Navigator.of(context).pop();
+
+        await languageProvider.changeLanguage(languageCode);
+
+        final localizations = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              localizations.languageChanged,
+              style: GoogleFonts.cairo(),
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      },
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? AppColors.primary.withAlpha(51)
+                  : themeProvider.isDarkMode
+                  ? AppColors.primaryDark
+                  : Colors.grey[50],
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isSelected
+                    ? AppColors.primary
+                    : Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.borderDark
+                    : Colors.grey[300]!,
+                width: isSelected ? 2 : 1,
+              ),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: AppColors.primary.withAlpha(25),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withAlpha(25),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(
+                    child: Text(
+                      _getLanguageFlag(languageCode),
+                      style: const TextStyle(fontSize: 20),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        nativeName,
+                        style: GoogleFonts.cairo(
+                          fontSize: 16,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.w600,
+                          color: isSelected
+                              ? AppColors.primary
+                              : Theme.of(context).brightness == Brightness.dark
+                              ? AppColors.textPrimaryDark
+                              : Colors.grey[800],
+                        ),
+                      ),
+                      if (displayName != nativeName)
+                        Text(
+                          displayName,
+                          style: GoogleFonts.cairo(
+                            fontSize: 12,
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                ? AppColors.textSecondaryDark
+                                : Colors.grey[600],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                if (isSelected)
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Iconsax.tick_circle,
+                      color: Theme.of(context).cardColor,
+                      size: 16,
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  String _getLanguageFlag(String languageCode) {
+    switch (languageCode) {
+      case 'ar':
+        return '🇸🇦';
+      case 'en':
+        return '🇺🇸';
+      case 'ur':
+        return '🇵🇰';
+      case 'fa':
+        return '🇮🇷';
+      case 'bn':
+        return '🇧🇩';
+      case 'hi':
+        return '🇮🇳';
+      default:
+        return '🌐';
     }
   }
 }

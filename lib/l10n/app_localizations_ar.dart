@@ -676,4 +676,13 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get accountDisabledMessage =>
       'تم تعطيل حسابك من النظام. بياناتك محفوظة لكن لا يمكنك الدخول.\nشكراً لاستخدامك تطبيق QCEC.';
+  @override
+  String get importantNotification => 'إشعار هام';
+
+  @override
+  String get updatePrompt =>
+      'برجاء التحديث للمرة الأخيرة لتشغيل التحديثات التلقائية المرة القادمة';
+
+  @override
+  String get updateNow => 'قم بالتحديث الآن';
 }

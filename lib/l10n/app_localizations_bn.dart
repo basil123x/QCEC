@@ -695,4 +695,14 @@ class AppLocalizationsBn extends AppLocalizations {
   @override
   String get accountDisabledMessage =>
       'আপনার অ্যাকাউন্ট সিস্টেম থেকে নিষ্ক্রিয় করা হয়েছে। আপনার ডেটা সংরক্ষিত কিন্তু আপনি লগইন করতে পারবেন না।\nQCEC অ্যাপ ব্যবহার করার জন্য ধন্যবাদ।';
+
+  @override
+  String get importantNotification => 'গুরুত্বপূর্ণ বিজ্ঞপ্তি';
+
+  @override
+  String get updatePrompt =>
+      'পরবর্তীবার স্বয়ংক্রিয় আপডেট চালু করার জন্য অনুগ্রহ করে এইবার আপডেট করুন';
+
+  @override
+  String get updateNow => 'এখন আপডেট করুন';
 }

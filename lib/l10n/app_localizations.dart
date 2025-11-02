@@ -294,6 +294,9 @@ abstract class AppLocalizations {
   String get pleaseWaitDisablingAccount;
   String get accountDisabledSuccessfully;
   String get accountDisabledMessage;
+  String get importantNotification;
+  String get updatePrompt;
+  String get updateNow;
 }
 
 class _AppLocalizationsDelegate

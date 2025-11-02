@@ -693,4 +693,13 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get accountDisabledMessage =>
       'حساب شما از سیستم غیرفعال شده است. داده‌های شما ذخیره شده اما نمی‌توانید وارد شوید.\nاز استفاده از برنامه QCEC متشکریم.';
+  @override
+  String get importantNotification => 'اطلاعیه مهم';
+
+  @override
+  String get updatePrompt =>
+      'لطفاً این بار بروزرسانی کنید تا بروزرسانی‌های خودکار در دفعه بعد فعال شود';
+
+  @override
+  String get updateNow => 'هم‌اکنون بروزرسانی کنید';
 }

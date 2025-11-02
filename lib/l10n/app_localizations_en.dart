@@ -676,4 +676,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get accountDisabledMessage =>
       'Your account has been disabled from the system. Your data is saved but you cannot log in.\nThank you for using QCEC app.';
+
+  @override
+  String get importantNotification => 'Important Notification';
+
+  @override
+  String get updatePrompt =>
+      'Please update this time to enable automatic updates next time';
+
+  @override
+  String get updateNow => 'Update Now';
 }

@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:QCEC/core/repositories/forceupdate_repository.dart';
 import 'package:QCEC/l10n/app_localizations.dart';
 import 'package:QCEC/presentation/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
@@ -31,6 +32,9 @@ class _SplashScreenState extends State<SplashScreen>
     _initAnimations();
     _startAnimations();
     _navigateToLogin();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      UpgradeRepository().checkUpdate(context, setState);
+    });
   }
 
   void _initAnimations() {

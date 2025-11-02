@@ -692,4 +692,14 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get accountDisabledMessage =>
       'आपका खाता सिस्टम से अक्षम कर दिया गया है। आपका डेटा सहेजा गया है लेकिन आप लॉगिन नहीं कर सकते।\nQCEC ऐप का उपयोग करने के लिए धन्यवाद।';
+
+  @override
+  String get importantNotification => 'महत्वपूर्ण सूचना';
+
+  @override
+  String get updatePrompt =>
+      'कृपया इस बार अपडेट करें ताकि अगली बार स्वचालित अपडेट चालू हों';
+
+  @override
+  String get updateNow => 'अभी अपडेट करें';
 }

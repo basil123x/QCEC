@@ -693,4 +693,14 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get accountDisabledMessage =>
       'آپ کا اکاؤنٹ نظام سے غیر فعال کر دیا گیا ہے۔ آپ کا ڈیٹا محفوظ ہے لیکن آپ لاگ ان نہیں کر سکتے۔\nQCEC ایپ استعمال کرنے کا شکریہ۔';
+
+  @override
+  String get importantNotification => 'اہم اطلاع';
+
+  @override
+  String get updatePrompt =>
+      'براہ کرم اس بار اپ ڈیٹ کریں تاکہ اگلی بار خودکار اپ ڈیٹس فعال ہوں';
+
+  @override
+  String get updateNow => 'ابھی اپ ڈیٹ کریں';
 }
