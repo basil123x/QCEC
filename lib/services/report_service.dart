@@ -1,8 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
+import 'package:QCEC/presentation/providers/auth_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -16,6 +19,7 @@ class ReportService {
 
   /// إرسال التقارير في الخلفية بعد رفع الصور
   static Future<void> sendReportsInBackground({
+    required String projectId,
     required int visitId,
     required List<String> imagePaths,
     required bool sendToCustomer,
@@ -27,9 +31,18 @@ class ReportService {
       // إنشاء Isolate للمعالجة في الخلفية
       final receivePort = ReceivePort();
 
+      try {
+        _updateVisitLocation(projectId);
+        debugPrint('📍 Location updated successfully');
+      } catch (e) {
+        debugPrint('📍 Error updating location: $e');
+        // Continue even if location update fails
+      }
+
       final isolate = await Isolate.spawn(
         _reportIsolateEntry,
         _ReportData(
+          projectId: projectId,
           visitId: visitId,
           imagePaths: imagePaths,
           sendToCustomer: sendToCustomer,
@@ -61,6 +74,63 @@ class ReportService {
       });
     } catch (e) {
       debugPrint('📊 Error starting report isolate: $e');
+    }
+  }
+
+  static void _updateVisitLocation(String projectId) async {
+    try {
+      // Check location permissions
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          throw Exception('Location permissions are denied');
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        throw Exception('Location permissions are permanently denied');
+      }
+
+      // Get current position
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 10),
+      );
+
+      debugPrint(
+        '📍 Current location: ${position.latitude}, ${position.longitude}',
+      );
+
+      // Update visitsx table with location
+      final response = await Dio().post(
+        'https://qcec.online/app2026/update_visit_location.php',
+        data: {
+          'project_id': projectId.toString(),
+          'latitude': position.latitude.toString(),
+          'longitude': position.longitude.toString(),
+        },
+        options: Options(
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          sendTimeout: const Duration(seconds: 30),
+          receiveTimeout: const Duration(seconds: 30),
+        ),
+      );
+
+      debugPrint('📍 Location update response: ${response.statusCode}');
+      debugPrint('📍 Location update data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data['success'] == true) {
+          debugPrint('📍 Location updated successfully in visitsx table');
+        } else {
+          debugPrint('📍 Failed to update location: ${data['message']}');
+        }
+      }
+    } catch (e) {
+      debugPrint('📍 Error updating visit location: $e');
+      throw e;
     }
   }
 
@@ -762,6 +832,7 @@ class ReportService {
 
 /// بيانات التقرير للـ Isolate
 class _ReportData {
+  final String projectId;
   final int visitId;
   final List<String> imagePaths;
   final bool sendToCustomer;
@@ -769,6 +840,7 @@ class _ReportData {
   final SendPort sendPort;
 
   _ReportData({
+    required this.projectId,
     required this.visitId,
     required this.imagePaths,
     required this.sendToCustomer,

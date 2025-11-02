@@ -12,10 +12,7 @@ import 'services/app_lifecycle_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // تهيئة نظام الحفظ التلقائي للزيارات
   await AppLifecycleService().initialize();
-  
   runApp(const QCECApp());
 }
 

@@ -17,6 +17,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get visits => 'الزيارات';
 
   @override
+  String get monthlyVisits => 'الزيارات الشهرية';
+
+  @override
+  String get todayVisits => 'زيارات اليوم';
+
+  @override
   String get camera => 'الكاميرا';
 
   @override
@@ -486,4 +492,188 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get phoneNumberMustBe8Digits => 'رقم الهاتف يجب أن يكون 8 أرقام';
+
+  // No Internet Screen translations
+  @override
+  String get noInternetTitle => 'لا يوجد اتصال بالإنترنت';
+
+  @override
+  String get noInternetMessage =>
+      'يرجى التحقق من اتصالك بالإنترنت\nوإعادة المحاولة';
+
+  @override
+  String get checkConnection => 'التحقق من الاتصال';
+
+  @override
+  String get connectionTips => 'نصائح للاتصال:';
+
+  @override
+  String get turnOnWifi => 'تأكد من تشغيل الواي فاي أو بيانات الجوال';
+
+  @override
+  String get checkNetworkSettings => 'تحقق من إعدادات الشبكة';
+
+  @override
+  String get restartRouter => 'حاول إعادة تشغيل جهاز التوجيه';
+
+  @override
+  String get stillNoConnection => 'لا يزال لا يوجد اتصال بالإنترنت';
+
+  @override
+  String get aboutUs => 'من نحن';
+  @override
+  String get qcecFullName => 'المركز القطري للاستشارات الهندسية';
+  @override
+  String get sinceYear => 'منذ عام 1998';
+  @override
+  String get aboutUsTitle => 'من نحن';
+  @override
+  String get aboutUsContent =>
+      'منذ تأسيسه عام 1998 , قدم المركز القطري للاستشارات الهندسيه أعمالا متميزة ومبتكرة في تصميم المباني والإشراف علي تنفيذها محققا رضاء العملاء وتقديرهم\n\nالان ودائما , نتطلع الي المشاركة وتعزيز التنمية في قطر من خلال خدمة ومشاركة عملائنا والمجتمع والمساهمه في المستقبل وتحدياته .';
+  @override
+  String get inTheBeginning => 'في البداية...';
+  @override
+  String get ourMissionContent =>
+      'نحن المركز القطري للاستشارات الهندسيه ملتزمون بتقديم افضل التصميمات جودة وابتكارا , الاشراف عليها سعيا لرضاء عملائنا وخدمتهم , بتقديم حلول عالية التقنيه وإبداع مستدام , والمحافظه علي الاصالة وإضافة الحداثة .';
+  @override
+  String get ourServices => 'خدماتنا';
+  @override
+  String get buildingDesign => 'تصميم المباني';
+  @override
+  String get executionSupervision => 'الإشراف على التنفيذ';
+  @override
+  String get technicalSolutions => 'حلول تقنية';
+  @override
+  String get qualityAndInnovation => 'جودة وابتكار';
+  @override
+  String get deleteAccountTitle => 'حذف الحساب';
+  @override
+  String get deleteAccountPermanently => 'حذف الحساب نهائياً من التطبيق';
+  @override
+  String get deleteAccountConfirmation => 'هل أنت متأكد من حذف حسابك نهائياً؟';
+  @override
+  String get deleteAccountWarning =>
+      'سيتم حذف جميع بياناتك ولن تتمكن من استعادتها';
+
+  @override
+  String get translating => 'جاري الترجمة...';
+
+  @override
+  String get translated => 'مترجم';
+
+  @override
+  String get translatingNotes => 'جاري ترجمة الملاحظات...';
+
+  @override
+  String get contactUsTitle => 'تواصل معنا';
+
+  @override
+  String get weAreHereToServe => 'نحن هنا لخدمتكم';
+
+  @override
+  String get contactUsAnytime => 'تواصلوا معنا في أي وقت';
+
+  @override
+  String get phone => 'الهاتف';
+
+  @override
+  String get callUsDirect => 'اتصل بنا مباشرة';
+
+  @override
+  String get email => 'البريد الإلكتروني';
+
+  @override
+  String get emailUs => 'راسلنا عبر الإيميل';
+
+  @override
+  String get address => 'العنوان';
+
+  @override
+  String get ourLocation => 'موقعنا الجغرافي';
+
+  @override
+  String get workingHours => 'ساعات العمل';
+
+  @override
+  String get officialHours => 'أوقات الدوام الرسمي';
+
+  @override
+  String get followUsOn => 'تابعونا على';
+
+  @override
+  String get whatsapp => 'واتساب';
+
+  @override
+  String get instagram => 'إنستغرام';
+
+  @override
+  String get website => 'الموقع';
+
+  @override
+  String get selectPhoneNumber => 'اختر رقم الهاتف';
+
+  @override
+  String get saturdayToThursday => 'السبت - الخميس';
+
+  @override
+  String get morningShift => '8 صباحاً - 12 مساءً';
+
+  @override
+  String get eveningShift => '4 مساءً - 8 مساءً';
+
+  @override
+  String get inquiryFromApp => 'استفسار من تطبيق QCEC';
+
+  @override
+  String get noVisitsOnThisDate => 'لا توجد زيارات في هذا التاريخ';
+
+  @override
+  String get learnAboutQCEC => 'تعرف على المركز القطري';
+
+  @override
+  String get contactMethods => 'طرق التواصل';
+
+  @override
+  String get contactInfo => 'بيانات الاتصال';
+
+  @override
+  String get disableAccountConfirmationMessage =>
+      'هل أنت متأكد من رغبتك في تعطيل حسابك؟\n\nسيتم تغيير كلمة المرور ولن تتمكن من الدخول، لكن بياناتك ستبقى محفوظة.';
+
+  @override
+  String get warning => 'تحذير';
+
+  @override
+  String get disableAccount => 'تعطيل الحساب';
+
+  @override
+  String get confirmDisable => 'تأكيد التعطيل';
+
+  @override
+  String get typeDisableMyAccount =>
+      'اكتب "عطل حسابي" للتأكيد من عملية التعطيل';
+
+  @override
+  String get disableMyAccount => 'عطل حسابي';
+
+  @override
+  String get permanentDisable => 'تعطيل نهائي';
+
+  @override
+  String get disableNotConfirmed =>
+      'لم يتم تأكيد التعطيل. يرجى كتابة "عطل حسابي" بشكل صحيح.';
+
+  @override
+  String get disablingAccount => 'جاري تعطيل الحساب...';
+
+  @override
+  String get pleaseWaitDisablingAccount =>
+      'يرجى الانتظار، جاري تعطيل حسابك من النظام';
+
+  @override
+  String get accountDisabledSuccessfully => 'تم تعطيل الحساب بنجاح';
+
+  @override
+  String get accountDisabledMessage =>
+      'تم تعطيل حسابك من النظام. بياناتك محفوظة لكن لا يمكنك الدخول.\nشكراً لاستخدامك تطبيق QCEC.';
 }

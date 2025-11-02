@@ -17,6 +17,12 @@ class AppLocalizationsFa extends AppLocalizations {
   String get visits => 'بازدیدها';
 
   @override
+  String get monthlyVisits => 'بازدیدهای ماهانه';
+
+  @override
+  String get todayVisits => 'بازدیدهای امروز';
+
+  @override
   String get camera => 'دوربین';
 
   @override
@@ -469,7 +475,8 @@ class AppLocalizationsFa extends AppLocalizations {
   String get hello => 'خوش آمدید!';
 
   @override
-  String get helloContent => 'از بازگشت شما خوشحالیم، وارد حساب خود شوید و سفر خلاقیت مهندسی را آغاز کنید';
+  String get helloContent =>
+      'از بازگشت شما خوشحالیم، وارد حساب خود شوید و سفر خلاقیت مهندسی را آغاز کنید';
 
   @override
   String get pleaseEnterPhoneNumber => 'لطفاً شماره تلفن را وارد کنید';
@@ -485,4 +492,205 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get phoneNumberMustBe8Digits => 'شماره تلفن باید 8 رقم باشد';
+
+  @override
+  String get noInternetTitle => 'اتصال اینترنت وجود ندارد';
+
+  @override
+  String get noInternetMessage =>
+      'لطفاً اتصال اینترنت خود را بررسی کنید\nو دوباره امتحان کنید';
+
+  @override
+  String get checkConnection => 'بررسی اتصال';
+
+  @override
+  String get connectionTips => 'نکات اتصال:';
+
+  @override
+  String get turnOnWifi => 'مطمئن شوید که وای‌فای یا داده موبایل روشن است';
+
+  @override
+  String get checkNetworkSettings => 'تنظیمات شبکه را بررسی کنید';
+
+  @override
+  String get restartRouter => 'راه‌اندازی مجدد روتر را امتحان کنید';
+
+  @override
+  String get stillNoConnection => 'هنوز اتصال اینترنت وجود ندارد';
+
+  @override
+  String get aboutUs => 'درباره ما';
+
+  @override
+  String get qcecFullName => 'مرکز مشاوره مهندسی قطر';
+
+  @override
+  String get sinceYear => 'از سال ۱۹۹۸';
+
+  @override
+  String get aboutUsTitle => 'درباره ما';
+
+  @override
+  String get aboutUsContent =>
+      'از زمان تأسیس در سال ۱۹۹۸، مرکز مشاوره مهندسی قطر کار برجسته و نوآورانه در طراحی ساختمان و نظارت بر اجرا ارائه کرده و رضایت و قدردانی مشتریان را به دست آورده است.\n\nاکنون و همیشه، ما مشتاق مشارکت و ارتقای توسعه در قطر از طریق خدمت و مشارکت مشتریان و جامعه خود هستیم و به آینده و چالش‌های آن کمک می‌کنیم.';
+
+  @override
+  String get inTheBeginning => 'در ابتدا...';
+
+  @override
+  String get ourMissionContent =>
+      'ما، مرکز مشاوره مهندسی قطر، متعهد به ارائه بهترین طراحی‌های با کیفیت و نوآورانه هستیم، با نظارت بر آنها در راستای رضایت و خدمت به مشتریان خود، با ارائه راه‌حل‌های فناوری پیشرفته و خلاقیت پایدار، در عین حفظ اصالت و افزودن مدرنیته.';
+
+  @override
+  String get ourServices => 'خدمات ما';
+
+  @override
+  String get buildingDesign => 'طراحی ساختمان';
+
+  @override
+  String get executionSupervision => 'نظارت بر اجرا';
+
+  @override
+  String get technicalSolutions => 'راه‌حل‌های فنی';
+
+  @override
+  String get qualityAndInnovation => 'کیفیت و نوآوری';
+
+  // Delete Account translations
+  @override
+  String get deleteAccountTitle => 'حذف حساب';
+
+  @override
+  String get deleteAccountPermanently => 'حذف دائمی حساب از برنامه';
+
+  @override
+  String get deleteAccountConfirmation =>
+      'آیا مطمئن هستید که می‌خواهید حساب خود را به طور دائم حذف کنید؟';
+
+  @override
+  String get deleteAccountWarning =>
+      'تمام داده‌های شما حذف خواهد شد و قابل بازیابی نیست';
+
+  @override
+  String get translating => 'در حال ترجمه...';
+
+  @override
+  String get translated => 'ترجمه شده';
+
+  @override
+  String get translatingNotes => 'در حال ترجمه یادداشت‌ها...';
+
+  // Contact Us Screen translations
+  @override
+  String get contactUsTitle => 'تماس با ما';
+
+  @override
+  String get weAreHereToServe => 'ما اینجا هستیم تا به شما خدمت کنیم';
+
+  @override
+  String get contactUsAnytime => 'در هر زمان با ما تماس بگیرید';
+
+  @override
+  String get phone => 'تلفن';
+
+  @override
+  String get callUsDirect => 'مستقیماً با ما تماس بگیرید';
+
+  @override
+  String get email => 'ایمیل';
+
+  @override
+  String get emailUs => 'برای ما ایمیل ارسال کنید';
+
+  @override
+  String get address => 'آدرس';
+
+  @override
+  String get ourLocation => 'موقعیت ما';
+
+  @override
+  String get workingHours => 'ساعات کاری';
+
+  @override
+  String get officialHours => 'ساعات کاری رسمی';
+
+  @override
+  String get followUsOn => 'ما را دنبال کنید';
+
+  @override
+  String get whatsapp => 'واتساپ';
+
+  @override
+  String get instagram => 'اینستاگرام';
+
+  @override
+  String get website => 'وب‌سایت';
+
+  @override
+  String get selectPhoneNumber => 'شماره تلفن را انتخاب کنید';
+
+  @override
+  String get saturdayToThursday => 'شنبه - پنج‌شنبه';
+
+  @override
+  String get morningShift => '۸ صبح - ۱۲ ظهر';
+
+  @override
+  String get eveningShift => '۴ عصر - ۸ شب';
+
+  @override
+  String get inquiryFromApp => 'استعلام از اپلیکیشن QCEC';
+
+  @override
+  String get noVisitsOnThisDate => 'هیچ بازدیدی در این تاریخ وجود ندارد';
+
+  @override
+  String get learnAboutQCEC => 'با مرکز قطر آشنا شوید';
+
+  @override
+  String get contactMethods => 'روش‌های تماس';
+
+  @override
+  String get contactInfo => 'اطلاعات تماس';
+
+  @override
+  String get disableAccountConfirmationMessage =>
+      'آیا مطمئن هستید که می‌خواهید حساب خود را غیرفعال کنید؟\n\nرمز عبور شما تغییر خواهد کرد و نمی‌توانید وارد شوید، اما داده‌های شما ذخیره خواهند ماند.';
+
+  @override
+  String get warning => 'هشدار';
+
+  @override
+  String get disableAccount => 'غیرفعال کردن حساب';
+
+  @override
+  String get confirmDisable => 'تایید غیرفعال سازی';
+
+  @override
+  String get typeDisableMyAccount =>
+      'برای تایید غیرفعال سازی "حساب من را غیرفعال کن" تایپ کنید';
+
+  @override
+  String get disableMyAccount => 'حساب من را غیرفعال کن';
+
+  @override
+  String get permanentDisable => 'غیرفعال سازی دائمی';
+
+  @override
+  String get disableNotConfirmed =>
+      'غیرفعال سازی تایید نشد. لطفاً "حساب من را غیرفعال کن" را به درستی تایپ کنید.';
+
+  @override
+  String get disablingAccount => 'در حال غیرفعال کردن حساب...';
+
+  @override
+  String get pleaseWaitDisablingAccount =>
+      'لطفاً صبر کنید، حساب شما از سیستم غیرفعال می‌شود';
+
+  @override
+  String get accountDisabledSuccessfully => 'حساب با موفقیت غیرفعال شد';
+
+  @override
+  String get accountDisabledMessage =>
+      'حساب شما از سیستم غیرفعال شده است. داده‌های شما ذخیره شده اما نمی‌توانید وارد شوید.\nاز استفاده از برنامه QCEC متشکریم.';
 }

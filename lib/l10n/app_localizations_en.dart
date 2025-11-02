@@ -17,6 +17,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get visits => 'Visits';
 
   @override
+  String get monthlyVisits => 'Monthly Visits';
+  @override
+  String get todayVisits => 'Today\'s Visits';
+
+  @override
   String get camera => 'Camera';
 
   @override
@@ -350,7 +355,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get companyName => 'Qatar Consulting Engineering Center';
 
   @override
-  String get companyDescription => 'Leading company in engineering consulting and project supervision';
+  String get companyDescription =>
+      'Leading company in engineering consulting and project supervision';
 
   @override
   String get companyAddress => 'Doha, Qatar';
@@ -463,13 +469,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get status => 'Status';
-  
+
   @override
   String get hello => 'Welcome back!';
 
   @override
-  String get helloContent => 'We\'re happy to have you back, log in to your account and start your engineering creativity journey';
-  
+  String get helloContent =>
+      'We\'re happy to have you back, log in to your account and start your engineering creativity journey';
+
   @override
   String get pleaseEnterPhoneNumber => 'Please enter phone number';
 
@@ -481,7 +488,192 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get phoneNumber => 'Phone number';
-  
+
   @override
   String get phoneNumberMustBe8Digits => 'Phone number must be 8 digits';
+
+  @override
+  String get noInternetTitle => 'No Internet Connection';
+
+  @override
+  String get noInternetMessage =>
+      'Please check your internet connection\nand try again';
+
+  @override
+  String get checkConnection => 'Check Connection';
+
+  @override
+  String get connectionTips => 'Connection Tips:';
+
+  @override
+  String get turnOnWifi => 'Make sure WiFi or mobile data is turned on';
+
+  @override
+  String get checkNetworkSettings => 'Check network settings';
+
+  @override
+  String get restartRouter => 'Try restarting your router';
+
+  @override
+  String get stillNoConnection => 'Still no internet connection';
+
+  @override
+  String get aboutUs => 'About Us';
+  @override
+  String get qcecFullName => 'Qatar Consulting Engineering Center';
+  @override
+  String get sinceYear => 'Since 1998';
+  @override
+  String get aboutUsTitle => 'About Us';
+  @override
+  String get aboutUsContent =>
+      'Since its establishment in 1998, Qatar Consulting Engineering Center has provided distinguished and innovative work in building design and supervision of implementation, achieving customer satisfaction and appreciation.\n\nNow and always, we look forward to participating and promoting development in Qatar through serving and engaging our clients and community and contributing to the future and its challenges.';
+  @override
+  String get inTheBeginning => 'In the Beginning...';
+  @override
+  String get ourMissionContent =>
+      'We, Qatar Consulting Engineering Center, are committed to providing the best quality and innovative designs, supervising them in pursuit of satisfying and serving our customers, by providing high-tech solutions and sustainable creativity, while preserving authenticity and adding modernity.';
+  @override
+  String get ourServices => 'Our Services';
+  @override
+  String get buildingDesign => 'Building Design';
+  @override
+  String get executionSupervision => 'Execution Supervision';
+  @override
+  String get technicalSolutions => 'Technical Solutions';
+  @override
+  String get qualityAndInnovation => 'Quality & Innovation';
+  @override
+  String get deleteAccountTitle => 'Delete Account';
+  @override
+  String get deleteAccountPermanently =>
+      'Permanently delete account from the app';
+  @override
+  String get deleteAccountConfirmation =>
+      'Are you sure you want to permanently delete your account?';
+  @override
+  String get deleteAccountWarning =>
+      'All your data will be deleted and cannot be recovered';
+
+  @override
+  String get translating => 'Translating...';
+
+  @override
+  String get translated => 'Translated';
+
+  @override
+  String get translatingNotes => 'Translating notes...';
+
+  // Contact Us Screen translations
+  @override
+  String get contactUsTitle => 'Contact Us';
+
+  @override
+  String get weAreHereToServe => 'We Are Here to Serve You';
+
+  @override
+  String get contactUsAnytime => 'Contact us anytime';
+
+  @override
+  String get phone => 'Phone';
+
+  @override
+  String get callUsDirect => 'Call us directly';
+
+  @override
+  String get email => 'Email';
+
+  @override
+  String get emailUs => 'Send us an email';
+
+  @override
+  String get address => 'Address';
+
+  @override
+  String get ourLocation => 'Our location';
+
+  @override
+  String get workingHours => 'Working Hours';
+
+  @override
+  String get officialHours => 'Official working hours';
+
+  @override
+  String get followUsOn => 'Follow Us On';
+
+  @override
+  String get whatsapp => 'WhatsApp';
+
+  @override
+  String get instagram => 'Instagram';
+
+  @override
+  String get website => 'Website';
+
+  @override
+  String get selectPhoneNumber => 'Select phone number';
+
+  @override
+  String get saturdayToThursday => 'Saturday - Thursday';
+
+  @override
+  String get morningShift => '8 AM - 12 PM';
+
+  @override
+  String get eveningShift => '4 PM - 8 PM';
+
+  @override
+  String get inquiryFromApp => 'Inquiry from QCEC App';
+
+  @override
+  String get noVisitsOnThisDate => 'No visits on this date';
+
+  @override
+  String get learnAboutQCEC => 'Learn About Qatar Center';
+
+  @override
+  String get contactMethods => 'Contact Methods';
+
+  @override
+  String get contactInfo => 'Contact Information';
+
+  @override
+  String get disableAccountConfirmationMessage =>
+      'Are you sure you want to disable your account?\n\nYour password will be changed and you won\'t be able to log in, but your data will remain saved.';
+
+  @override
+  String get warning => 'Warning';
+  @override
+  String get disableAccount => 'Disable Account';
+
+  @override
+  String get confirmDisable => 'Confirm Disable';
+
+  @override
+  String get typeDisableMyAccount =>
+      'Type "Disable My Account" to confirm the disabling process';
+
+  @override
+  String get disableMyAccount => 'Disable My Account';
+
+  @override
+  String get permanentDisable => 'Permanent Disable';
+
+  @override
+  String get disableNotConfirmed =>
+      'Disable not confirmed. Please type "Disable My Account" correctly.';
+
+  @override
+  String get disablingAccount => 'Disabling account...';
+
+  @override
+  String get pleaseWaitDisablingAccount =>
+      'Please wait, disabling your account from the system';
+
+  @override
+  String get accountDisabledSuccessfully => 'Account Disabled Successfully';
+
+  @override
+  String get accountDisabledMessage =>
+      'Your account has been disabled from the system. Your data is saved but you cannot log in.\nThank you for using QCEC app.';
 }

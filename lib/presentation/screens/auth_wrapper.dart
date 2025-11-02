@@ -1,4 +1,6 @@
+import 'package:QCEC/presentation/screens/no_internet_screen.dart';
 import 'package:QCEC/test.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:provider/provider.dart';
@@ -17,6 +19,7 @@ class AuthWrapper extends StatefulWidget {
 class _AuthWrapperState extends State<AuthWrapper> {
   bool _minSplashElapsed = false;
   Timer? _minTimer;
+  List<ConnectivityResult> connectivityResult = [];
 
   @override
   void initState() {
@@ -28,6 +31,13 @@ class _AuthWrapperState extends State<AuthWrapper> {
         });
       }
     });
+    _checkConnectivityAndNavigate();
+  }
+
+  Future<void> _checkConnectivityAndNavigate() async {
+    await Future.delayed(const Duration(seconds: 3));
+    if (!mounted) return;
+    connectivityResult = await Connectivity().checkConnectivity();
   }
 
   @override
@@ -48,10 +58,20 @@ class _AuthWrapperState extends State<AuthWrapper> {
         }
 
         // After splash: route based on auth state
-        if (authProvider.isLoggedIn) {
-          return const MainScreen();
+        if (connectivityResult[0] == ConnectivityResult.none) {
+          return NoInternetScreen(
+            onRetry: () {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (context) => const SplashScreen()),
+              );
+            },
+          );
         } else {
-          return const LoginScreen();
+          if (authProvider.isLoggedIn) {
+            return const MainScreen();
+          } else {
+            return const LoginScreen();
+          }
         }
       },
     );

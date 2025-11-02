@@ -1,6 +1,9 @@
 import 'dart:math';
+import 'package:QCEC/l10n/app_localizations.dart';
+import 'package:QCEC/presentation/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
 import 'login_screen.dart';
@@ -17,7 +20,7 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _logoController;
   late AnimationController _textController;
   late AnimationController _backgroundController;
-  
+
   late Animation<double> _logoAnimation;
   late Animation<double> _textAnimation;
   late Animation<double> _backgroundAnimation;
@@ -35,49 +38,37 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(milliseconds: 2000),
       vsync: this,
     );
-    
+
     _textController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
-    
+
     _backgroundController = AnimationController(
       duration: const Duration(milliseconds: 3000),
       vsync: this,
     );
 
-    _logoAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _logoController,
-      curve: Curves.elasticOut,
-    ));
+    _logoAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _logoController, curve: Curves.elasticOut),
+    );
 
-    _textAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _textController,
-      curve: Curves.easeInOut,
-    ));
+    _textAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _textController, curve: Curves.easeInOut),
+    );
 
-    _backgroundAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _backgroundController,
-      curve: Curves.easeInOut,
-    ));
+    _backgroundAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _backgroundController, curve: Curves.easeInOut),
+    );
   }
 
   void _startAnimations() {
     _backgroundController.forward();
-    
+
     Future.delayed(const Duration(milliseconds: 400), () {
       if (mounted) _logoController.forward();
     });
-    
+
     Future.delayed(const Duration(milliseconds: 900), () {
       if (mounted) _textController.forward();
     });
@@ -90,12 +81,10 @@ class _SplashScreenState extends State<SplashScreen>
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
                 const LoginScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
             transitionDuration: const Duration(milliseconds: 1200),
           ),
         );
@@ -113,90 +102,78 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.primary,
-        ),
-        child: AnimatedBuilder(
-          animation: Listenable.merge([
-            _logoController,
-            _textController,
-            _backgroundController,
-          ]),
-          builder: (context, child) {
-            return Stack(
-              children: [
-                // Background Circles
-                _buildBackgroundCircles(),
-                
-                // Main Content
-                Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Logo
-                      Transform.scale(
-                        scale: _logoAnimation.value,
-                        child: _buildLogo(),
-                      ),
-                      
-                      const SizedBox(height: 40),
-                      
-                      // App Name
-                      Opacity(
-                        opacity: _textAnimation.value,
-                        child: Text(
-                          AppStrings.appName,
-                          style: const TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: 2,
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return Scaffold(
+          body: Container(
+            decoration: BoxDecoration(
+              color: themeProvider.isDarkMode
+                  ? AppColors.primaryDark
+                  : AppColors.primary,
+            ),
+            child: AnimatedBuilder(
+              animation: Listenable.merge([
+                _logoController,
+                _textController,
+                _backgroundController,
+              ]),
+              builder: (context, child) {
+                return Stack(
+                  children: [
+                    // Background Circles
+                    _buildBackgroundCircles(),
+
+                    // Main Content
+                    Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Logo
+                          Transform.scale(
+                            scale: _logoAnimation.value,
+                            child: _buildLogo(),
                           ),
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 16),
-                      
-                      // Subtitle with Animation
-                      AnimatedBuilder(
-                        animation: _textController,
-                        builder: (context, child) {
-                          return Transform.translate(
-                            offset: Offset(0, _textAnimation.value * 30),
-                            child: FadeTransition(
-                              opacity: _textAnimation,
-                              child: Text(
-                                'المركز القطري للإستشارات الهندسية',
-                                style: GoogleFonts.cairo(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  letterSpacing: 1,
+
+                          // Subtitle with Animation
+                          AnimatedBuilder(
+                            animation: _textController,
+                            builder: (context, child) {
+                              return Transform.translate(
+                                offset: Offset(0, _textAnimation.value * 30),
+                                child: FadeTransition(
+                                  opacity: _textAnimation,
+                                  child: Text(
+                                    AppLocalizations.of(context)!.qcecFullName,
+                                    style: GoogleFonts.cairo(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      letterSpacing: 1,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
                                 ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          );
-                        },
+                              );
+                            },
+                          ),
+
+                          const SizedBox(height: 60),
+
+                          // Custom Loading Indicator
+                          Opacity(
+                            opacity: _textAnimation.value,
+                            child: _buildCustomLoader(),
+                          ),
+                        ],
                       ),
-                      
-                      const SizedBox(height: 60),
-                      
-                      // Custom Loading Indicator
-                      Opacity(
-                        opacity: _textAnimation.value,
-                        child: _buildCustomLoader(),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-        },
-      ),
-      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -219,7 +196,7 @@ class _SplashScreenState extends State<SplashScreen>
             ),
           ),
         ),
-        
+
         // Bottom Right Circle
         Positioned(
           bottom: -150,
@@ -236,7 +213,7 @@ class _SplashScreenState extends State<SplashScreen>
             ),
           ),
         ),
-        
+
         // Center Small Circle
         Positioned(
           top: MediaQuery.of(context).size.height * 0.3,
@@ -308,14 +285,22 @@ class _SplashScreenState extends State<SplashScreen>
           ...List.generate(8, (index) {
             final angle = (index * 45) * (3.14159 / 180);
             return Positioned(
-              left: 30 + (25 * cos(angle + (_logoController.value * 2 * 3.14159))) - 3,
-              top: 30 + (25 * sin(angle + (_logoController.value * 2 * 3.14159))) - 3,
+              left:
+                  30 +
+                  (25 * cos(angle + (_logoController.value * 2 * 3.14159))) -
+                  3,
+              top:
+                  30 +
+                  (25 * sin(angle + (_logoController.value * 2 * 3.14159))) -
+                  3,
               child: Container(
                 width: 6,
                 height: 6,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withAlpha((255 * (index + 1) / 8).round()),
+                  color: Colors.white.withAlpha(
+                    (255 * (index + 1) / 8).round(),
+                  ),
                 ),
               ),
             );
@@ -326,34 +311,38 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Widget _buildLogo() {
-    return Container(
-      width: 150,
-      height: 150,
-      child: Image.asset(
-        'assets/images/logo.png',
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            width: 150,
-            height: 150,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withAlpha(51),
-            ),
-            child: Center(
-              child: Text(
-                'QCEC',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  letterSpacing: 2,
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return Container(
+          width: 150,
+          height: 150,
+          child: Image.asset(
+            'assets/images/${themeProvider.isDarkMode ? "logo-white" : "logo"}.png',
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                width: 150,
+                height: 150,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withAlpha(51),
                 ),
-              ),
-            ),
-          );
-        },
-      ),
+                child: Center(
+                  child: Text(
+                    'QCEC',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }

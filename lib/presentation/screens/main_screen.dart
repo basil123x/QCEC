@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:QCEC/presentation/screens/about_us_screen.dart';
 import 'package:QCEC/presentation/screens/contact_us_screen.dart';
+import 'package:QCEC/services/translation_service.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -1162,6 +1163,7 @@ class _MainScreenState extends State<MainScreen> {
                         ? AppColors.textPrimaryDark
                         : Colors.grey[800],
                   ),
+                  maxLines: 1,
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -1172,6 +1174,7 @@ class _MainScreenState extends State<MainScreen> {
                         ? AppColors.textSecondaryDark
                         : Colors.grey[600],
                   ),
+                  maxLines: 1,
                 ),
               ],
             ),
@@ -1419,98 +1422,102 @@ class _MainScreenState extends State<MainScreen> {
   Widget _buildSettingsSection(AuthProvider authProvider) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
-        return Container(
-          decoration: BoxDecoration(
-            color: themeProvider.isDarkMode
-                ? AppColors.secondaryDark
-                : AppColors.pureWhite,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(13),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
+        return Consumer<LanguageProvider>(
+          builder: (context, languageProvider, child) {
+            final localizations = AppLocalizations.of(context)!;
+            return Container(
+              decoration: BoxDecoration(
+                color: themeProvider.isDarkMode
+                    ? AppColors.secondaryDark
+                    : AppColors.pureWhite,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(13),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Consumer<LanguageProvider>(
-                builder: (context, languageProvider, child) {
-                  final localizations = AppLocalizations.of(context)!;
-                  return _buildSettingsItem(
+              child: Column(
+                children: [
+                  _buildSettingsItem(
                     icon: Iconsax.language_circle,
                     title: localizations.changeLanguage,
                     subtitle: languageProvider.currentLanguageName,
                     onTap: () => _showLanguageDialog(),
                     color: Colors.blue,
-                  );
-                },
+                  ),
+                  _buildDivider(),
+                  Consumer<ThemeProvider>(
+                    builder: (context, themeProvider, child) {
+                      return _buildThemeToggleItem(themeProvider);
+                    },
+                  ),
+                  _buildDivider(),
+                  _buildSettingsItem(
+                    icon: Iconsax.info_circle,
+                    title: localizations.aboutUs,
+                    subtitle: localizations.learnAboutQCEC,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AboutUsScreen(),
+                        ),
+                      );
+                    },
+                    color: Colors.orange,
+                  ),
+                  _buildDivider(),
+                  _buildSettingsItem(
+                    icon: Iconsax.call,
+                    title: localizations.contactUs,
+                    subtitle:
+                        "${localizations.contactMethods}\n ${localizations.contactInfo}",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ContactUsScreen(),
+                        ),
+                      );
+                    },
+                    color: Colors.green,
+                  ),
+                  _buildDivider(),
+                  _buildSettingsItem(
+                    icon: Iconsax.trash,
+                    title: localizations.deleteAccount,
+                    subtitle: localizations.deleteAccountPermanently,
+                    onTap: () =>
+                        _showDeleteAccountDialog(context, localizations),
+                    color: Colors.red,
+                  ),
+                ],
               ),
-              _buildDivider(),
-              Consumer<ThemeProvider>(
-                builder: (context, themeProvider, child) {
-                  return _buildThemeToggleItem(themeProvider);
-                },
-              ),
-              _buildDivider(),
-              _buildSettingsItem(
-                icon: Iconsax.info_circle,
-                title: 'من نحن',
-                subtitle: 'تعرف على المركز القطري للاستشارات الهندسية',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const AboutUsScreen(),
-                    ),
-                  );
-                },
-                color: Colors.orange,
-              ),
-              _buildDivider(),
-              _buildSettingsItem(
-                icon: Iconsax.call,
-                title: 'تواصل معنا',
-                subtitle: 'طرق التواصل وبيانات الاتصال',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ContactUsScreen(),
-                    ),
-                  );
-                },
-                color: Colors.green,
-              ),
-              _buildDivider(),
-              _buildSettingsItem(
-                icon: Iconsax.trash,
-                title: 'حذف الحساب',
-                subtitle: 'حذف الحساب نهائياً من التطبيق',
-                onTap: () => _showDeleteAccountDialog(context),
-                color: Colors.red,
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
   }
 
-  void _showDeleteAccountDialog(BuildContext context) {
+  void _showDeleteAccountDialog(
+    BuildContext context,
+    AppLocalizations localizations,
+  ) {
     AwesomeDialog(
       context: context,
       dialogType: DialogType.warning,
       animType: AnimType.bottomSlide,
-      title: 'تحذير',
-      desc:
-          'هل أنت متأكد من رغبتك في تعطيل حسابك؟\n\nسيتم تغيير كلمة المرور ولن تتمكن من الدخول، لكن بياناتك ستبقى محفوظة.',
-      btnCancelText: 'إلغاء',
-      btnOkText: 'تعطيل الحساب',
+      title: localizations.warning,
+      desc: localizations.disableAccountConfirmationMessage,
+      btnCancelText: localizations.cancel,
+      btnOkText: localizations.disableAccount,
       btnCancelOnPress: () {},
       btnOkOnPress: () {
-        _confirmDeleteAccount(context);
+        _confirmDeleteAccount(context, localizations);
       },
       btnOkColor: Colors.red,
       btnCancelColor: Colors.grey,
@@ -1533,20 +1540,21 @@ class _MainScreenState extends State<MainScreen> {
     ).show();
   }
 
-  void _confirmDeleteAccount(BuildContext context) {
+  void _confirmDeleteAccount(
+    BuildContext context,
+    AppLocalizations localizations,
+  ) {
     TextEditingController deleteController = TextEditingController();
     AwesomeDialog(
       context: context,
       dialogType: DialogType.error,
       animType: AnimType.scale,
-      title: 'تأكيد التعطيل',
-      desc: 'اكتب "عطل حسابي" للتأكيد من عملية التعطيل',
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             Text(
-              'تأكيد التعطيل',
+              localizations.confirmDisable,
               style: GoogleFonts.cairo(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -1555,7 +1563,7 @@ class _MainScreenState extends State<MainScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'اكتب "عطل حسابي" للتأكيد من عملية التعطيل',
+              localizations.typeDisableMyAccount,
               style: GoogleFonts.cairo(
                 fontSize: 16,
                 color: Colors.grey[700],
@@ -1569,7 +1577,7 @@ class _MainScreenState extends State<MainScreen> {
               style: GoogleFonts.cairo(fontSize: 16),
               controller: deleteController,
               decoration: InputDecoration(
-                hintText: 'عطل حسابي',
+                hintText: localizations.disableMyAccount,
                 hintStyle: GoogleFonts.cairo(color: Colors.grey[400]),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1587,17 +1595,17 @@ class _MainScreenState extends State<MainScreen> {
           ],
         ),
       ),
-      btnCancelText: 'إلغاء',
-      btnOkText: 'تعطيل نهائي',
+      btnCancelText: localizations.cancel,
+      btnOkText: localizations.permanentDisable,
       btnCancelOnPress: () {},
       btnOkOnPress: () {
-        if (deleteController.text.trim() == 'عطل حسابي') {
-          _deleteAccount(context);
+        if (deleteController.text.trim() == localizations.disableMyAccount) {
+          _deleteAccount(context, localizations);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'لم يتم تأكيد التعطيل. يرجى كتابة "عطل حسابي" بشكل صحيح.',
+                localizations.disableNotConfirmed,
                 style: GoogleFonts.cairo(),
               ),
               backgroundColor: Colors.red,
@@ -1620,15 +1628,18 @@ class _MainScreenState extends State<MainScreen> {
     ).show();
   }
 
-  void _deleteAccount(BuildContext context) async {
+  void _deleteAccount(
+    BuildContext context,
+    AppLocalizations localizations,
+  ) async {
     try {
       // Show loading dialog
       AwesomeDialog(
         context: context,
         dialogType: DialogType.info,
         animType: AnimType.scale,
-        title: 'جاري تعطيل الحساب...',
-        desc: 'يرجى الانتظار، جاري تعطيل حسابك من النظام',
+        title: localizations.disablingAccount,
+        desc: localizations.pleaseWaitDisablingAccount,
         dismissOnTouchOutside: false,
         dismissOnBackKeyPress: false,
         showCloseIcon: false,
@@ -1673,10 +1684,9 @@ class _MainScreenState extends State<MainScreen> {
             context: context,
             dialogType: DialogType.success,
             animType: AnimType.topSlide,
-            title: 'تم تعطيل الحساب بنجاح',
-            desc:
-                'تم تعطيل حسابك من النظام. بياناتك محفوظة لكن لا يمكنك الدخول.\nشكراً لاستخدامك تطبيق QCEC.',
-            btnOkText: 'موافق',
+            title: localizations.accountDisabledSuccessfully,
+            desc: localizations.accountDisabledMessage,
+            btnOkText: localizations.ok,
             btnOkOnPress: () async {
               // Logout and clear all data
               await authProvider.logout();
@@ -2226,44 +2236,115 @@ class _MainScreenState extends State<MainScreen> {
     final isExpanded = _expandedNotes.contains(visitId);
     final maxLines = isExpanded ? null : 2;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          text,
-          style: GoogleFonts.cairo(
-            fontSize: 14,
-            color: Theme.of(context).brightness == Brightness.dark
-                ? AppColors.textPrimaryDark
-                : Colors.grey[800],
-            height: 1.4,
-          ),
-          maxLines: maxLines,
-          overflow: isExpanded ? null : TextOverflow.ellipsis,
-        ),
-        if (text.length > 100) ...[
-          const SizedBox(height: 4),
-          GestureDetector(
-            onTap: () {
-              setLocalState(() {
-                if (_expandedNotes.contains(visitId)) {
-                  _expandedNotes.remove(visitId);
-                } else {
-                  _expandedNotes.add(visitId);
-                }
-              });
-            },
-            child: Text(
-              isExpanded ? 'عرض أقل' : 'اقرأ المزيد',
-              style: GoogleFonts.cairo(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-              ),
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, child) {
+        if (text.isEmpty || text == "لا توجد ملاحظات") {
+          return Text(
+            "لا توجد ملاحظات",
+            style: GoogleFonts.cairo(
+              fontSize: 14,
+              color: Colors.grey[500],
+              fontStyle: FontStyle.italic,
             ),
+          );
+        }
+
+        return FutureBuilder<String>(
+          future: TranslationService().translateText(
+            text: text,
+            targetLanguage: languageProvider.currentLocale.toString(),
+            sourceLanguage: 'ar',
           ),
-        ],
-      ],
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Row(
+                children: [
+                  SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Colors.amber[700]!,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    AppLocalizations.of(context)!.translatingNotes,
+                    style: GoogleFonts.cairo(
+                      fontSize: 12,
+                      color: Colors.amber[700],
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            final translatedText = snapshot.data ?? text;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  translatedText,
+                  style: GoogleFonts.cairo(
+                    fontSize: 14,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.textPrimaryDark
+                        : Colors.grey[800],
+                    height: 1.4,
+                  ),
+                  maxLines: maxLines,
+                  overflow: isExpanded ? null : TextOverflow.ellipsis,
+                ),
+                if (translatedText.length > 100) ...[
+                  const SizedBox(height: 4),
+                  GestureDetector(
+                    onTap: () {
+                      setLocalState(() {
+                        if (_expandedNotes.contains(visitId)) {
+                          _expandedNotes.remove(visitId);
+                        } else {
+                          _expandedNotes.add(visitId);
+                        }
+                      });
+                    },
+                    child: Text(
+                      isExpanded ? 'عرض أقل' : 'اقرأ المزيد',
+                      style: GoogleFonts.cairo(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ],
+                // Show translation indicator if text was translated
+                if (languageProvider.currentLocale != 'ar' &&
+                    translatedText != text) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.translate, size: 12, color: Colors.blue[600]),
+                      const SizedBox(width: 4),
+                      Text(
+                        AppLocalizations.of(context)!.translated,
+                        style: GoogleFonts.cairo(
+                          fontSize: 10,
+                          color: Colors.blue[600],
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -2980,133 +3061,163 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildDateNavigationBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(color: AppColors.primary.withAlpha(51)),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          IconButton(
-            onPressed: () {
-              setState(() {
-                _selectedDate = _selectedDate.subtract(const Duration(days: 1));
-
-                prox = "";
-
-                final oldDateKey = intlx.DateFormat(
-                  'yyyy-MM-dd',
-                ).format(_selectedDate.add(const Duration(days: 1)));
-                _visitsCache.remove(oldDateKey);
-              });
-            },
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Theme.of(context).cardColor,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(25),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Icon(
-                Iconsax.arrow_right_3,
-                color: AppColors.primary,
-                size: 16,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).cardColor,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(25),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
+    return Consumer<LanguageProvider>(
+      builder: (context, localization, child) {
+        return Consumer<ThemeProvider>(
+          builder: (context, themeProvider, child) {
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(color: AppColors.primary.withAlpha(51)),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    _getArabicDayName(_selectedDate.weekday),
-                    style: GoogleFonts.cairo(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _selectedDate = _selectedDate.subtract(
+                          const Duration(days: 1),
+                        );
+
+                        prox = "";
+
+                        final oldDateKey = intlx.DateFormat(
+                          'yyyy-MM-dd',
+                        ).format(_selectedDate.add(const Duration(days: 1)));
+                        _visitsCache.remove(oldDateKey);
+                      });
+                    },
+                    icon: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: themeProvider.isDarkMode
+                            ? AppColors.primaryDark
+                            : AppColors.primary,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withAlpha(25),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        AppLocalizations.of(context)?.localeName == 'ar' ||
+                                AppLocalizations.of(context)?.localeName ==
+                                    'ur' ||
+                                AppLocalizations.of(context)?.localeName == 'fa'
+                            ? Iconsax.arrow_right_4
+                            : Iconsax.arrow_left_14,
+                        color: Colors.white,
+                        size: 16,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                    style: GoogleFonts.cairo(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? AppColors.textPrimaryDark
-                          : Colors.grey[800],
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: themeProvider.isDarkMode
+                            ? AppColors.primaryDark
+                            : AppColors.primary,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withAlpha(25),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            _getArabicDayName(_selectedDate.weekday),
+                            style: GoogleFonts.cairo(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+                            style: GoogleFonts.cairo(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: _isBeforeToday()
+                        ? () {
+                            setState(() {
+                              _selectedDate = _selectedDate.add(
+                                const Duration(days: 1),
+                              );
+                              prox = "";
+
+                              final oldDateKey = intlx.DateFormat('yyyy-MM-dd')
+                                  .format(
+                                    _selectedDate.subtract(
+                                      const Duration(days: 1),
+                                    ),
+                                  );
+                              _visitsCache.remove(oldDateKey);
+                            });
+                          }
+                        : null,
+                    icon: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: _isBeforeToday()
+                            ? themeProvider.isDarkMode
+                                  ? AppColors.secondaryDark
+                                  : AppColors.primary
+                            : Theme.of(context).brightness == Brightness.dark
+                            ? AppColors.borderDark
+                            : Colors.grey[300],
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: _isBeforeToday()
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withAlpha(25),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Icon(
+                        AppLocalizations.of(context)?.localeName == 'ar' ||
+                                AppLocalizations.of(context)?.localeName ==
+                                    'ur' ||
+                                AppLocalizations.of(context)?.localeName == 'fa'
+                            ? Iconsax.arrow_left_1
+                            : Iconsax.arrow_right_4,
+                        color: _isBeforeToday()
+                            ? Colors.white
+                            : Theme.of(context).brightness == Brightness.dark
+                            ? AppColors.textSecondaryDark
+                            : Colors.grey[500],
+                        size: 16,
+                      ),
                     ),
                   ),
                 ],
               ),
-            ),
-          ),
-          IconButton(
-            onPressed: _isBeforeToday()
-                ? () {
-                    setState(() {
-                      _selectedDate = _selectedDate.add(
-                        const Duration(days: 1),
-                      );
-                      prox = "";
-
-                      final oldDateKey = intlx.DateFormat(
-                        'yyyy-MM-dd',
-                      ).format(_selectedDate.subtract(const Duration(days: 1)));
-                      _visitsCache.remove(oldDateKey);
-                    });
-                  }
-                : null,
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: _isBeforeToday()
-                    ? Colors.white
-                    : Theme.of(context).brightness == Brightness.dark
-                    ? AppColors.borderDark
-                    : Colors.grey[300],
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: _isBeforeToday()
-                    ? [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(25),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Icon(
-                Iconsax.arrow_left_2,
-                color: _isBeforeToday()
-                    ? AppColors.primary
-                    : Theme.of(context).brightness == Brightness.dark
-                    ? AppColors.textSecondaryDark
-                    : Colors.grey[500],
-                size: 16,
-              ),
-            ),
-          ),
-        ],
-      ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -3620,22 +3731,27 @@ class _MainScreenState extends State<MainScreen> {
                             width: double.infinity,
                             child: ElevatedButton(
                               onPressed: () async {
+                                final authProvider = Provider.of<AuthProvider>(
+                                  context,
+                                  listen: false,
+                                );
                                 // 1️⃣ مسح الـ cache القديم عشان نحمل الداتا من جديد
                                 _visitsCache.clear();
 
                                 // 2️⃣ الانتقال لصفحة الزيارات
                                 setState(() {
-                                  _selectedIndex = 2;
+                                  if (authProvider.isEngineer()) {
+                                    _selectedIndex = 3;
+                                  } else {
+                                    _selectedIndex = 2;
+                                  }
                                   prox = project['id'];
                                   _showingStats =
                                       false; // نتأكد إننا في صفحة الزيارات مش الإحصائيات
                                 });
 
                                 // 3️⃣ تحميل البيانات فوراً بعد الانتقال
-                                final authProvider = Provider.of<AuthProvider>(
-                                  context,
-                                  listen: false,
-                                );
+
                                 final dateKey = intlx.DateFormat(
                                   'yyyy-MM-dd',
                                 ).format(_selectedDate);
@@ -3652,7 +3768,9 @@ class _MainScreenState extends State<MainScreen> {
                                 }
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
+                                backgroundColor: themeProvider.isDarkMode
+                                    ? AppColors.secondaryDark
+                                    : AppColors.primary,
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 12,
                                 ),
@@ -3665,7 +3783,7 @@ class _MainScreenState extends State<MainScreen> {
                                 style: GoogleFonts.cairo(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).cardColor,
+                                  color: Colors.white,
                                 ),
                               ),
                             ),
@@ -4229,17 +4347,105 @@ class _MainScreenState extends State<MainScreen> {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        visit['a2'] ?? "",
-                        style: GoogleFonts.cairo(
-                          fontSize: 14,
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? AppColors.textPrimaryDark
-                              : Colors.grey[800],
-                          height: 1.4,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                      Consumer<LanguageProvider>(
+                        builder: (context, languageProvider, child) {
+                          final description = visit['a2'] ?? "";
+                          if (description.isEmpty) {
+                            return Text(
+                              "لا يوجد وصف",
+                              style: GoogleFonts.cairo(
+                                fontSize: 14,
+                                color: Colors.grey[500],
+                                fontStyle: FontStyle.italic,
+                              ),
+                            );
+                          }
+
+                          return FutureBuilder<String>(
+                            future: TranslationService().translateText(
+                              text: description,
+                              targetLanguage: languageProvider.currentLocale
+                                  .toString(),
+                              sourceLanguage: 'ar',
+                            ),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 12,
+                                      height: 12,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.amber[700]!,
+                                            ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      AppLocalizations.of(context)!.translating,
+                                      style: GoogleFonts.cairo(
+                                        fontSize: 12,
+                                        color: Colors.amber[700],
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              }
+
+                              final translatedText =
+                                  snapshot.data ?? description;
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    translatedText,
+                                    style: GoogleFonts.cairo(
+                                      fontSize: 14,
+                                      color:
+                                          Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? AppColors.textPrimaryDark
+                                          : Colors.grey[800],
+                                      height: 1.4,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  // Show translation indicator if text was translated
+                                  if (languageProvider.currentLocale != 'ar' &&
+                                      translatedText != description) ...[
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.translate,
+                                          size: 12,
+                                          color: Colors.blue[600],
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          AppLocalizations.of(
+                                            context,
+                                          )!.translated,
+                                          style: GoogleFonts.cairo(
+                                            fontSize: 10,
+                                            color: Colors.blue[600],
+                                            fontStyle: FontStyle.italic,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
+                              );
+                            },
+                          );
+                        },
                       ),
                       const SizedBox(height: 8),
                       Row(

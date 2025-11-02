@@ -17,6 +17,12 @@ class AppLocalizationsBn extends AppLocalizations {
   String get visits => 'পরিদর্শন';
 
   @override
+  String get monthlyVisits => 'মাসিক ভিজিট';
+
+  @override
+  String get todayVisits => 'আজকের ভিজিট';
+
+  @override
   String get camera => 'ক্যামেরা';
 
   @override
@@ -486,4 +492,207 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get phoneNumberMustBe8Digits => 'ফোন নম্বর অবশ্যই ৮ সংখ্যার হতে হবে';
+
+  // No Internet Screen translations
+  @override
+  String get noInternetTitle => 'ইন্টারনেট সংযোগ নেই';
+
+  @override
+  String get noInternetMessage =>
+      'অনুগ্রহ করে আপনার ইন্টারনেট সংযোগ পরীক্ষা করুন\nএবং আবার চেষ্টা করুন';
+
+  @override
+  String get checkConnection => 'সংযোগ পরীক্ষা করুন';
+
+  @override
+  String get connectionTips => 'সংযোগের টিপস:';
+
+  @override
+  String get turnOnWifi => 'নিশ্চিত করুন যে ওয়াইফাই বা মোবাইল ডেটা চালু আছে';
+
+  @override
+  String get checkNetworkSettings => 'নেটওয়ার্ক সেটিংস পরীক্ষা করুন';
+
+  @override
+  String get restartRouter => 'আপনার রাউটার পুনরায় চালু করার চেষ্টা করুন';
+
+  @override
+  String get stillNoConnection => 'এখনও ইন্টারনেট সংযোগ নেই';
+
+  @override
+  String get aboutUs => 'আমাদের সম্পর্কে';
+
+  @override
+  String get qcecFullName => 'কাতার কনসালটিং ইঞ্জিনিয়ারিং সেন্টার';
+
+  @override
+  String get sinceYear => '১৯৯৮ সাল থেকে';
+
+  @override
+  String get aboutUsTitle => 'আমাদের সম্পর্কে';
+
+  @override
+  String get aboutUsContent =>
+      '১৯৯৮ সালে প্রতিষ্ঠার পর থেকে, কাতার কনসালটিং ইঞ্জিনিয়ারিং সেন্টার ভবন নকশা এবং বাস্তবায়নের তত্ত্বাবধানে বিশিষ্ট এবং উদ্ভাবনী কাজ প্রদান করে আসছে, গ্রাহক সন্তুষ্টি এবং প্রশংসা অর্জন করছে।\n\nএখন এবং সর্বদা, আমরা আমাদের ক্লায়েন্ট এবং সম্প্রদায়কে সেবা এবং জড়িত করার মাধ্যমে কাতারে উন্নয়নে অংশগ্রহণ এবং প্রচারের জন্য উন্মুখ এবং ভবিষ্যত এবং এর চ্যালেঞ্জে অবদান রাখছি।';
+
+  @override
+  String get inTheBeginning => 'শুরুতে...';
+
+  @override
+  String get ourMissionContent =>
+      'আমরা, কাতার কনসালটিং ইঞ্জিনিয়ারিং সেন্টার, সর্বোত্তম মানের এবং উদ্ভাবনী নকশা প্রদান করতে, উচ্চ প্রযুক্তির সমাধান এবং টেকসই সৃজনশীলতা প্রদান করে আমাদের গ্রাহকদের সন্তুষ্ট এবং সেবা করার জন্য তাদের তত্ত্বাবধান করতে প্রতিশ্রুতিবদ্ধ, মূলত্ব সংরক্ষণ এবং আধুনিকতা যোগ করার সময়।';
+
+  @override
+  String get ourServices => 'আমাদের সেবা';
+
+  @override
+  String get buildingDesign => 'ভবন নকশা';
+
+  @override
+  String get executionSupervision => 'বাস্তবায়ন তত্ত্বাবধান';
+
+  @override
+  String get technicalSolutions => 'প্রযুক্তিগত সমাধান';
+
+  @override
+  String get qualityAndInnovation => 'মান ও উদ্ভাবন';
+
+  // Delete Account translations
+  @override
+  String get deleteAccountTitle => 'অ্যাকাউন্ট মুছুন';
+
+  @override
+  String get deleteAccountPermanently =>
+      'অ্যাপ থেকে স্থায়ীভাবে অ্যাকাউন্ট মুছুন';
+
+  @override
+  String get deleteAccountConfirmation =>
+      'আপনি কি নিশ্চিত যে আপনি স্থায়ীভাবে আপনার অ্যাকাউন্ট মুছতে চান?';
+
+  @override
+  String get deleteAccountWarning =>
+      'আপনার সমস্ত ডেটা মুছে ফেলা হবে এবং পুনরুদ্ধার করা যাবে না';
+
+  @override
+  String get translating => 'অনুবাদ করা হচ্ছে...';
+
+  @override
+  String get translated => 'অনুবাদিত';
+
+  @override
+  String get translatingNotes => 'নোট অনুবাদ করা হচ্ছে...';
+
+  @override
+  String get contactUsTitle => 'আমাদের সাথে যোগাযোগ করুন';
+
+  @override
+  String get weAreHereToServe => 'আমরা আপনার সেবায় আছি';
+
+  @override
+  String get contactUsAnytime => 'যেকোনো সময় যোগাযোগ করুন';
+
+  @override
+  String get phone => 'ফোন';
+
+  @override
+  String get callUsDirect => 'সরাসরি আমাদের কল করুন';
+
+  @override
+  String get email => 'ইমেইল';
+
+  @override
+  String get emailUs => 'আমাদের ইমেইল পাঠান';
+
+  @override
+  String get address => 'ঠিকানা';
+
+  @override
+  String get ourLocation => 'আমাদের অবস্থান';
+
+  @override
+  String get workingHours => 'কর্মঘণ্টা';
+
+  @override
+  String get officialHours => 'সরকারি কর্মঘণ্টা';
+
+  @override
+  String get followUsOn => 'আমাদের অনুসরণ করুন';
+
+  @override
+  String get whatsapp => 'হোয়াটসঅ্যাপ';
+
+  @override
+  String get instagram => 'ইনস্টাগ্রাম';
+
+  @override
+  String get website => 'ওয়েবসাইট';
+
+  @override
+  String get selectPhoneNumber => 'ফোন নম্বর নির্বাচন করুন';
+
+  @override
+  String get saturdayToThursday => 'শনিবার - বৃহস্পতিবার';
+
+  @override
+  String get morningShift => 'সকাল ৮টা - দুপুর ১২টা';
+
+  @override
+  String get eveningShift => 'বিকাল ৪টা - রাত ৮টা';
+
+  @override
+  String get inquiryFromApp => 'QCEC অ্যাপ থেকে অনুসন্ধান';
+
+  @override
+  String get noVisitsOnThisDate => 'এই তারিখে কোনো ভিজিট নেই';
+
+  @override
+  String get learnAboutQCEC => 'কাতার সেন্টার সম্পর্কে জানুন';
+
+  @override
+  String get contactMethods => 'যোগাযোগের পদ্ধতি';
+
+  @override
+  String get contactInfo => 'যোগাযোগের তথ্য';
+
+  @override
+  String get disableAccountConfirmationMessage =>
+      'আপনি কি নিশ্চিত যে আপনি আপনার অ্যাকাউন্ট নিষ্ক্রিয় করতে চান?\n\nআপনার পাসওয়ার্ড পরিবর্তন হবে এবং আপনি লগইন করতে পারবেন না, তবে আপনার ডেটা সংরক্ষিত থাকবে।';
+
+  @override
+  String get warning => 'সতর্কতা';
+
+  @override
+  String get disableAccount => 'অ্যাকাউন্ট নিষ্ক্রিয় করুন';
+
+  @override
+  String get confirmDisable => 'নিষ্ক্রিয় নিশ্চিত করুন';
+
+  @override
+  String get typeDisableMyAccount =>
+      'নিষ্ক্রিয় প্রক্রিয়া নিশ্চিত করতে "আমার অ্যাকাউন্ট নিষ্ক্রিয় করুন" টাইপ করুন';
+
+  @override
+  String get disableMyAccount => 'আমার অ্যাকাউন্ট নিষ্ক্রিয় করুন';
+
+  @override
+  String get permanentDisable => 'স্থায়ী নিষ্ক্রিয়';
+
+  @override
+  String get disableNotConfirmed =>
+      'নিষ্ক্রিয় নিশ্চিত হয়নি। অনুগ্রহ করে "আমার অ্যাকাউন্ট নিষ্ক্রিয় করুন" সঠিকভাবে টাইপ করুন।';
+
+  @override
+  String get disablingAccount => 'অ্যাকাউন্ট নিষ্ক্রিয় করা হচ্ছে...';
+
+  @override
+  String get pleaseWaitDisablingAccount =>
+      'অনুগ্রহ করে অপেক্ষা করুন, সিস্টেম থেকে আপনার অ্যাকাউন্ট নিষ্ক্রিয় করা হচ্ছে';
+
+  @override
+  String get accountDisabledSuccessfully =>
+      'অ্যাকাউন্ট সফলভাবে নিষ্ক্রিয় হয়েছে';
+
+  @override
+  String get accountDisabledMessage =>
+      'আপনার অ্যাকাউন্ট সিস্টেম থেকে নিষ্ক্রিয় করা হয়েছে। আপনার ডেটা সংরক্ষিত কিন্তু আপনি লগইন করতে পারবেন না।\nQCEC অ্যাপ ব্যবহার করার জন্য ধন্যবাদ।';
 }

@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:QCEC/core/constants/app_colors.dart';
 import 'add_visit_screen.dart';
+import 'package:saver_gallery/saver_gallery.dart';
 
 class CameraWorking extends StatefulWidget {
   final int visitId;
@@ -132,6 +133,13 @@ class _CameraWorkingState extends State<CameraWorking> {
                 if (await file.exists() && mounted) {
                   final isVideo = capture.captureRequest.path!.contains(
                     'video_',
+                  );
+
+                  await SaverGallery.saveFile(
+                    filePath: file.path,
+                    fileName:
+                        "GallerySaving${DateTime.now().millisecondsSinceEpoch}/${widget.projectId}/${widget.visitId}.jpg",
+                    skipIfExists: false,
                   );
 
                   debugPrint(

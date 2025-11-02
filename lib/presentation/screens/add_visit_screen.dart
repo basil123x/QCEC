@@ -1,8 +1,16 @@
+import 'dart:convert';
+import 'dart:isolate';
+import 'dart:typed_data';
+
+import 'package:QCEC/core/Functions/GetImages.dart';
+import 'package:QCEC/core/Functions/SendToWhatsapp.dart';
+import 'package:QCEC/core/Functions/sendSMS.dart';
 import 'package:QCEC/presentation/providers/theme_provider.dart';
 import 'package:QCEC/presentation/screens/main_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:intl/intl.dart' as intlx;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
@@ -20,6 +28,9 @@ import 'additional_camera_screen.dart';
 import 'simple_video_player.dart';
 import '../../models/draft_visit.dart';
 import '../../services/draft_visit_service.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:http_parser/http_parser.dart';
 
 class AddVisitScreen extends StatefulWidget {
   final int visitId;
@@ -44,6 +55,301 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
   final Dio dio = Dio();
   final ImagePicker _picker = ImagePicker();
   final DraftVisitService _draftService = DraftVisitService();
+
+  void startBackgroundTasks(Map<String, dynamic> data) async {
+    final dir = await getApplicationDocumentsDirectory();
+    data['appDir'] = dir.path;
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        throw Exception("User denied permissions to access location.");
+      }
+    }
+    Position cPosition = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.best,
+    );
+
+    await Dio().post(
+      'https://qcec.online/erp2025/app_source/visits.php',
+      data: {
+        'action': 'update_visitsx',
+        'proId': widget.projectId,
+        'lat': cPosition.latitude,
+        'long': cPosition.longitude,
+      },
+    );
+    Isolate.spawn(runHeavyTasks, data);
+    // _images.clear();
+  }
+
+  static void runHeavyTasks(Map<String, dynamic> data) async {
+    final appDir = data['appDir'];
+    print("🚀 Starting upload for visit ${data['visitId']}");
+
+    try {
+      final formData = FormData();
+
+      // التحقق من وجود الملفات
+      if (data['images'] == null || (data['images'] as List).isEmpty) {
+        print("⚠️ No files to upload");
+        return;
+      }
+
+      // فصل الصور عن الفيديوهات
+      List<String> images = [];
+      List<String> videos = [];
+
+      for (var filePath in data['images']) {
+        final ext = filePath.toString().split('.').last.toLowerCase();
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(ext)) {
+          images.add(filePath.toString());
+        } else if (['mp4', 'mov', 'avi', 'mkv', 'webm', '3gp'].contains(ext)) {
+          videos.add(filePath.toString());
+        }
+      }
+
+      print("📊 Total files: ${images.length} images, ${videos.length} videos");
+
+      // إضافة الصور
+      for (int i = 0; i < images.length; i++) {
+        final file = File(images[i]);
+        if (!await file.exists()) {
+          print("⚠️ File not found: ${images[i]}");
+          continue;
+        }
+
+        formData.files.add(
+          MapEntry('images[]', await MultipartFile.fromFile(file.path)),
+        );
+        print("✅ Added image ${i + 1}");
+      }
+
+      // إضافة الفيديوهات
+      for (int i = 0; i < videos.length; i++) {
+        final file = File(videos[i]);
+        if (!await file.exists()) {
+          print("⚠️ File not found: ${videos[i]}");
+          continue;
+        }
+
+        final fileSize = await file.length();
+        print(
+          "✅ Added video ${i + 1} (${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB)",
+        );
+
+        formData.files.add(
+          MapEntry('videos[]', await MultipartFile.fromFile(file.path)),
+        );
+      }
+
+      // التحقق من وجود ملفات للرفع
+      if (formData.files.isEmpty) {
+        print("⚠️ No valid files to upload");
+        return;
+      }
+
+      // إضافة رقم الزيارة
+      formData.fields.add(MapEntry('visitId', data['visitId'].toString()));
+
+      final dio = Dio();
+      print(
+        "📤 Starting upload to visits/${data['visitId']}/ (${formData.files.length} files)",
+      );
+
+      final response = await dio.post(
+        'https://qcec.online/app2026/cloud_multi_media.php',
+        data: formData,
+        options: Options(
+          headers: {"Content-Type": "multipart/form-data"},
+          sendTimeout: Duration(minutes: 10),
+          receiveTimeout: Duration(minutes: 10),
+          validateStatus: (status) => true, // قبول كل الـ status codes
+          responseType: ResponseType.plain, // استقبال النص الخام أولاً
+        ),
+        onSendProgress: (sent, total) {
+          if (total != -1) {
+            final progress = sent / total;
+            final sentMB = (sent / 1024 / 1024).toStringAsFixed(2);
+            final totalMB = (total / 1024 / 1024).toStringAsFixed(2);
+            print(
+              "📤 Uploading: ${(progress * 100).toStringAsFixed(1)}% ($sentMB/$totalMB MB)",
+            );
+          }
+        },
+      );
+
+      print("📥 Response Status: ${response.statusCode}");
+      print("📥 Raw Response: ${response.data}");
+
+      if (response.statusCode == 200) {
+        try {
+          // محاولة تحويل الـ response لـ JSON
+          final jsonData = jsonDecode(response.data.toString());
+
+          if (jsonData['success'] == true) {
+            print("✅ ${jsonData['message']}");
+            if (jsonData['uploaded_files'] != null) {
+              print("📁 Files uploaded:");
+              for (var file in jsonData['uploaded_files']) {
+                print("   - ${file['new_name']} (${file['type']})");
+              }
+            }
+          } else {
+            print("⚠️ ${jsonData['message']}");
+            if (jsonData['failed_files'] != null &&
+                jsonData['failed_files'].length > 0) {
+              print("❌ Failed files:");
+              for (var file in jsonData['failed_files']) {
+                print("   - ${file['name']}: ${file['reason']}");
+              }
+            }
+          }
+        } catch (e) {
+          print("❌ Failed to parse JSON response: $e");
+          print("Raw response was: ${response.data}");
+        }
+      } else {
+        print("⚠️ Upload failed with status: ${response.statusCode}");
+        print("Response: ${response.data}");
+      }
+    } catch (e, stackTrace) {
+      print("❌ Exception during upload: $e");
+      print("Stack trace: $stackTrace");
+    }
+
+    try {
+      print("📄 Starting PDF generation...");
+      final pdf = pw.Document();
+
+      List myImages = await Getimages().getImages(data['visitId'].toString());
+      print("Found ${myImages.length} images for PDF");
+
+      for (var url in myImages) {
+        if (url.toString().split('/').last.split('.').last == 'jpg') {
+          try {
+            final response = await Dio().get<List<int>>(
+              url,
+              options: Options(responseType: ResponseType.bytes),
+            );
+
+            if (response.statusCode == 200 && response.data != null) {
+              final image = pw.MemoryImage(Uint8List.fromList(response.data!));
+              pdf.addPage(
+                pw.Page(
+                  build: (pw.Context context) {
+                    return pw.Center(child: pw.Image(image));
+                  },
+                ),
+              );
+            }
+          } catch (e) {
+            print("⚠️ Failed to add image to PDF: $e");
+          }
+        }
+      }
+
+      final timestamp = intlx.DateFormat(
+        'yyyyMMdd_HHmmss',
+      ).format(DateTime.now());
+      final file = File('$appDir/visit_report_$timestamp.pdf');
+      await file.writeAsBytes(await pdf.save());
+      print("✅ PDF saved: ${file.path}");
+
+      final dio = Dio();
+      final pdfFormData = FormData.fromMap({
+        'folder': "Whatsapp/${data['visitId']}",
+        'pdf': await MultipartFile.fromFile(file.path, filename: '1.pdf'),
+      });
+
+      print("📤 Uploading PDF...");
+      await dio.post(
+        'https://qcec.online/erp2025/aws/cloud_pdf.php',
+        data: pdfFormData,
+        options: Options(headers: {"Content-Type": "multipart/form-data"}),
+      );
+      print("✅ PDF uploaded successfully");
+
+      // WhatsApp وSMS
+      print("📱 Fetching WhatsApp data...");
+      final whatsRes = await Dio().post(
+        'https://qcec.online/erp2025/app_source/visits.php',
+        data: {'action': 'get_whats_visit_data', 'vdId': data['visitId']},
+      );
+
+      if (whatsRes.data != null && whatsRes.data['get_visits_whats'] != null) {
+        List fullMessage = whatsRes.data['get_visits_whats'];
+
+        String msg =
+            """
+${data['date']} - ${data['time']} ${intlx.DateFormat('yyyy-MM-dd').format(DateTime.now())}
+*العميل*: ${fullMessage[0]['cname']}
+*المشروع*: ${fullMessage[0]['projx']}
+*المنطقة*: ${fullMessage[0]['place']}
+*الرقم المساحي*: ${fullMessage[0]['pin']}
+*المقاول*: ${fullMessage[0]['cnname']}
+*الاستشاري*: م/${fullMessage[0]['ename']}
+*الوصف*: ${fullMessage[0]['a2']}
+*التفاصيل*: ${fullMessage[0]['a4']}
+""";
+
+        data['msg'] = msg;
+
+        if (data['sendCmob'] != null && data['sendCmob'] != '') {
+          await Future.delayed(Duration(seconds: 10));
+          await sendSMS().sendSms(data['sendCmob'], data['msg'], 'both');
+
+          await Sendtowhatsapp().sendToWhatsDocs(
+            data['sendCmob'],
+            data['visitId'],
+            data['msg'],
+          );
+          await Future.delayed(Duration(seconds: 10));
+          List videos = await Getimages().getImages(data['visitId'].toString());
+          for (var video in videos) {
+            if (video.toString().split('/').last.split('.').last == 'mp4') {
+              Sendtowhatsapp().sendToWhatsVideo(
+                data['sendCmob'],
+                video.toString(),
+              );
+              await Future.delayed(Duration(seconds: 10));
+            }
+          }
+        }
+
+        if (data['sendCNmob'] != null && data['sendCNmob'] != '') {
+          await sendSMS().sendSms(data['sendCNmob'], data['msg'], 'both');
+          await Sendtowhatsapp().sendToWhatsDocs(
+            data['sendCNmob'],
+            data['visitId'],
+            data['msg'],
+          );
+          await Future.delayed(Duration(seconds: 10));
+          List videos = await Getimages().getImages(data['visitId'].toString());
+          for (var video in videos) {
+            if (video.toString().split('/').last.split('.').last == 'mp4') {
+              Sendtowhatsapp().sendToWhatsVideo(
+                data['sendCNmob'],
+                video.toString(),
+              );
+              await Future.delayed(Duration(seconds: 10));
+            }
+          }
+        }
+      }
+
+      if (data['images'] != null) {
+        data['images'].clear();
+      }
+
+      print("✅ All background tasks finished for visit ${data['visitId']}");
+    } catch (e, stackTrace) {
+      print("❌ Exception in PDF/WhatsApp section: $e");
+      print("Stack trace: $stackTrace");
+    }
+  }
 
   int _currentImageIndex = 0;
   List<String> _images = [];
@@ -74,8 +380,8 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
     try {
       // بدء الزيارة أو استكمالها
       DraftVisit? draft = await _draftService.startVisit(
-        widget.visitId, 
-        widget.projectId
+        widget.visitId,
+        widget.projectId,
       );
 
       if (draft != null) {
@@ -83,13 +389,15 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
           // تحميل البيانات المحفوظة
           _descriptionController.text = draft.description;
           _notesController.text = draft.notes;
-          _images = draft.images.isNotEmpty ? draft.images : widget.capturedImages;
+          _images = draft.images.isNotEmpty
+              ? draft.images
+              : widget.capturedImages;
           _contactCustomer = draft.contactCustomer;
           _contactContractor = draft.contactContractor;
         });
 
         debugPrint('📋 Loaded draft visit data: ${draft.toString()}');
-        
+
         // إضافة listeners للحفظ التلقائي
         _setupAutoSaveListeners();
       }
@@ -213,10 +521,10 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
             TextButton(
               onPressed: () async {
                 Navigator.of(context).pop();
-                
+
                 // حفظ مسار الصورة قبل الحذف
                 String imagePath = _images[index];
-                
+
                 setState(() {
                   _images.removeAt(index);
                   if (_currentImageIndex >= _images.length &&
@@ -241,7 +549,10 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('تم حذف الصورة وحذفها من التخزين المحلي', style: GoogleFonts.cairo()),
+                    content: Text(
+                      'تم حذف الصورة وحذفها من التخزين المحلي',
+                      style: GoogleFonts.cairo(),
+                    ),
                     backgroundColor: Colors.green,
                   ),
                 );
@@ -884,7 +1195,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
 
       if (pickedFiles.isNotEmpty) {
         final directory = Directory(
-          '/data/data/com.example.qcec/app_flutter/visits/${widget.visitId}',
+          '/data/data/com.qcec.compania/app_flutter/visits/${widget.visitId}',
         );
         if (!await directory.exists()) {
           await directory.create(recursive: true);
@@ -1280,136 +1591,154 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
 
   /// بناء أزرار إضافة الوسائط المبسطة
   Widget _buildAddImageButtons() {
-    return Row(
-      children: [
-        // زر وسائط من الكاميرا
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: _showCameraOptions,
-            icon: Icon(Iconsax.camera, color: Colors.white, size: 24),
-            label: Text(
-              'وسائط من الكاميرا',
-              style: GoogleFonts.cairo(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return Row(
+          children: [
+            // زر وسائط من الكاميرا
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: _showCameraOptions,
+                icon: Icon(Iconsax.camera, color: Colors.white, size: 24),
+                label: Text(
+                  'وسائط من الكاميرا',
+                  style: GoogleFonts.cairo(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: themeProvider.isDarkMode
+                      ? AppColors.secondaryDark
+                      : AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 3,
+                ),
               ),
             ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 3,
-            ),
-          ),
-        ),
-        const SizedBox(width: 16),
+            const SizedBox(width: 16),
 
-        // زر وسائط من الجاليري
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: _showGalleryOptions,
-            icon: Icon(Iconsax.gallery, color: Colors.white, size: 24),
-            label: Text(
-              'وسائط من الجاليري',
-              style: GoogleFonts.cairo(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+            // زر وسائط من الجاليري
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: _showGalleryOptions,
+                icon: Icon(Iconsax.gallery, color: Colors.white, size: 24),
+                label: Text(
+                  'وسائط من الجاليري',
+                  style: GoogleFonts.cairo(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: themeProvider.isDarkMode
+                      ? AppColors.secondaryDark
+                      : AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 3,
+                ),
               ),
             ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 3,
-            ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 
   Widget _buildMessagingOptions() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(25),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return Container(
+          decoration: BoxDecoration(
+            color: themeProvider.isDarkMode
+                ? AppColors.secondaryDark
+                : AppColors.primary,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(25),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: CheckboxListTile(
-              value: _contactCustomer,
-              onChanged: (value) {
-                setState(() {
-                  _contactCustomer = value ?? false;
-                });
-                // حفظ تلقائي عند تغيير حالة الاتصال
-                _saveCurrentState();
-              },
-              title: Text('العميل', style: GoogleFonts.cairo(fontSize: 14)),
-              subtitle: _contactCustomer
-                  ? Text(
-                      _contactCustomer ? _customerPhone : 'غير مفعل',
-                      style: GoogleFonts.cairo(
-                        fontSize: 12,
-                        color: _contactCustomer
-                            ? Colors.green[600]
-                            : Theme.of(context).brightness == Brightness.dark
-                            ? AppColors.textSecondaryDark
-                            : Colors.grey[600],
-                      ),
-                    )
-                  : null,
-              activeColor: AppColors.primary,
-              controlAffinity: ListTileControlAffinity.leading,
-            ),
+          child: Row(
+            children: [
+              Expanded(
+                child: CheckboxListTile(
+                  value: _contactCustomer,
+                  onChanged: (value) {
+                    setState(() {
+                      _contactCustomer = value ?? false;
+                    });
+                    // حفظ تلقائي عند تغيير حالة الاتصال
+                    _saveCurrentState();
+                  },
+                  title: Text('العميل', style: GoogleFonts.cairo(fontSize: 14)),
+                  subtitle: _contactCustomer
+                      ? Text(
+                          _contactCustomer ? _customerPhone : 'غير مفعل',
+                          style: GoogleFonts.cairo(
+                            fontSize: 12,
+                            color: _contactCustomer
+                                ? AppColors.secondaryDark
+                                : Theme.of(context).brightness ==
+                                      Brightness.dark
+                                ? AppColors.textSecondaryDark
+                                : Colors.grey[600],
+                          ),
+                        )
+                      : null,
+                  activeColor: AppColors.secondaryDark,
+                  controlAffinity: ListTileControlAffinity.leading,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: CheckboxListTile(
+                  value: _contactContractor,
+                  onChanged: (value) {
+                    setState(() {
+                      _contactContractor = value ?? false;
+                    });
+                    _saveCurrentState();
+                  },
+                  title: Text(
+                    'المقاول',
+                    style: GoogleFonts.cairo(fontSize: 14),
+                  ),
+                  subtitle: _contactContractor
+                      ? Text(
+                          _contactContractor ? _contractorPhone : '',
+                          style: GoogleFonts.cairo(
+                            fontSize: 12,
+                            color: _contactContractor
+                                ? AppColors.secondaryDark
+                                : Theme.of(context).brightness ==
+                                      Brightness.dark
+                                ? AppColors.textSecondaryDark
+                                : Colors.grey[600],
+                          ),
+                        )
+                      : null,
+                  activeColor: AppColors.secondaryDark,
+                  controlAffinity: ListTileControlAffinity.leading,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: CheckboxListTile(
-              value: _contactContractor,
-              onChanged: (value) {
-                setState(() {
-                  _contactContractor = value ?? false;
-                });
-                // حفظ تلقائي عند تغيير حالة الاتصال
-                _saveCurrentState();
-              },
-              title: Text('المقاول', style: GoogleFonts.cairo(fontSize: 14)),
-              subtitle: _contactContractor
-                  ? Text(
-                      _contactContractor ? _contractorPhone : '',
-                      style: GoogleFonts.cairo(
-                        fontSize: 12,
-                        color: _contactContractor
-                            ? Colors.green[600]
-                            : Theme.of(context).brightness == Brightness.dark
-                            ? AppColors.textSecondaryDark
-                            : Colors.grey[600],
-                      ),
-                    )
-                  : null,
-              activeColor: Colors.orange,
-              controlAffinity: ListTileControlAffinity.leading,
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -1589,45 +1918,52 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
             shape: const RoundedRectangleBorder(
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
-            builder: (context) => Container(
-              padding: const EdgeInsets.all(20),
-              height: 300,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'اختر وصف من القائمة',
-                    style: GoogleFonts.cairo(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? AppColors.textPrimaryDark
-                          : Colors.grey[800],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: vlistData.length,
-                      itemBuilder: (context, index) {
-                        return ListTile(
-                          title: Text(
-                            vlistData[index],
-                            style: GoogleFonts.cairo(fontSize: 14),
-                          ),
-                          onTap: () {
-                            _descriptionController.text = vlistData[index];
-                            _updateDescription(
-                              vlistData[index],
-                            ); // تحديث في قاعدة البيانات
-                            Navigator.pop(context);
+            builder: (context) => Consumer<ThemeProvider>(
+              builder: (context, themeProvider, child) {
+                return Container(
+                  color: themeProvider.isDarkMode
+                      ? AppColors.primaryDark
+                      : AppColors.primary,
+                  padding: const EdgeInsets.all(20),
+                  height: 300,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'اختر وصف من القائمة',
+                        style: GoogleFonts.cairo(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? AppColors.textPrimaryDark
+                              : Colors.grey[800],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: vlistData.length,
+                          itemBuilder: (context, index) {
+                            return ListTile(
+                              title: Text(
+                                vlistData[index],
+                                style: GoogleFonts.cairo(fontSize: 14),
+                              ),
+                              onTap: () {
+                                _descriptionController.text = vlistData[index];
+                                _updateDescription(
+                                  vlistData[index],
+                                ); // تحديث في قاعدة البيانات
+                                Navigator.pop(context);
+                              },
+                            );
                           },
-                        );
-                      },
-                    ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                );
+              },
             ),
           );
         }
@@ -1714,24 +2050,53 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
         debugPrint(
           '📤 Starting background upload for ${_images.length} media files',
         );
-        UploadService.uploadVisitMediaInBackground(
-          visitId: widget.visitId,
-          mediaPaths: _images,
-        );
+        // UploadService.uploadVisitMediaInBackground(
+        //   visitId: widget.visitId,
+        //   mediaPaths: _images,
+        // );
 
-        // بدء إرسال التقارير في الخلفية (بعد رفع الصور)
-        if (_contactCustomer || _contactContractor) {
-          debugPrint('📊 Starting background report generation');
-          // تأخير بسيط للسماح برفع الصور أولاً
-          Future.delayed(const Duration(seconds: 30), () {
-            ReportService.sendReportsInBackground(
-              visitId: widget.visitId,
-              imagePaths: _images,
-              sendToCustomer: _contactCustomer,
-              sendToContractor: _contactContractor,
-            );
-          });
-        }
+        // // بدء إرسال التقارير في الخلفية (بعد رفع الصور)
+        // if (_contactCustomer || _contactContractor) {
+        //   debugPrint('📊 Starting background report generation');
+        //   // تأخير بسيط للسماح برفع الصور أولاً
+        //   Future.delayed(const Duration(seconds: 30), () {
+        //     ReportService.sendReportsInBackground(
+        //       projectId: widget.projectId.toString(),
+        //       visitId: widget.visitId,
+        //       imagePaths: _images,
+        //       sendToCustomer: _contactCustomer,
+        //       sendToContractor: _contactContractor,
+        //     );
+        //   });
+        // }
+
+        String date = "26-09-2025";
+        DateTime now = DateTime.now();
+        String formattedTime = intlx.DateFormat('hh:mm a').format(now);
+
+        var imagesCopy = List<String>.from(_images);
+
+        String visitIdCopy = widget.visitId.toString();
+
+        String _contPhone = "";
+        String _custPhone = "";
+
+        _contactContractor ? _contPhone = _contractorPhone : _contPhone = '';
+        _contactCustomer ? _custPhone = _customerPhone : _custPhone = '';
+
+        // إعداد البيانات بدون await
+        Map<String, dynamic> data = {
+          'visitId': visitIdCopy,
+          'sendCmob': _custPhone,
+          'sendCNmob': _contPhone,
+          'desc': _descriptionController.text,
+          'notes': _notesController.text,
+          'images': imagesCopy,
+          'date': date,
+          'time': formattedTime,
+        };
+
+        startBackgroundTasks(data);
       }
 
       // Close loading dialog
@@ -1759,11 +2124,13 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
         );
       }
 
-      // إنهاء الزيارة وحذف البيانات المؤقتة
+      // // Get current location and update visitsx table
+
+      // // إنهاء الزيارة وحذف البيانات المؤقتة
       await _draftService.completeVisit(widget.visitId);
       debugPrint('✅ Visit completed and draft data cleaned up');
 
-      // Return to main screen
+      // // Return to main screen
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       // Close loading dialog
@@ -1927,341 +2294,385 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
         maxChildSize: 0.95,
         builder: (context, scrollController) => Consumer<ThemeProvider>(
           builder: (context, themeProvider, child) {
-            return Container(
-              decoration: BoxDecoration(
-                color: themeProvider.isDarkMode
-                    ? AppColors.surfaceDark
-                    : Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: Column(
-                children: [
-                  // Handle bar
-                  Container(
-                    margin: const EdgeInsets.only(top: 12),
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? AppColors.borderDark
-                          : Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
+            return Consumer<ThemeProvider>(
+              builder: (context, themeProvider, child) {
+                return Container(
+                  decoration: BoxDecoration(
+                    color: themeProvider.isDarkMode
+                        ? AppColors.surfaceDark
+                        : Colors.white,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(20),
                     ),
                   ),
-            
-                  // Header
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    child: Row(
-                      children: [
-                        Icon(Iconsax.people, color: AppColors.primary, size: 24),
-                        const SizedBox(width: 12),
-                        Text(
-                          'عملاء المهندس',
-                          style: GoogleFonts.cairo(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).brightness == Brightness.dark
-                                ? AppColors.textPrimaryDark
-                                : Colors.grey[800],
-                          ),
+                  child: Column(
+                    children: [
+                      // Handle bar
+                      Container(
+                        margin: const EdgeInsets.only(top: 12),
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? AppColors.borderDark
+                              : Colors.grey[300],
+                          borderRadius: BorderRadius.circular(2),
                         ),
-                        const Spacer(),
-                        IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: Icon(Iconsax.close_circle),
-                        ),
-                      ],
-                    ),
-                  ),
-            
-                  // Customers list
-                  Expanded(
-                    child: FutureBuilder<Map<String, dynamic>>(
-                      future: Provider.of<AuthProvider>(
-                        context,
-                        listen: false,
-                      ).getEngineerCustomers(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                CircularProgressIndicator(color: AppColors.primary),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'جاري تحميل العملاء...',
-                                  style: GoogleFonts.cairo(
-                                    fontSize: 16,
-                                    color:
-                                        Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? AppColors.textSecondaryDark
-                                        : Colors.grey[600],
-                                  ),
-                                ),
-                              ],
+                      ),
+
+                      // Header
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Iconsax.people,
+                              color: AppColors.primary,
+                              size: 24,
                             ),
-                          );
-                        }
-            
-                        if (snapshot.hasError ||
-                            !snapshot.hasData ||
-                            snapshot.data!['success'] != true) {
-                          return Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Iconsax.info_circle,
-                                  color:
-                                      Theme.of(context).brightness ==
-                                          Brightness.dark
-                                      ? AppColors.textHintDark
-                                      : Colors.grey[400],
-                                  size: 48,
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'لا توجد عملاء',
-                                  style: GoogleFonts.cairo(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color:
-                                        Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? AppColors.textSecondaryDark
-                                        : Colors.grey[600],
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'لم يتم العثور على عملاء لهذا المهندس',
-                                  style: GoogleFonts.cairo(
-                                    fontSize: 14,
-                                    color:
-                                        Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? AppColors.textSecondaryDark
-                                        : Colors.grey[500],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-            
-                        final customers = snapshot.data!['data'] as List;
-            
-                        return ListView.builder(
-                          controller: scrollController,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: customers.length,
-                          itemBuilder: (context, index) {
-                            final customer = customers[index];
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).cardColor,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color:
-                                      Theme.of(context).brightness ==
-                                          Brightness.dark
-                                      ? AppColors.surfaceDark.withOpacity(0.8)
-                                      : Colors.grey[200]!,
-                                  width: 1,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withAlpha(25),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
+                            const SizedBox(width: 12),
+                            Text(
+                              'عملاء المهندس',
+                              style: GoogleFonts.cairo(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color:
+                                    Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? AppColors.textPrimaryDark
+                                    : Colors.grey[800],
                               ),
-                              child: ListTile(
-                                contentPadding: const EdgeInsets.all(16),
-                                leading: Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary.withAlpha(51),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Icon(
-                                    Iconsax.user,
-                                    color: AppColors.primary,
-                                    size: 24,
-                                  ),
-                                ),
-                                title: Text(
-                                  customer['customer_name'] ?? 'غير محدد',
-                                  style: GoogleFonts.cairo(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color:
-                                        Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? AppColors.textPrimaryDark
-                                        : Colors.grey[800],
-                                  ),
-                                ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                            ),
+                            const Spacer(),
+                            IconButton(
+                              onPressed: () => Navigator.pop(context),
+                              icon: Icon(Iconsax.close_circle),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Customers list
+                      Expanded(
+                        child: FutureBuilder<Map<String, dynamic>>(
+                          future: Provider.of<AuthProvider>(
+                            context,
+                            listen: false,
+                          ).getEngineerCustomers(),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    if (customer['customer_phone'] != null) ...[
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Iconsax.call,
-                                            color: Colors.green,
-                                            size: 14,
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            customer['customer_phone'],
-                                            style: GoogleFonts.cairo(
-                                              fontSize: 14,
-                                              color:
-                                                  Theme.of(context).brightness ==
-                                                      Brightness.dark
-                                                  ? AppColors.textSecondaryDark
-                                                  : Colors.grey[600],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                    if (customer['contractor_name'] != null) ...[
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Iconsax.buildings,
-                                            color: Colors.orange,
-                                            size: 14,
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Expanded(
-                                            child: Text(
-                                              'مقاول: ${customer['contractor_name']}',
-                                              style: GoogleFonts.cairo(
-                                                fontSize: 14,
-                                                color:
-                                                    Theme.of(context).brightness ==
-                                                        Brightness.dark
-                                                    ? AppColors.textSecondaryDark
-                                                    : Colors.grey[600],
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                                onTap: () async {
-                                  // Show loading
-                                  showDialog(
-                                    context: context,
-                                    barrierDismissible: false,
-                                    builder: (context) => Center(
-                                      child: Container(
-                                        padding: const EdgeInsets.all(20),
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context).cardColor,
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            CircularProgressIndicator(
-                                              color: AppColors.primary,
-                                            ),
-                                            const SizedBox(height: 16),
-                                            Text(
-                                              'جاري تحديث بيانات الزيارة...',
-                                              style: GoogleFonts.cairo(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                                    CircularProgressIndicator(
+                                      color: AppColors.primary,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'جاري تحميل العملاء...',
+                                      style: GoogleFonts.cairo(
+                                        fontSize: 16,
+                                        color:
+                                            Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? AppColors.textSecondaryDark
+                                            : Colors.grey[600],
                                       ),
                                     ),
-                                  );
-            
-                                  // Update project ID in database
-                                  final authProvider = Provider.of<AuthProvider>(
-                                    context,
-                                    listen: false,
-                                  );
-                                  final updateResult = await authProvider
-                                      .updateVisitProject(
-                                        widget.visitId.toString(),
-                                        customer['project_id'].toString(),
-                                      );
-            
-                                  Navigator.pop(context); // Close loading
-                                  Navigator.pop(context); // Close bottom sheet
-            
-                                  if (updateResult['success'] == true) {
-                                    setState(() {
-                                      _customerName =
-                                          customer['customer_name'] ?? 'غير محدد';
-                                      _customerPhone =
-                                          customer['customer_phone'] ?? '';
-                                      _contractorPhone =
-                                          customer['contractor_phone'] ?? '';
-                                    });
-            
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          'تم اختيار العميل وتحديث المشروع: $_customerName',
-                                          style: GoogleFonts.cairo(),
-                                        ),
-                                        backgroundColor: Colors.green,
-                                        behavior: SnackBarBehavior.floating,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
+                                  ],
+                                ),
+                              );
+                            }
+
+                            if (snapshot.hasError ||
+                                !snapshot.hasData ||
+                                snapshot.data!['success'] != true) {
+                              return Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Iconsax.info_circle,
+                                      color:
+                                          Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? AppColors.textHintDark
+                                          : Colors.grey[400],
+                                      size: 48,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'لا توجد عملاء',
+                                      style: GoogleFonts.cairo(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color:
+                                            Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? AppColors.textSecondaryDark
+                                            : Colors.grey[600],
                                       ),
-                                    );
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          'تم اختيار العميل لكن فشل تحديث المشروع: ${updateResult['message'] ?? 'خطأ غير معروف'}',
-                                          style: GoogleFonts.cairo(),
-                                        ),
-                                        backgroundColor: Colors.orange,
-                                        behavior: SnackBarBehavior.floating,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'لم يتم العثور على عملاء لهذا المهندس',
+                                      style: GoogleFonts.cairo(
+                                        fontSize: 14,
+                                        color:
+                                            Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? AppColors.textSecondaryDark
+                                            : Colors.grey[500],
                                       ),
-                                    );
-                                  }
-                                },
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+
+                            final customers = snapshot.data!['data'] as List;
+
+                            return ListView.builder(
+                              controller: scrollController,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
                               ),
+                              itemCount: customers.length,
+                              itemBuilder: (context, index) {
+                                final customer = customers[index];
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  decoration: BoxDecoration(
+                                    color: themeProvider.isDarkMode
+                                        ? AppColors.primaryDark
+                                        : AppColors.pureWhite,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color:
+                                          Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? AppColors.surfaceDark.withOpacity(
+                                              0.8,
+                                            )
+                                          : Colors.grey[200]!,
+                                      width: 1,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withAlpha(25),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: ListTile(
+                                    contentPadding: const EdgeInsets.all(16),
+                                    leading: Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary.withAlpha(51),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Icon(
+                                        Iconsax.user,
+                                        color: AppColors.primary,
+                                        size: 24,
+                                      ),
+                                    ),
+                                    title: Text(
+                                      customer['customer_name'] ?? 'غير محدد',
+                                      style: GoogleFonts.cairo(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color:
+                                            Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? AppColors.textPrimaryDark
+                                            : Colors.grey[800],
+                                      ),
+                                    ),
+                                    subtitle: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        if (customer['customer_phone'] !=
+                                            null) ...[
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Iconsax.call,
+                                                color: Colors.green,
+                                                size: 14,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                customer['customer_phone'],
+                                                style: GoogleFonts.cairo(
+                                                  fontSize: 14,
+                                                  color:
+                                                      Theme.of(
+                                                            context,
+                                                          ).brightness ==
+                                                          Brightness.dark
+                                                      ? AppColors
+                                                            .textSecondaryDark
+                                                      : Colors.grey[600],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                        if (customer['contractor_name'] !=
+                                            null) ...[
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Iconsax.buildings,
+                                                color: Colors.orange,
+                                                size: 14,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Expanded(
+                                                child: Text(
+                                                  'مقاول: ${customer['contractor_name']}',
+                                                  style: GoogleFonts.cairo(
+                                                    fontSize: 14,
+                                                    color:
+                                                        Theme.of(
+                                                              context,
+                                                            ).brightness ==
+                                                            Brightness.dark
+                                                        ? AppColors
+                                                              .textSecondaryDark
+                                                        : Colors.grey[600],
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                    onTap: () async {
+                                      // Show loading
+                                      showDialog(
+                                        context: context,
+                                        barrierDismissible: false,
+                                        builder: (context) => Center(
+                                          child: Container(
+                                            padding: const EdgeInsets.all(20),
+                                            decoration: BoxDecoration(
+                                              color: Theme.of(
+                                                context,
+                                              ).cardColor,
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                CircularProgressIndicator(
+                                                  color: AppColors.primary,
+                                                ),
+                                                const SizedBox(height: 16),
+                                                Text(
+                                                  'جاري تحديث بيانات الزيارة...',
+                                                  style: GoogleFonts.cairo(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      );
+
+                                      // Update project ID in database
+                                      final authProvider =
+                                          Provider.of<AuthProvider>(
+                                            context,
+                                            listen: false,
+                                          );
+                                      final updateResult = await authProvider
+                                          .updateVisitProject(
+                                            widget.visitId.toString(),
+                                            customer['project_id'].toString(),
+                                          );
+
+                                      Navigator.pop(context); // Close loading
+                                      Navigator.pop(
+                                        context,
+                                      ); // Close bottom sheet
+
+                                      if (updateResult['success'] == true) {
+                                        setState(() {
+                                          _customerName =
+                                              customer['customer_name'] ??
+                                              'غير محدد';
+                                          _customerPhone =
+                                              customer['customer_phone'] ?? '';
+                                          _contractorPhone =
+                                              customer['contractor_phone'] ??
+                                              '';
+                                        });
+
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'تم اختيار العميل وتحديث المشروع: $_customerName',
+                                              style: GoogleFonts.cairo(),
+                                            ),
+                                            backgroundColor: Colors.green,
+                                            behavior: SnackBarBehavior.floating,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                        );
+                                      } else {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'تم اختيار العميل لكن فشل تحديث المشروع: ${updateResult['message'] ?? 'خطأ غير معروف'}',
+                                              style: GoogleFonts.cairo(),
+                                            ),
+                                            backgroundColor: Colors.orange,
+                                            behavior: SnackBarBehavior.floating,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                );
+                              },
                             );
                           },
-                        );
-                      },
-                    ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                );
+              },
             );
-          }
+          },
         ),
       ),
     );
   }
 
- 
+  /// Update visit location in visitsx table
 }

@@ -17,6 +17,12 @@ class AppLocalizationsHi extends AppLocalizations {
   String get visits => 'दौरे';
 
   @override
+  String get monthlyVisits => 'मासिक विजिट';
+
+  @override
+  String get todayVisits => 'आज की विजिट';
+
+  @override
   String get camera => 'कैमरा';
 
   @override
@@ -350,7 +356,8 @@ class AppLocalizationsHi extends AppLocalizations {
   String get companyName => 'कतर कंसल्टिंग इंजीनियरिंग सेंटर';
 
   @override
-  String get companyDescription => 'इंजीनियरिंग परामर्श और परियोजना पर्यवेक्षण में अग्रणी कंपनी';
+  String get companyDescription =>
+      'इंजीनियरिंग परामर्श और परियोजना पर्यवेक्षण में अग्रणी कंपनी';
 
   @override
   String get companyAddress => 'दोहा, कतर';
@@ -468,7 +475,8 @@ class AppLocalizationsHi extends AppLocalizations {
   String get hello => 'फिर से स्वागत है!';
 
   @override
-  String get helloContent => 'आपकी वापसी से हमें खुशी हुई, अपने खाते में लॉग इन करें और इंजीनियरिंग रचनात्मकता की यात्रा शुरू करें';
+  String get helloContent =>
+      'आपकी वापसी से हमें खुशी हुई, अपने खाते में लॉग इन करें और इंजीनियरिंग रचनात्मकता की यात्रा शुरू करें';
 
   @override
   String get pleaseEnterPhoneNumber => 'कृपया फ़ोन नंबर दर्ज करें';
@@ -481,7 +489,207 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get phoneNumber => 'फ़ोन नंबर';
-  
+
   @override
   String get phoneNumberMustBe8Digits => 'फ़ोन नंबर 8 अंकों का होना चाहिए';
+
+  @override
+  String get noInternetTitle => 'इंटरनेट कनेक्शन नहीं';
+
+  @override
+  String get noInternetMessage =>
+      'कृपया अपना इंटरनेट कनेक्शन जांचें\nऔर पुनः प्रयास करें';
+
+  @override
+  String get checkConnection => 'कनेक्शन जांचें';
+
+  @override
+  String get connectionTips => 'कनेक्शन टिप्स:';
+
+  @override
+  String get turnOnWifi => 'सुनिश्चित करें कि वाईफाई या मोबाइल डेटा चालू है';
+
+  @override
+  String get checkNetworkSettings => 'नेटवर्क सेटिंग्स जांचें';
+
+  @override
+  String get restartRouter => 'अपने राउटर को पुनः आरंभ करने का प्रयास करें';
+
+  @override
+  String get stillNoConnection => 'अभी भी इंटरनेट कनेक्शन नहीं';
+
+  @override
+  String get aboutUs => 'हमारे बारे में';
+
+  @override
+  String get qcecFullName => 'कतर कंसल्टिंग इंजीनियरिंग सेंटर';
+
+  @override
+  String get sinceYear => '1998 से';
+
+  @override
+  String get aboutUsTitle => 'हमारे बारे में';
+
+  @override
+  String get aboutUsContent =>
+      '1998 में अपनी स्थापना के बाद से, कतर कंसल्टिंग इंजीनियरिंग सेंटर ने इमारत डिजाइन और कार्यान्वयन की देखरेख में विशिष्ट और नवीन काम प्रदान किया है, ग्राहक संतुष्टि और प्रशंसा प्राप्त की है।\n\nअब और हमेशा, हम अपने ग्राहकों और समुदाय की सेवा और संलग्न करके कतर में विकास में भागीदारी और प्रचार करने की आशा करते हैं और भविष्य और इसकी चुनौतियों में योगदान करते हैं।';
+
+  @override
+  String get inTheBeginning => 'शुरुआत में...';
+
+  @override
+  String get ourMissionContent =>
+      'हम, कतर कंसल्टिंग इंजीनियरिंग सेंटर, सर्वोत्तम गुणवत्ता और नवीन डिजाइन प्रदान करने के लिए प्रतिबद्ध हैं, उच्च तकनीक समाधान और टिकाऊ रचनात्मकता प्रदान करके अपने ग्राहकों को संतुष्ट करने और उनकी सेवा करने के लिए उनकी देखरेख करते हुए, मूलता को संरक्षित करते हुए और आधुनिकता जोड़ते हुए।';
+
+  @override
+  String get ourServices => 'हमारी सेवाएं';
+
+  @override
+  String get buildingDesign => 'इमारत डिजाइन';
+
+  @override
+  String get executionSupervision => 'कार्यान्वयन देखरेख';
+
+  @override
+  String get technicalSolutions => 'तकनीकी समाधान';
+
+  @override
+  String get qualityAndInnovation => 'गुणवत्ता और नवाचार';
+
+  // Delete Account translations
+  @override
+  String get deleteAccountTitle => 'खाता हटाएं';
+
+  @override
+  String get deleteAccountPermanently => 'ऐप से खाता स्थायी रूप से हटाएं';
+
+  @override
+  String get deleteAccountConfirmation =>
+      'क्या आप वाकई अपना खाता स्थायी रूप से हटाना चाहते हैं?';
+
+  @override
+  String get deleteAccountWarning =>
+      'आपका सभी डेटा हटा दिया जाएगा और पुनर्प्राप्त नहीं किया जा सकता';
+
+  @override
+  String get translating => 'अनुवाद कर रहे हैं...';
+
+  @override
+  String get translated => 'अनुवादित';
+
+  @override
+  String get translatingNotes => 'नोट्स का अनुवाद कर रहे हैं...';
+
+  // Contact Us Screen translations
+  @override
+  String get contactUsTitle => 'हमसे संपर्क करें';
+
+  @override
+  String get weAreHereToServe => 'हम आपकी सेवा के लिए यहां हैं';
+
+  @override
+  String get contactUsAnytime => 'किसी भी समय हमसे संपर्क करें';
+
+  @override
+  String get phone => 'फोन';
+
+  @override
+  String get callUsDirect => 'हमें सीधे कॉल करें';
+
+  @override
+  String get email => 'ईमेल';
+
+  @override
+  String get emailUs => 'हमें ईमेल भेजें';
+
+  @override
+  String get address => 'पता';
+
+  @override
+  String get ourLocation => 'हमारा स्थान';
+
+  @override
+  String get workingHours => 'कार्य समय';
+
+  @override
+  String get officialHours => 'आधिकारिक कार्य समय';
+
+  @override
+  String get followUsOn => 'हमें फॉलो करें';
+
+  @override
+  String get whatsapp => 'व्हाट्सएप';
+
+  @override
+  String get instagram => 'इंस्टाग्राम';
+
+  @override
+  String get website => 'वेबसाइट';
+
+  @override
+  String get selectPhoneNumber => 'फोन नंबर चुनें';
+
+  @override
+  String get saturdayToThursday => 'शनिवार - गुरुवार';
+
+  @override
+  String get morningShift => 'सुबह 8 बजे - दोपहर 12 बजे';
+
+  @override
+  String get eveningShift => 'शाम 4 बजे - रात 8 बजे';
+
+  @override
+  String get inquiryFromApp => 'QCEC ऐप से पूछताछ';
+
+  @override
+  String get noVisitsOnThisDate => 'इस तारीख को कोई विजिट नहीं';
+
+  @override
+  String get learnAboutQCEC => 'कतर सेंटर के बारे में जानें';
+
+  @override
+  String get contactMethods => 'संपर्क के तरीके';
+
+  @override
+  String get contactInfo => 'संपर्क जानकारी';
+
+  @override
+  String get disableAccountConfirmationMessage =>
+      'क्या आप वाकई अपना खाता अक्षम करना चाहते हैं?\n\nआपका पासवर्ड बदल दिया जाएगा और आप लॉगिन नहीं कर पाएंगे, लेकिन आपका डेटा सहेजा रहेगा।';
+
+  @override
+  String get warning => 'चेतावनी';
+
+  @override
+  String get disableAccount => 'खाता अक्षम करें';
+
+  @override
+  String get confirmDisable => 'अक्षम करने की पुष्टि करें';
+
+  @override
+  String get typeDisableMyAccount =>
+      'अक्षम करने की प्रक्रिया की पुष्टि के लिए "मेरा खाता अक्षम करें" टाइप करें';
+
+  @override
+  String get disableMyAccount => 'मेरा खाता अक्षम करें';
+
+  @override
+  String get permanentDisable => 'स्थायी अक्षम';
+
+  @override
+  String get disableNotConfirmed =>
+      'अक्षम की पुष्टि नहीं हुई। कृपया "मेरा खाता अक्षम करें" सही ढंग से टाइप करें।';
+
+  @override
+  String get disablingAccount => 'खाता अक्षम किया जा रहा है...';
+  @override
+  String get pleaseWaitDisablingAccount =>
+      'कृपया प्रतीक्षा करें, सिस्टम से आपका खाता अक्षम किया जा रहा है';
+
+  @override
+  String get accountDisabledSuccessfully => 'खाता सफलतापूर्वक अक्षम हो गया';
+
+  @override
+  String get accountDisabledMessage =>
+      'आपका खाता सिस्टम से अक्षम कर दिया गया है। आपका डेटा सहेजा गया है लेकिन आप लॉगिन नहीं कर सकते।\nQCEC ऐप का उपयोग करने के लिए धन्यवाद।';
 }

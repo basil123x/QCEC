@@ -17,6 +17,12 @@ class AppLocalizationsUr extends AppLocalizations {
   String get visits => 'دورے';
 
   @override
+  String get monthlyVisits => 'ماہانہ دورے';
+
+  @override
+  String get todayVisits => 'آج کے دورے';
+
+  @override
   String get camera => 'کیمرہ';
 
   @override
@@ -486,4 +492,205 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get phoneNumberMustBe8Digits => 'فون نمبر 8 ہندسوں کا ہونا چاہیے';
+
+  @override
+  String get noInternetTitle => 'انٹرنیٹ کنکشن نہیں';
+
+  @override
+  String get noInternetMessage =>
+      'براہ کرم اپنا انٹرنیٹ کنکشن چیک کریں\nاور دوبارہ کوشش کریں';
+
+  @override
+  String get checkConnection => 'کنکشن چیک کریں';
+
+  @override
+  String get connectionTips => 'کنکشن کے لیے تجاویز:';
+
+  @override
+  String get turnOnWifi => 'یقینی بنائیں کہ وائی فائی یا موبائل ڈیٹا آن ہے';
+
+  @override
+  String get checkNetworkSettings => 'نیٹ ورک کی ترتیبات چیک کریں';
+
+  @override
+  String get restartRouter => 'اپنا راؤٹر دوبارہ شروع کرنے کی کوشش کریں';
+
+  @override
+  String get stillNoConnection => 'ابھی بھی انٹرنیٹ کنکشن نہیں';
+
+  @override
+  String get aboutUs => 'ہمارے بارے میں';
+
+  @override
+  String get qcecFullName => 'قطر کنسلٹنگ انجینئرنگ سینٹر';
+
+  @override
+  String get sinceYear => '1998 سے';
+
+  @override
+  String get aboutUsTitle => 'ہمارے بارے میں';
+
+  @override
+  String get aboutUsContent =>
+      '1998 میں اپنے قیام کے بعد سے، قطر کنسلٹنگ انجینئرنگ سینٹر نے عمارت کے ڈیزائن اور نفاذ کی نگرانی میں نمایاں اور جدید کام فراہم کیا ہے، صارفین کی اطمینان اور تعریف حاصل کی ہے۔\n\nاب اور ہمیشہ، ہم اپنے کلائنٹس اور کمیونٹی کی خدمت اور مشغولیت کے ذریعے قطر میں ترقی میں شرکت اور فروغ کے منتظر ہیں اور مستقبل اور اس کے چیلنجوں میں شراکت کر رہے ہیں۔';
+
+  @override
+  String get inTheBeginning => 'شروعات میں...';
+
+  @override
+  String get ourMissionContent =>
+      'ہم، قطر کنسلٹنگ انجینئرنگ سینٹر، بہترین معیار اور جدید ڈیزائن فراہم کرنے کے لیے پرعزم ہیں، اعلیٰ تکنیکی حل اور پائیدار تخلیقیت فراہم کرتے ہوئے اپنے گاہکوں کو مطمئن کرنے اور ان کی خدمت کرنے کے لیے ان کی نگرانی کرتے ہوئے، اصلیت کو محفوظ رکھتے ہوئے اور جدیدیت شامل کرتے ہوئے۔';
+
+  @override
+  String get ourServices => 'ہماری خدمات';
+
+  @override
+  String get buildingDesign => 'عمارت کا ڈیزائن';
+
+  @override
+  String get executionSupervision => 'نفاذ کی نگرانی';
+
+  @override
+  String get technicalSolutions => 'تکنیکی حل';
+
+  @override
+  String get qualityAndInnovation => 'معیار اور جدت';
+
+  // Delete Account translations
+  @override
+  String get deleteAccountTitle => 'اکاؤنٹ حذف کریں';
+
+  @override
+  String get deleteAccountPermanently => 'ایپ سے مستقل طور پر اکاؤنٹ حذف کریں';
+
+  @override
+  String get deleteAccountConfirmation =>
+      'کیا آپ واقعی اپنا اکاؤنٹ مستقل طور پر حذف کرنا چاہتے ہیں؟';
+
+  @override
+  String get deleteAccountWarning =>
+      'آپ کا تمام ڈیٹا حذف ہو جائے گا اور بحال نہیں کیا جا سکتا';
+
+  @override
+  String get translating => 'ترجمہ کر رہے ہیں...';
+
+  @override
+  String get translated => 'ترجمہ شدہ';
+
+  @override
+  String get translatingNotes => 'نوٹس کا ترجمہ کر رہے ہیں...';
+
+  // Contact Us Screen translations
+  @override
+  String get contactUsTitle => 'ہم سے رابطہ کریں';
+
+  @override
+  String get weAreHereToServe => 'ہم آپ کی خدمت کے لیے حاضر ہیں';
+
+  @override
+  String get contactUsAnytime => 'کسی بھی وقت ہم سے رابطہ کریں';
+
+  @override
+  String get phone => 'فون';
+
+  @override
+  String get callUsDirect => 'ہمیں براہ راست کال کریں';
+
+  @override
+  String get email => 'ای میل';
+
+  @override
+  String get emailUs => 'ہمیں ای میل بھیجیں';
+
+  @override
+  String get address => 'پتہ';
+
+  @override
+  String get ourLocation => 'ہمارا مقام';
+
+  @override
+  String get workingHours => 'کام کے اوقات';
+
+  @override
+  String get officialHours => 'سرکاری کام کے اوقات';
+
+  @override
+  String get followUsOn => 'ہمیں فالو کریں';
+
+  @override
+  String get whatsapp => 'واٹس ایپ';
+
+  @override
+  String get instagram => 'انسٹاگرام';
+
+  @override
+  String get website => 'ویب سائٹ';
+
+  @override
+  String get selectPhoneNumber => 'فون نمبر منتخب کریں';
+
+  @override
+  String get saturdayToThursday => 'ہفتہ - جمعرات';
+
+  @override
+  String get morningShift => 'صبح 8 بجے - دوپہر 12 بجے';
+
+  @override
+  String get eveningShift => 'شام 4 بجے - رات 8 بجے';
+
+  @override
+  String get inquiryFromApp => 'QCEC ایپ سے استفسار';
+
+  @override
+  String get noVisitsOnThisDate => 'اس تاریخ میں کوئی دورہ نہیں';
+
+  @override
+  String get learnAboutQCEC => 'قطر سینٹر کے بارے میں جانیں';
+
+  @override
+  String get contactMethods => 'رابطے کے طریقے';
+
+  @override
+  String get contactInfo => 'رابطے کی معلومات';
+
+  @override
+  String get disableAccountConfirmationMessage =>
+      'کیا آپ واقعی اپنا اکاؤنٹ غیر فعال کرنا چاہتے ہیں؟\n\nآپ کا پاس ورڈ تبدیل ہو جائے گا اور آپ لاگ ان نہیں کر سکیں گے، لیکن آپ کا ڈیٹا محفوظ رہے گا۔';
+
+  @override
+  String get warning => 'انتباہ';
+
+  @override
+  String get disableAccount => 'اکاؤنٹ غیر فعال کریں';
+
+  @override
+  String get confirmDisable => 'غیر فعال کرنے کی تصدیق کریں';
+
+  @override
+  String get typeDisableMyAccount =>
+      'غیر فعال کرنے کی تصدیق کے لیے "میرا اکاؤنٹ غیر فعال کریں" لکھیں';
+
+  @override
+  String get disableMyAccount => 'میرا اکاؤنٹ غیر فعال کریں';
+
+  @override
+  String get permanentDisable => 'مستقل غیر فعال';
+
+  @override
+  String get disableNotConfirmed =>
+      'غیر فعال کرنے کی تصدیق نہیں ہوئی۔ براہ کرم "میرا اکاؤنٹ غیر فعال کریں" صحیح لکھیں۔';
+
+  @override
+  String get disablingAccount => 'اکاؤنٹ غیر فعال کیا جا رہا ہے...';
+
+  @override
+  String get pleaseWaitDisablingAccount =>
+      'براہ کرم انتظار کریں، آپ کا اکاؤنٹ نظام سے غیر فعال کیا جا رہا ہے';
+
+  @override
+  String get accountDisabledSuccessfully => 'اکاؤنٹ کامیابی سے غیر فعال ہو گیا';
+
+  @override
+  String get accountDisabledMessage =>
+      'آپ کا اکاؤنٹ نظام سے غیر فعال کر دیا گیا ہے۔ آپ کا ڈیٹا محفوظ ہے لیکن آپ لاگ ان نہیں کر سکتے۔\nQCEC ایپ استعمال کرنے کا شکریہ۔';
 }

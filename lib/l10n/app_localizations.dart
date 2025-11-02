@@ -13,7 +13,8 @@ import 'app_localizations_hi.dart';
 
 /// Callers can lookup localized strings with Lookup.of(context).
 abstract class AppLocalizations {
-  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  AppLocalizations(String locale)
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -21,14 +22,16 @@ abstract class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations);
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
 
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
-    delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-  ];
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
 
   static const List<Locale> supportedLocales = <Locale>[
     Locale('ar'),
@@ -41,9 +44,12 @@ abstract class AppLocalizations {
 
   // Common
   String get appName;
+  String get qcecFullName;
   String get home;
   String get projects;
   String get visits;
+  String get monthlyVisits;
+  String get todayVisits;
   String get camera;
   String get profile;
   String get settings;
@@ -226,9 +232,72 @@ abstract class AppLocalizations {
   String get writeYourPassword;
   String get phoneNumber;
   String get phoneNumberMustBe8Digits;
+  String get noInternetTitle;
+  String get noInternetMessage;
+  String get checkConnection;
+  String get connectionTips;
+  String get turnOnWifi;
+  String get checkNetworkSettings;
+  String get restartRouter;
+  String get stillNoConnection;
+  String get aboutUs;
+  String get sinceYear;
+  String get aboutUsTitle;
+  String get aboutUsContent;
+  String get inTheBeginning;
+  String get ourMissionContent;
+  String get ourServices;
+  String get buildingDesign;
+  String get executionSupervision;
+  String get technicalSolutions;
+  String get qualityAndInnovation;
+  String get deleteAccountTitle;
+  String get deleteAccountPermanently;
+  String get deleteAccountConfirmation;
+  String get deleteAccountWarning;
+  String get translating;
+  String get translated;
+  String get translatingNotes;
+  String get contactUsTitle;
+  String get weAreHereToServe;
+  String get contactUsAnytime;
+  String get phone;
+  String get callUsDirect;
+  String get email;
+  String get emailUs;
+  String get address;
+  String get ourLocation;
+  String get workingHours;
+  String get officialHours;
+  String get followUsOn;
+  String get whatsapp;
+  String get instagram;
+  String get website;
+  String get selectPhoneNumber;
+  String get saturdayToThursday;
+  String get morningShift;
+  String get eveningShift;
+  String get inquiryFromApp;
+  String get noVisitsOnThisDate;
+  String get learnAboutQCEC;
+  String get contactMethods;
+  String get contactInfo;
+  String get disableAccountConfirmationMessage;
+  String get warning;
+  String get disableAccount;
+  String get confirmDisable;
+  String get typeDisableMyAccount;
+  String get disableMyAccount;
+  String get permanentDisable;
+  String get disableNotConfirmed;
+  String get disablingAccount;
+  String get pleaseWaitDisablingAccount;
+  String get accountDisabledSuccessfully;
+  String get accountDisabledMessage;
 }
 
-class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -237,7 +306,14 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
   }
 
   @override
-  bool isSupported(Locale locale) => <String>['ar', 'en', 'ur', 'fa', 'bn', 'hi'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => <String>[
+    'ar',
+    'en',
+    'ur',
+    'fa',
+    'bn',
+    'hi',
+  ].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -245,17 +321,23 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
   switch (locale.languageCode) {
-    case 'ar': return AppLocalizationsAr();
-    case 'en': return AppLocalizationsEn();
-    case 'ur': return AppLocalizationsUr();
-    case 'fa': return AppLocalizationsFa();
-    case 'bn': return AppLocalizationsBn();
-    case 'hi': return AppLocalizationsHi();
+    case 'ar':
+      return AppLocalizationsAr();
+    case 'en':
+      return AppLocalizationsEn();
+    case 'ur':
+      return AppLocalizationsUr();
+    case 'fa':
+      return AppLocalizationsFa();
+    case 'bn':
+      return AppLocalizationsBn();
+    case 'hi':
+      return AppLocalizationsHi();
   }
 
   throw FlutterError(
     'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
     'an issue with the localizations generation tool. Please file an issue on GitHub with a '
-    'reproducible sample app and the gen-l10n configuration that was used.'
+    'reproducible sample app and the gen-l10n configuration that was used.',
   );
 }

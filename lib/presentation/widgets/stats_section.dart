@@ -72,50 +72,55 @@ class _StatsSectionState extends State<StatsSection> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Section Title
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              AppLocalizations.of(context)!.statistics,
-              style: GoogleFonts.cairo(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[800],
-              ),
-            ),
-            if (!_isLoading)
-              IconButton(
-                onPressed: _loadStats,
-                icon: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Iconsax.refresh,
-                    color: Colors.blue,
-                    size: 16,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  AppLocalizations.of(context)!.statistics,
+                  style: GoogleFonts.cairo(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: themeProvider.isDarkMode
+                        ? Colors.white
+                        : Colors.grey[800],
                   ),
                 ),
-              ),
+                if (!_isLoading)
+                  IconButton(
+                    onPressed: _loadStats,
+                    icon: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Iconsax.refresh,
+                        color: Colors.blue,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // Stats Content
+            if (_isLoading)
+              _buildLoadingState()
+            else if (_errorMessage.isNotEmpty)
+              _buildErrorState()
+            else
+              _buildStatsGrid(),
           ],
-        ),
-
-        const SizedBox(height: 16),
-
-        // Stats Content
-        if (_isLoading)
-          _buildLoadingState()
-        else if (_errorMessage.isNotEmpty)
-          _buildErrorState()
-        else
-          _buildStatsGrid(),
-      ],
+        );
+      },
     );
   }
 
@@ -328,11 +333,17 @@ class _StatsSectionState extends State<StatsSection> {
               Row(
                 children: [
                   Expanded(
-                    child: _buildStatHeader('الزيارات الشهرية', Colors.orange),
+                    child: _buildStatHeader(
+                      AppLocalizations.of(context)!.monthlyVisits,
+                      Colors.orange,
+                    ),
                   ),
                   const SizedBox(width: 20),
                   Expanded(
-                    child: _buildStatHeader('زيارات اليوم', Colors.indigo),
+                    child: _buildStatHeader(
+                      AppLocalizations.of(context)!.todayVisits,
+                      Colors.indigo,
+                    ),
                   ),
                 ],
               ),

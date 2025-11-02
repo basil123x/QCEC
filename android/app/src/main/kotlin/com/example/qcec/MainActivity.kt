@@ -1,4 +1,4 @@
-package com.example.qcec
+package com.qcec.compania
 
 import io.flutter.embedding.android.FlutterActivity
 

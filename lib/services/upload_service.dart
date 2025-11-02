@@ -9,7 +9,7 @@ import 'package:video_compress/video_compress.dart';
 
 class UploadService {
   static const String _uploadUrl = 'https://qcec.online/app2026/s3.php';
-  
+
   /// رفع وسائط الزيارة (صور وفيديوهات) في الخلفية باستخدام Isolate
   static Future<void> uploadVisitMediaInBackground({
     required int visitId,
@@ -18,7 +18,7 @@ class UploadService {
     try {
       // إنشاء Isolate للرفع في الخلفية
       final receivePort = ReceivePort();
-      
+
       final isolate = await Isolate.spawn(
         _uploadMediaIsolateEntry,
         _UploadMediaData(
@@ -27,28 +27,32 @@ class UploadService {
           sendPort: receivePort.sendPort,
         ),
       );
-      
+
       // الاستماع لنتائج الرفع
       receivePort.listen((message) {
         if (message is _UploadResult) {
-          debugPrint('📤 Upload result: ${message.success ? "Success" : "Failed"}');
+          debugPrint(
+            '📤 Upload result: ${message.success ? "Success" : "Failed"}',
+          );
           debugPrint('📤 Message: ${message.message}');
-          
+
           if (message.success) {
             debugPrint('📤 Uploaded ${message.uploadedCount} media files');
+            debugPrint(
+              '📊 Total count on S3: ${message.totalCount}',
+            ); // 🔥 عدد الصور الكلي
             // حفظ حالة الرفع الناجح
             _saveUploadStatus(visitId, true);
           } else {
             debugPrint('📤 Upload failed: ${message.error}');
             _saveUploadStatus(visitId, false);
           }
-          
+
           // إنهاء الـ Isolate
           isolate.kill();
           receivePort.close();
         }
       });
-      
     } catch (e) {
       debugPrint('📤 Error starting upload isolate: $e');
     }
@@ -62,7 +66,7 @@ class UploadService {
     try {
       // إنشاء Isolate للرفع في الخلفية
       final receivePort = ReceivePort();
-      
+
       final isolate = await Isolate.spawn(
         _uploadIsolateEntry,
         _UploadData(
@@ -71,64 +75,73 @@ class UploadService {
           sendPort: receivePort.sendPort,
         ),
       );
-      
+
       // الاستماع لنتائج الرفع
       receivePort.listen((message) {
         if (message is _UploadResult) {
-          debugPrint('📤 Upload result: ${message.success ? "Success" : "Failed"}');
+          debugPrint(
+            '📤 Upload result: ${message.success ? "Success" : "Failed"}',
+          );
           debugPrint('📤 Message: ${message.message}');
-          
+
           if (message.success) {
             debugPrint('📤 Uploaded ${message.uploadedCount} images');
+            debugPrint(
+              '📊 Total count on S3: ${message.totalCount}',
+            ); // 🔥 عدد الصور الكلي
             // حفظ حالة الرفع الناجح
             _saveUploadStatus(visitId, true);
           } else {
             debugPrint('📤 Upload failed: ${message.error}');
             _saveUploadStatus(visitId, false);
           }
-          
+
           // إنهاء الـ Isolate
           isolate.kill();
           receivePort.close();
         }
       });
-      
     } catch (e) {
       debugPrint('📤 Error starting upload isolate: $e');
     }
   }
-  
+
   /// نقطة دخول الـ Isolate للوسائط
   static void _uploadMediaIsolateEntry(_UploadMediaData data) async {
     try {
       final dio = Dio();
       final List<Map<String, dynamic>> mediaFiles = [];
-      
+
       // معالجة كل ملف (صورة أو فيديو)
       for (int i = 0; i < data.mediaPaths.length; i++) {
         try {
           final filePath = data.mediaPaths[i];
           final file = File(filePath);
-          
+
           if (await file.exists()) {
-            final isVideo = filePath.contains('video_') || 
-                           filePath.toLowerCase().endsWith('.mp4') ||
-                           filePath.toLowerCase().endsWith('.mov');
-            
+            final isVideo =
+                filePath.contains('video_') ||
+                filePath.toLowerCase().endsWith('.mp4') ||
+                filePath.toLowerCase().endsWith('.mov');
+
             String processedFilePath = filePath;
-            
+
             // ضغط الفيديو إذا كان فيديو (تم تعطيله مؤقتاً بسبب مشكلة في التهيئة)
             if (isVideo) {
-              data.sendPort.send(_UploadProgress(
-                current: i + 1,
-                total: data.mediaPaths.length,
-                stage: 'Processing video ${i + 1}',
-              ));
-              
+              data.sendPort.send(
+                _UploadProgress(
+                  current: i + 1,
+                  total: data.mediaPaths.length,
+                  stage: 'Processing video ${i + 1}',
+                ),
+              );
+
               // تم تعطيل ضغط الفيديو مؤقتاً بسبب مشكلة في WidgetsFlutterBinding
               // يمكن تفعيله لاحقاً بعد حل مشكلة التهيئة
-              debugPrint('📹 Video compression disabled temporarily, using original file');
-              
+              debugPrint(
+                '📹 Video compression disabled temporarily, using original file',
+              );
+
               /* 
               try {
                 final compressedVideo = await VideoCompress.compressVideo(
@@ -146,39 +159,43 @@ class UploadService {
               }
               */
             }
-            
+
             // قراءة الملف المعالج
             final processedFile = File(processedFilePath);
             final bytes = await processedFile.readAsBytes();
             final base64String = base64Encode(bytes);
-            
+
             mediaFiles.add({
               'data': base64String,
               'type': isVideo ? 'video' : 'image',
               'filename': file.path.split('/').last,
             });
-            
+
             // إرسال تقدم الرفع
-            data.sendPort.send(_UploadProgress(
-              current: i + 1,
-              total: data.mediaPaths.length,
-              stage: 'Converting ${isVideo ? "video" : "image"} ${i + 1}',
-            ));
+            data.sendPort.send(
+              _UploadProgress(
+                current: i + 1,
+                total: data.mediaPaths.length,
+                stage: 'Converting ${isVideo ? "video" : "image"} ${i + 1}',
+              ),
+            );
           }
         } catch (e) {
           debugPrint('📤 Error processing file ${i + 1}: $e');
         }
       }
-      
+
       if (mediaFiles.isEmpty) {
-        data.sendPort.send(_UploadResult(
-          success: false,
-          message: 'لا توجد وسائط صالحة للرفع',
-          error: 'No valid media found',
-        ));
+        data.sendPort.send(
+          _UploadResult(
+            success: false,
+            message: 'لا توجد وسائط صالحة للرفع',
+            error: 'No valid media found',
+          ),
+        );
         return;
       }
-      
+
       // رفع الوسائط إلى S3
       final response = await dio.post(
         _uploadUrl,
@@ -193,10 +210,10 @@ class UploadService {
           receiveTimeout: const Duration(minutes: 15),
         ),
       );
-      
+
       debugPrint('📤 Response received: ${response.statusCode}');
       debugPrint('📤 Response data: ${response.data}');
-      
+
       // تحويل الاستجابة إلى Map
       Map<String, dynamic> responseData;
       if (response.data is String) {
@@ -204,28 +221,57 @@ class UploadService {
       } else {
         responseData = response.data as Map<String, dynamic>;
       }
-      
+
       if (responseData['success'] == true) {
         final uploadedCount = responseData['data']?['total_uploaded'] ?? 0;
-        data.sendPort.send(_UploadResult(
-          success: true,
-          message: 'تم رفع $uploadedCount ملف بنجاح',
-          uploadedCount: uploadedCount is int ? uploadedCount : int.tryParse(uploadedCount.toString()) ?? 0,
-        ));
+        // 🔥 العدد الكلي جاي من السيرفر بعد ما عد الصور القديمة
+        final totalCount =
+            responseData['data']?['total_count'] ?? uploadedCount;
+
+        // Update visits_det table with total media count from S3
+        try {
+          await _updateVisitMediaCount(
+            data.visitId,
+            totalCount is int
+                ? totalCount
+                : int.tryParse(totalCount.toString()) ?? 0,
+          );
+          debugPrint(
+            '📤 Updated visits_det table with total count: $totalCount',
+          );
+        } catch (e) {
+          debugPrint('📤 Error updating visits_det table: $e');
+        }
+
+        data.sendPort.send(
+          _UploadResult(
+            success: true,
+            message: 'تم رفع $uploadedCount ملف بنجاح وتحديث قاعدة البيانات',
+            uploadedCount: uploadedCount is int
+                ? uploadedCount
+                : int.tryParse(uploadedCount.toString()) ?? 0,
+            totalCount: totalCount is int
+                ? totalCount
+                : int.tryParse(totalCount.toString()) ?? 0,
+          ),
+        );
       } else {
-        data.sendPort.send(_UploadResult(
-          success: false,
-          message: responseData['message']?.toString() ?? 'فشل في الرفع',
-          error: responseData['message']?.toString(),
-        ));
+        data.sendPort.send(
+          _UploadResult(
+            success: false,
+            message: responseData['message']?.toString() ?? 'فشل في الرفع',
+            error: responseData['message']?.toString(),
+          ),
+        );
       }
-      
     } catch (e) {
-      data.sendPort.send(_UploadResult(
-        success: false,
-        message: 'خطأ في الاتصال',
-        error: e.toString(),
-      ));
+      data.sendPort.send(
+        _UploadResult(
+          success: false,
+          message: 'خطأ في الاتصال',
+          error: e.toString(),
+        ),
+      );
     }
   }
 
@@ -234,7 +280,7 @@ class UploadService {
     try {
       final dio = Dio();
       final List<String> base64Images = [];
-      
+
       // تحويل الصور إلى base64
       for (int i = 0; i < data.imagePaths.length; i++) {
         try {
@@ -243,28 +289,32 @@ class UploadService {
             final bytes = await file.readAsBytes();
             final base64String = base64Encode(bytes);
             base64Images.add(base64String);
-            
+
             // إرسال تقدم الرفع
-            data.sendPort.send(_UploadProgress(
-              current: i + 1,
-              total: data.imagePaths.length,
-              stage: 'Converting to base64',
-            ));
+            data.sendPort.send(
+              _UploadProgress(
+                current: i + 1,
+                total: data.imagePaths.length,
+                stage: 'Converting to base64',
+              ),
+            );
           }
         } catch (e) {
           debugPrint('📤 Error converting image ${i + 1}: $e');
         }
       }
-      
+
       if (base64Images.isEmpty) {
-        data.sendPort.send(_UploadResult(
-          success: false,
-          message: 'لا توجد صور صالحة للرفع',
-          error: 'No valid images found',
-        ));
+        data.sendPort.send(
+          _UploadResult(
+            success: false,
+            message: 'لا توجد صور صالحة للرفع',
+            error: 'No valid images found',
+          ),
+        );
         return;
       }
-      
+
       // رفع الصور إلى S3
       final response = await dio.post(
         _uploadUrl,
@@ -279,11 +329,11 @@ class UploadService {
           receiveTimeout: const Duration(minutes: 10),
         ),
       );
-      
+
       debugPrint('📤 Response received: ${response.statusCode}');
       debugPrint('📤 Response data type: ${response.data.runtimeType}');
       debugPrint('📤 Response data: ${response.data}');
-      
+
       // تحويل الاستجابة إلى Map
       Map<String, dynamic> responseData;
       if (response.data is String) {
@@ -291,42 +341,74 @@ class UploadService {
       } else {
         responseData = response.data as Map<String, dynamic>;
       }
-      
+
       if (responseData['success'] == true) {
         final uploadedCount = responseData['data']?['total_uploaded'] ?? 0;
-        data.sendPort.send(_UploadResult(
-          success: true,
-          message: 'تم رفع $uploadedCount صورة بنجاح',
-          uploadedCount: uploadedCount is int ? uploadedCount : int.tryParse(uploadedCount.toString()) ?? 0,
-        ));
+        // 🔥 العدد الكلي جاي من السيرفر بعد ما عد الصور القديمة
+        final totalCount =
+            responseData['data']?['total_count'] ?? uploadedCount;
+
+        // Update visits_det table with total media count from S3
+        try {
+          await _updateVisitMediaCount(
+            data.visitId,
+            totalCount is int
+                ? totalCount
+                : int.tryParse(totalCount.toString()) ?? 0,
+          );
+          debugPrint(
+            '📤 Updated visits_det table with total count: $totalCount',
+          );
+        } catch (e) {
+          debugPrint('📤 Error updating visits_det table: $e');
+        }
+
+        data.sendPort.send(
+          _UploadResult(
+            success: true,
+            message: 'تم رفع $uploadedCount صورة بنجاح وتحديث قاعدة البيانات',
+            uploadedCount: uploadedCount is int
+                ? uploadedCount
+                : int.tryParse(uploadedCount.toString()) ?? 0,
+            totalCount: totalCount is int
+                ? totalCount
+                : int.tryParse(totalCount.toString()) ?? 0,
+          ),
+        );
       } else {
-        data.sendPort.send(_UploadResult(
-          success: false,
-          message: responseData['message']?.toString() ?? 'فشل في الرفع',
-          error: responseData['message']?.toString(),
-        ));
+        data.sendPort.send(
+          _UploadResult(
+            success: false,
+            message: responseData['message']?.toString() ?? 'فشل في الرفع',
+            error: responseData['message']?.toString(),
+          ),
+        );
       }
-      
     } catch (e) {
-      data.sendPort.send(_UploadResult(
-        success: false,
-        message: 'خطأ في الاتصال',
-        error: e.toString(),
-      ));
+      data.sendPort.send(
+        _UploadResult(
+          success: false,
+          message: 'خطأ في الاتصال',
+          error: e.toString(),
+        ),
+      );
     }
   }
-  
+
   /// حفظ حالة الرفع
   static Future<void> _saveUploadStatus(int visitId, bool success) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('upload_status_$visitId', success);
-      await prefs.setString('upload_time_$visitId', DateTime.now().toIso8601String());
+      await prefs.setString(
+        'upload_time_$visitId',
+        DateTime.now().toIso8601String(),
+      );
     } catch (e) {
       debugPrint('📤 Error saving upload status: $e');
     }
   }
-  
+
   /// التحقق من حالة الرفع
   static Future<bool?> getUploadStatus(int visitId) async {
     try {
@@ -337,6 +419,40 @@ class UploadService {
       return null;
     }
   }
+
+  /// Update visits_det table with TOTAL media count (old + new) from S3
+  static Future<void> _updateVisitMediaCount(
+    int visitId,
+    int totalCount, // 🔥 العدد الكلي اللي جاي من السيرفر (قديم + جديد)
+  ) async {
+    try {
+      final dio = Dio();
+
+      debugPrint('📊 Updating visits_det with TOTAL count: $totalCount');
+
+      final response = await dio.post(
+        'https://qcec.online/app2026/update_visit.php',
+        data: {
+          'visit_id': visitId,
+          'image_count': totalCount, // 🔥 العدد الكلي من S3
+          'mob1': 0,
+          'mob2': 0,
+        },
+        options: Options(
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          sendTimeout: const Duration(seconds: 30),
+          receiveTimeout: const Duration(seconds: 30),
+        ),
+      );
+
+      debugPrint('📤 Update visits_det response: ${response.statusCode}');
+      debugPrint('📤 Update visits_det data: ${response.data}');
+      debugPrint('✅ Updated a8 column with TOTAL count: $totalCount');
+    } catch (e) {
+      debugPrint('📤 Error updating visits_det: $e');
+      throw e;
+    }
+  }
 }
 
 /// بيانات الرفع للوسائط للـ Isolate
@@ -344,7 +460,7 @@ class _UploadMediaData {
   final int visitId;
   final List<String> mediaPaths;
   final SendPort sendPort;
-  
+
   _UploadMediaData({
     required this.visitId,
     required this.mediaPaths,
@@ -357,7 +473,7 @@ class _UploadData {
   final int visitId;
   final List<String> imagePaths;
   final SendPort sendPort;
-  
+
   _UploadData({
     required this.visitId,
     required this.imagePaths,
@@ -371,12 +487,14 @@ class _UploadResult {
   final String message;
   final String? error;
   final int? uploadedCount;
-  
+  final int? totalCount; // 🔥 العدد الكلي للصور على S3
+
   _UploadResult({
     required this.success,
     required this.message,
     this.error,
     this.uploadedCount,
+    this.totalCount, // 🔥 جديد
   });
 }
 
@@ -385,7 +503,7 @@ class _UploadProgress {
   final int current;
   final int total;
   final String stage;
-  
+
   _UploadProgress({
     required this.current,
     required this.total,
