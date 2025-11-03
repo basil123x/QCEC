@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'dart:async';
+import 'package:camerawesome/pigeon.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:camerawesome/camerawesome_plugin.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:QCEC/core/constants/app_colors.dart';
 import 'add_visit_screen.dart';
@@ -34,10 +36,54 @@ class _CameraWorkingState extends State<CameraWorking> {
   int recordingSeconds = 0;
   Timer? recordingTimer;
   final int maxRecordingSeconds = 15;
+  bool permissionsGranted = false;
 
   // Mode state
   bool isVideoMode = false;
   Key _cameraKey = UniqueKey();
+
+  Future<void> requestPermissions() async {
+    // اطلب إذن الكاميرا والميكروفون
+    Map<Permission, PermissionStatus> statuses = await [
+      Permission.camera,
+      Permission.microphone,
+    ].request();
+
+    // تحقق إن الأذونات اتمنحت
+    if (statuses[Permission.camera]!.isGranted &&
+        statuses[Permission.microphone]!.isGranted) {
+      setState(() {
+        permissionsGranted = true;
+      });
+    } else {
+      // لو المستخدم رفض الأذونات
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'نحتاج أذونات الكاميرا والميكروفون لتسجيل الفيديو بالصوت',
+              style: GoogleFonts.cairo(),
+            ),
+            backgroundColor: Colors.red,
+            action: SnackBarAction(
+              label: 'الإعدادات',
+              textColor: Colors.white,
+              onPressed: () {
+                openAppSettings(); // يفتح إعدادات التطبيق
+              },
+            ),
+          ),
+        );
+        Navigator.pop(context);
+      }
+    }
+  }
+
+  @override
+  void initState() {
+    requestPermissions();
+    super.initState();
+  }
 
   @override
   void dispose() {
@@ -114,80 +160,99 @@ class _CameraWorkingState extends State<CameraWorking> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          KeyedSubtree(
-            key: _cameraKey,
-            child: CameraAwesomeBuilder.awesome(
-              saveConfig: SaveConfig.photoAndVideo(
-                initialCaptureMode: isVideoMode
-                    ? CaptureMode.video
-                    : CaptureMode.photo,
-                photoPathBuilder: _captureRequestBuilder,
-                videoPathBuilder: _videoCaptureRequestBuilder,
-              ),
-              onMediaCaptureEvent: (MediaCapture capture) async {
-                SharedPreferences prefx = await SharedPreferences.getInstance();
-                final file = File(capture.captureRequest.path!);
-
-                if (await file.exists() && mounted) {
-                  final isVideo = capture.captureRequest.path!.contains(
-                    'video_',
-                  );
-
-                  await SaverGallery.saveFile(
-                    filePath: file.path,
-                    fileName:
-                        "GallerySaving${DateTime.now().millisecondsSinceEpoch}/${widget.projectId}/${widget.visitId}.jpg",
-                    skipIfExists: false,
-                  );
-
-                  debugPrint(
-                    '📸 ${isVideo ? "Video" : "Photo"} captured: ${file.path}',
-                  );
-
-                  setState(() {
-                    allImages.add(file.path);
-                    if (isVideo) {
-                      videoCounter++;
-                    } else {
-                      photoCounter++;
-                    }
-                    prefx.setStringList(
-                      "imagesSaved_${widget.visitId}",
-                      allImages,
-                    );
-                  });
-
-                  // Show success feedback
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        isVideo
-                            ? 'تم تسجيل الفيديو ${allImages.where((p) => p.contains('video_')).length} ✅'
-                            : 'تم التقاط الصورة ${allImages.where((p) => p.contains('photo_')).length} ✅',
-                        style: GoogleFonts.cairo(),
-                      ),
-                      backgroundColor: Colors.green,
-                      duration: const Duration(seconds: 1),
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+      body: permissionsGranted
+          ? Stack(
+              children: [
+                KeyedSubtree(
+                  key: _cameraKey,
+                  child: CameraAwesomeBuilder.awesome(
+                    saveConfig: SaveConfig.photoAndVideo(
+                      initialCaptureMode: isVideoMode
+                          ? CaptureMode.video
+                          : CaptureMode.photo,
+                      photoPathBuilder: _captureRequestBuilder,
+                      videoPathBuilder: _videoCaptureRequestBuilder,
+                      videoOptions: VideoOptions(
+                        enableAudio: true, // ⭐ده المهم!
+                        quality: VideoRecordingQuality.fhd,
                       ),
                     ),
-                  );
-                }
-              },
-              bottomActionsBuilder: (state) {
-                return _buildBottomActions(state);
-              },
-              topActionsBuilder: (state) {
-                return _buildTopActions(state);
-              },
+                    onMediaCaptureEvent: (MediaCapture capture) async {
+                      SharedPreferences prefx =
+                          await SharedPreferences.getInstance();
+                      final file = File(capture.captureRequest.path!);
+
+                      if (await file.exists() && mounted) {
+                        final isVideo = capture.captureRequest.path!.contains(
+                          'video_',
+                        );
+
+                        await SaverGallery.saveFile(
+                          filePath: file.path,
+                          fileName:
+                              "GallerySaving${DateTime.now().millisecondsSinceEpoch}/${widget.projectId}/${widget.visitId}.jpg",
+                          skipIfExists: false,
+                        );
+
+                        debugPrint(
+                          '📸 ${isVideo ? "Video" : "Photo"} captured: ${file.path}',
+                        );
+
+                        setState(() {
+                          allImages.add(file.path);
+                          if (isVideo) {
+                            videoCounter++;
+                          } else {
+                            photoCounter++;
+                          }
+                          prefx.setStringList(
+                            "imagesSaved_${widget.visitId}",
+                            allImages,
+                          );
+                        });
+
+                        // Show success feedback
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              isVideo
+                                  ? 'تم تسجيل الفيديو ${allImages.where((p) => p.contains('video_')).length} ✅'
+                                  : 'تم التقاط الصورة ${allImages.where((p) => p.contains('photo_')).length} ✅',
+                              style: GoogleFonts.cairo(),
+                            ),
+                            backgroundColor: Colors.green,
+                            duration: const Duration(seconds: 1),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                    bottomActionsBuilder: (state) {
+                      return _buildBottomActions(state);
+                    },
+                    topActionsBuilder: (state) {
+                      return _buildTopActions(state);
+                    },
+                  ),
+                ),
+              ],
+            )
+          : Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: Colors.white),
+                  SizedBox(height: 20),
+                  Text(
+                    'جاري طلب الأذونات...',
+                    style: GoogleFonts.cairo(color: Colors.white, fontSize: 16),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
     );
   }
 

@@ -1432,7 +1432,7 @@ class _MainScreenState extends State<MainScreen> {
         debugPrint('✅ Visit created successfully: ${result['visit_id']}');
       } else {
         _showErrorDialog(
-          'فشل في إنشاء الزيارة',
+          result['message'],
           result['message'] ?? 'حدث خطأ غير متوقع',
         );
       }

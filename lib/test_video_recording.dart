@@ -10,7 +10,8 @@ class VideoRecordingTestScreen extends StatefulWidget {
   const VideoRecordingTestScreen({Key? key}) : super(key: key);
 
   @override
-  State<VideoRecordingTestScreen> createState() => _VideoRecordingTestScreenState();
+  State<VideoRecordingTestScreen> createState() =>
+      _VideoRecordingTestScreenState();
 }
 
 class _VideoRecordingTestScreenState extends State<VideoRecordingTestScreen> {
@@ -18,6 +19,7 @@ class _VideoRecordingTestScreenState extends State<VideoRecordingTestScreen> {
   int _recordingSeconds = 0;
   int _maxVideoDuration = 15;
   Timer? _videoTimer;
+  
 
   @override
   void dispose() {
@@ -28,26 +30,26 @@ class _VideoRecordingTestScreenState extends State<VideoRecordingTestScreen> {
   /// بدء تسجيل الفيديو مع العد التنازلي
   void _startVideoRecording() {
     if (_isRecordingVideo) return;
-    
+
     setState(() {
       _isRecordingVideo = true;
       _recordingSeconds = 0;
     });
-    
+
     // بدء العد التنازلي
     _videoTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
         setState(() {
           _recordingSeconds++;
         });
-        
+
         // إيقاف التسجيل عند الوصول للحد الأقصى
         if (_recordingSeconds >= _maxVideoDuration) {
           _stopVideoRecording();
         }
       }
     });
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -59,36 +61,33 @@ class _VideoRecordingTestScreenState extends State<VideoRecordingTestScreen> {
       ),
     );
   }
-  
+
   /// إيقاف تسجيل الفيديو
   void _stopVideoRecording() {
     if (!_isRecordingVideo) return;
-    
+
     _videoTimer?.cancel();
     _videoTimer = null;
-    
+
     setState(() {
       _isRecordingVideo = false;
     });
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          'تم إيقاف تسجيل الفيديو ✅',
-          style: GoogleFonts.cairo(),
-        ),
+        content: Text('تم إيقاف تسجيل الفيديو ✅', style: GoogleFonts.cairo()),
         backgroundColor: Colors.green,
         duration: const Duration(seconds: 1),
       ),
     );
   }
-  
+
   /// بناء واجهة العد التنازلي
   Widget _buildVideoTimer() {
     if (!_isRecordingVideo) return const SizedBox.shrink();
-    
+
     final remainingSeconds = _maxVideoDuration - _recordingSeconds;
-    
+
     return Positioned(
       top: 120,
       left: 0,
@@ -173,11 +172,7 @@ class _VideoRecordingTestScreenState extends State<VideoRecordingTestScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Iconsax.video,
-                    color: Colors.white,
-                    size: 64,
-                  ),
+                  Icon(Iconsax.video, color: Colors.white, size: 64),
                   const SizedBox(height: 16),
                   Text(
                     'شاشة الكاميرا',
@@ -199,10 +194,10 @@ class _VideoRecordingTestScreenState extends State<VideoRecordingTestScreen> {
               ),
             ),
           ),
-          
+
           // العد التنازلي
           _buildVideoTimer(),
-          
+
           // أزرار التحكم
           Positioned(
             bottom: 50,
@@ -216,7 +211,10 @@ class _VideoRecordingTestScreenState extends State<VideoRecordingTestScreen> {
                   onTap: () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('تم التقاط صورة 📸', style: GoogleFonts.cairo()),
+                        content: Text(
+                          'تم التقاط صورة 📸',
+                          style: GoogleFonts.cairo(),
+                        ),
                         backgroundColor: Colors.blue,
                       ),
                     );
@@ -229,16 +227,12 @@ class _VideoRecordingTestScreenState extends State<VideoRecordingTestScreen> {
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 3),
                     ),
-                    child: Icon(
-                      Iconsax.camera,
-                      color: Colors.black,
-                      size: 32,
-                    ),
+                    child: Icon(Iconsax.camera, color: Colors.black, size: 32),
                   ),
                 ),
-                
+
                 const SizedBox(width: 40),
-                
+
                 // زر الفيديو
                 GestureDetector(
                   onTap: () {
@@ -255,8 +249,8 @@ class _VideoRecordingTestScreenState extends State<VideoRecordingTestScreen> {
                       color: _isRecordingVideo ? Colors.red : Colors.purple,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: _isRecordingVideo ? Colors.red : Colors.purple, 
-                        width: 3
+                        color: _isRecordingVideo ? Colors.red : Colors.purple,
+                        width: 3,
                       ),
                     ),
                     child: Icon(
@@ -269,7 +263,7 @@ class _VideoRecordingTestScreenState extends State<VideoRecordingTestScreen> {
               ],
             ),
           ),
-          
+
           // معلومات الحالة
           Positioned(
             top: 100,
@@ -303,10 +297,7 @@ class _VideoRecordingTestScreenState extends State<VideoRecordingTestScreen> {
                   const SizedBox(height: 8),
                   Text(
                     'الوقت: ${_recordingSeconds}s / ${_maxVideoDuration}s',
-                    style: GoogleFonts.cairo(
-                      color: Colors.white,
-                      fontSize: 12,
-                    ),
+                    style: GoogleFonts.cairo(color: Colors.white, fontSize: 12),
                   ),
                 ],
               ),

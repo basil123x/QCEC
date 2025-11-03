@@ -300,7 +300,7 @@ ${data['date']} - ${data['time']} ${intlx.DateFormat('yyyy-MM-dd').format(DateTi
         if (data['sendCmob'] != null && data['sendCmob'] != '') {
           await Future.delayed(Duration(seconds: 10));
           await sendSMS().sendSms(data['sendCmob'], data['msg'], 'both');
-
+          await Future.delayed(Duration(seconds: 10));
           await Sendtowhatsapp().sendToWhatsDocs(
             data['sendCmob'],
             data['visitId'],
@@ -320,7 +320,9 @@ ${data['date']} - ${data['time']} ${intlx.DateFormat('yyyy-MM-dd').format(DateTi
         }
 
         if (data['sendCNmob'] != null && data['sendCNmob'] != '') {
+          await Future.delayed(Duration(seconds: 10));
           await sendSMS().sendSms(data['sendCNmob'], data['msg'], 'both');
+          await Future.delayed(Duration(seconds: 10));
           await Sendtowhatsapp().sendToWhatsDocs(
             data['sendCNmob'],
             data['visitId'],
@@ -361,8 +363,8 @@ ${data['date']} - ${data['time']} ${intlx.DateFormat('yyyy-MM-dd').format(DateTi
   bool _isLoadingDetails = true;
 
   // Contact options
-  bool _contactCustomer = false;
-  bool _contactContractor = false;
+  bool _contactCustomer = true;
+  bool _contactContractor = true;
 
   // Image editing states
   bool _showEditIcons = false;
@@ -374,6 +376,41 @@ ${data['date']} - ${data['time']} ${intlx.DateFormat('yyyy-MM-dd').format(DateTi
     _initializeDraftVisit();
     _loadVisitDetails();
   }
+
+  /// تهيئة الزيارة المؤقتة وتحميل البيانات المحفوظة
+  // void _initializeDraftVisit() async {
+  //   try {
+  //     // بدء الزيارة أو استكمالها
+  //     DraftVisit? draft = await _draftService.startVisit(
+  //       widget.visitId,
+  //       widget.projectId,
+  //     );
+
+  //     if (draft != null) {
+  //       setState(() {
+  //         // تحميل البيانات المحفوظة
+  //         _descriptionController.text = draft.description;
+  //         _notesController.text = draft.notes;
+  //         _images = draft.images.isNotEmpty
+  //             ? draft.images
+  //             : widget.capturedImages;
+  //         _contactCustomer = draft.contactCustomer;
+  //         _contactContractor = draft.contactContractor;
+  //       });
+
+  //       debugPrint('📋 Loaded draft visit data: ${draft.toString()}');
+
+  //       // إضافة listeners للحفظ التلقائي
+  //       _setupAutoSaveListeners();
+  //     }
+  //   } catch (e) {
+  //     debugPrint('❌ Error initializing draft visit: $e');
+  //     // في حالة الخطأ، استخدم الصور المرسلة
+  //     setState(() {
+  //       _images = widget.capturedImages;
+  //     });
+  //   }
+  // }
 
   /// تهيئة الزيارة المؤقتة وتحميل البيانات المحفوظة
   void _initializeDraftVisit() async {
@@ -392,8 +429,18 @@ ${data['date']} - ${data['time']} ${intlx.DateFormat('yyyy-MM-dd').format(DateTi
           _images = draft.images.isNotEmpty
               ? draft.images
               : widget.capturedImages;
-          _contactCustomer = draft.contactCustomer;
-          _contactContractor = draft.contactContractor;
+
+          // ⭐ لو الـ draft فاضي (زيارة جديدة)، حط true
+          // لو فيه بيانات محفوظة، استخدم القيم المحفوظة
+          if (draft.description.isEmpty && draft.notes.isEmpty) {
+            // زيارة جديدة - القيم الافتراضية
+            _contactCustomer = true;
+            _contactContractor = true;
+          } else {
+            // زيارة محفوظة - استخدم القيم المحفوظة
+            _contactCustomer = draft.contactCustomer;
+            _contactContractor = draft.contactContractor;
+          }
         });
 
         debugPrint('📋 Loaded draft visit data: ${draft.toString()}');
@@ -403,9 +450,11 @@ ${data['date']} - ${data['time']} ${intlx.DateFormat('yyyy-MM-dd').format(DateTi
       }
     } catch (e) {
       debugPrint('❌ Error initializing draft visit: $e');
-      // في حالة الخطأ، استخدم الصور المرسلة
+      // في حالة الخطأ، استخدم الصور المرسلة والقيم الافتراضية
       setState(() {
         _images = widget.capturedImages;
+        _contactCustomer = true; // ⭐
+        _contactContractor = true; // ⭐
       });
     }
   }
@@ -698,6 +747,35 @@ ${data['date']} - ${data['time']} ${intlx.DateFormat('yyyy-MM-dd').format(DateTi
     return ['mp4', 'mov', 'avi', 'mkv', '3gp'].contains(extension);
   }
 
+  final Map<String, Duration> _videoDurations = {};
+
+  Future<Duration> getVideoDuration(String videoPath) async {
+    // لو موجود في الـ cache، ارجعه على طول
+    if (_videoDurations.containsKey(videoPath)) {
+      return _videoDurations[videoPath]!;
+    }
+
+    final controller = VideoPlayerController.file(File(videoPath));
+    try {
+      await controller.initialize();
+      final duration = controller.value.duration;
+      _videoDurations[videoPath] = duration; // ⭐ احفظ في الـ cache
+      await controller.dispose();
+      return duration;
+    } catch (e) {
+      debugPrint('خطأ في جلب مدة الفيديو: $e');
+      await controller.dispose();
+      return Duration(seconds: 0);
+    }
+  }
+
+  String formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return '$minutes:$seconds';
+  }
+
   /// Build video player widget with thumbnail
   Widget _buildVideoPlayer(String videoPath) {
     return Container(
@@ -732,6 +810,7 @@ ${data['date']} - ${data['time']} ${intlx.DateFormat('yyyy-MM-dd').format(DateTi
               }
             },
           ),
+
           // Play button overlay
           Container(
             decoration: BoxDecoration(
@@ -747,60 +826,87 @@ ${data['date']} - ${data['time']} ${intlx.DateFormat('yyyy-MM-dd').format(DateTi
               ),
             ),
           ),
-          // Video indicator
+
+          // ⭐ Video indicator مع المدة الديناميكية
           Positioned(
             top: 12,
             left: 12,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.purple.withOpacity(0.9),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Theme.of(context).cardColor,
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Iconsax.video,
-                    color: Theme.of(context).cardColor,
-                    size: 12,
+            child: FutureBuilder<Duration>(
+              future: getVideoDuration(videoPath),
+              builder: (context, snapshot) {
+                final durationText =
+                    snapshot.hasData && snapshot.data!.inSeconds > 0
+                    ? 'فيديو ${snapshot.data!.inSeconds} ث'
+                    : 'فيديو';
+
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'فيديو 15 ث',
-                    style: GoogleFonts.cairo(
+                  decoration: BoxDecoration(
+                    color: Colors.purple.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
                       color: Theme.of(context).cardColor,
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Iconsax.video,
+                        color: Theme.of(context).cardColor,
+                        size: 12,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        durationText,
+                        style: GoogleFonts.cairo(
+                          color: Theme.of(context).cardColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+
+          // ⭐ Duration indicator مع الوقت الديناميكي (MM:SS)
+          Positioned(
+            bottom: 12,
+            left: 12,
+            child: FutureBuilder<Duration>(
+              future: getVideoDuration(videoPath),
+              builder: (context, snapshot) {
+                final displayTime =
+                    snapshot.hasData && snapshot.data!.inSeconds > 0
+                    ? formatDuration(snapshot.data!)
+                    : '0:00';
+
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    displayTime,
+                    style: GoogleFonts.cairo(
+                      color: Colors.white,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
-
-          // Duration indicator
-          Positioned(
-            bottom: 12,
-            left: 12,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.black54,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                '0:15',
-                style: GoogleFonts.cairo(
-                  color: Theme.of(context).cardColor,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+                );
+              },
             ),
           ),
         ],
@@ -839,68 +945,76 @@ ${data['date']} - ${data['time']} ${intlx.DateFormat('yyyy-MM-dd').format(DateTi
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle bar
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? AppColors.borderDark
-                    : Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
+      builder: (context) => Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return Container(
+            decoration: BoxDecoration(
+              color: themeProvider.isDarkMode
+                  ? AppColors.secondaryDark
+                  : AppColors.pureWhite,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
-            const SizedBox(height: 20),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle bar
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.borderDark
+                        : Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
 
-            // Title
-            Text(
-              'اختر نوع الوسائط',
-              style: GoogleFonts.cairo(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
+                // Title
+                Text(
+                  'اختر نوع الوسائط',
+                  style: GoogleFonts.cairo(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: themeProvider.isDarkMode
+                        ? AppColors.pureWhite
+                        : Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Photo option
+                _buildBottomSheetOption(
+                  icon: Iconsax.camera,
+                  title: 'التقاط صورة',
+                  subtitle: 'التقط صورة جديدة بالكاميرا',
+                  color: AppColors.primary,
+                  onTap: () {
+                    Navigator.pop(context);
+                    _captureImageFromCamera();
+                  },
+                ),
+
+                const SizedBox(height: 16),
+
+                // Video option
+                _buildBottomSheetOption(
+                  icon: Iconsax.video,
+                  title: 'تسجيل فيديو',
+                  subtitle: 'سجل فيديو جديد (15 ثانية)',
+                  color: Colors.purple,
+                  onTap: () {
+                    Navigator.pop(context);
+                    _captureVideoFromCamera();
+                  },
+                ),
+
+                const SizedBox(height: 24),
+              ],
             ),
-            const SizedBox(height: 24),
-
-            // Photo option
-            _buildBottomSheetOption(
-              icon: Iconsax.camera,
-              title: 'التقاط صورة',
-              subtitle: 'التقط صورة جديدة بالكاميرا',
-              color: AppColors.primary,
-              onTap: () {
-                Navigator.pop(context);
-                _captureImageFromCamera();
-              },
-            ),
-
-            const SizedBox(height: 16),
-
-            // Video option
-            _buildBottomSheetOption(
-              icon: Iconsax.video,
-              title: 'تسجيل فيديو',
-              subtitle: 'سجل فيديو جديد (15 ثانية)',
-              color: Colors.purple,
-              onTap: () {
-                Navigator.pop(context);
-                _captureVideoFromCamera();
-              },
-            ),
-
-            const SizedBox(height: 24),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -909,69 +1023,77 @@ ${data['date']} - ${data['time']} ${intlx.DateFormat('yyyy-MM-dd').format(DateTi
   void _showGalleryOptions() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle bar
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? AppColors.borderDark
-                    : Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
+      backgroundColor: Colors.white,
+      builder: (context) => Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return Container(
+            decoration: BoxDecoration(
+              color: themeProvider.isDarkMode
+                  ? AppColors.secondaryDark
+                  : AppColors.pureWhite,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
-            const SizedBox(height: 20),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle bar
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.borderDark
+                        : Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
 
-            // Title
-            Text(
-              'اختر من المعرض',
-              style: GoogleFonts.cairo(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
+                // Title
+                Text(
+                  'اختر من المعرض',
+                  style: GoogleFonts.cairo(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: themeProvider.isDarkMode
+                        ? AppColors.pureWhite
+                        : Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Photos option
+                _buildBottomSheetOption(
+                  icon: Iconsax.gallery,
+                  title: 'صور من المعرض',
+                  subtitle: 'اختر صور محفوظة من الجاليري',
+                  color: AppColors.secondary,
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickImagesFromGallery();
+                  },
+                ),
+
+                const SizedBox(height: 16),
+
+                // Videos option
+                _buildBottomSheetOption(
+                  icon: Iconsax.video_play,
+                  title: 'فيديو من المعرض',
+                  subtitle: 'اختر فيديو محفوظ من الجاليري',
+                  color: Colors.orange,
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickVideoFromGallery();
+                  },
+                ),
+
+                const SizedBox(height: 24),
+              ],
             ),
-            const SizedBox(height: 24),
-
-            // Photos option
-            _buildBottomSheetOption(
-              icon: Iconsax.gallery,
-              title: 'صور من المعرض',
-              subtitle: 'اختر صور محفوظة من الجاليري',
-              color: AppColors.secondary,
-              onTap: () {
-                Navigator.pop(context);
-                _pickImagesFromGallery();
-              },
-            ),
-
-            const SizedBox(height: 16),
-
-            // Videos option
-            _buildBottomSheetOption(
-              icon: Iconsax.video_play,
-              title: 'فيديو من المعرض',
-              subtitle: 'اختر فيديو محفوظ من الجاليري',
-              color: Colors.orange,
-              onTap: () {
-                Navigator.pop(context);
-                _pickVideoFromGallery();
-              },
-            ),
-
-            const SizedBox(height: 24),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -986,52 +1108,60 @@ ${data['date']} - ${data['time']} ${intlx.DateFormat('yyyy-MM-dd').format(DateTi
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.3)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: Theme.of(context).cardColor, size: 24),
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: color.withOpacity(0.3)),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.cairo(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.cairo(
-                      fontSize: 12,
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? AppColors.textSecondaryDark
-                          : Colors.grey[600],
-                    ),
+                  child: Icon(
+                    icon,
+                    color: Theme.of(context).cardColor,
+                    size: 24,
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.cairo(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.pureWhite,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: GoogleFonts.cairo(
+                          fontSize: 12,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? AppColors.textSecondaryDark
+                              : Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Iconsax.arrow_left_2, color: color, size: 20),
+              ],
             ),
-            Icon(Iconsax.arrow_left_2, color: color, size: 20),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -1430,7 +1560,7 @@ ${data['date']} - ${data['time']} ${intlx.DateFormat('yyyy-MM-dd').format(DateTi
                               child: Text(
                                 '${_currentImageIndex + 1} / ${_images.length}',
                                 style: GoogleFonts.cairo(
-                                  color: Theme.of(context).cardColor,
+                                  color: Colors.white,
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -1518,7 +1648,11 @@ ${data['date']} - ${data['time']} ${intlx.DateFormat('yyyy-MM-dd').format(DateTi
                     child: ElevatedButton(
                       onPressed: _saveVisit,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor:
+                            _descriptionController.text.trim().isEmpty ||
+                                _notesController.text.trim().isEmpty
+                            ? Colors.red
+                            : Colors.green,
                         foregroundColor: Colors.white,
                         padding: EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -1658,6 +1792,7 @@ ${data['date']} - ${data['time']} ${intlx.DateFormat('yyyy-MM-dd').format(DateTi
   Widget _buildMessagingOptions() {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
+        print(_contactCustomer);
         return Container(
           decoration: BoxDecoration(
             color: themeProvider.isDarkMode
@@ -1676,6 +1811,7 @@ ${data['date']} - ${data['time']} ${intlx.DateFormat('yyyy-MM-dd').format(DateTi
             children: [
               Expanded(
                 child: CheckboxListTile(
+                  checkColor: AppColors.primaryDark,
                   value: _contactCustomer,
                   onChanged: (value) {
                     setState(() {
@@ -1684,28 +1820,27 @@ ${data['date']} - ${data['time']} ${intlx.DateFormat('yyyy-MM-dd').format(DateTi
                     // حفظ تلقائي عند تغيير حالة الاتصال
                     _saveCurrentState();
                   },
-                  title: Text('العميل', style: GoogleFonts.cairo(fontSize: 14)),
+                  title: Text(
+                    'العميل',
+                    style: GoogleFonts.cairo(fontSize: 14, color: Colors.white),
+                  ),
                   subtitle: _contactCustomer
                       ? Text(
                           _contactCustomer ? _customerPhone : 'غير مفعل',
                           style: GoogleFonts.cairo(
                             fontSize: 12,
-                            color: _contactCustomer
-                                ? AppColors.secondaryDark
-                                : Theme.of(context).brightness ==
-                                      Brightness.dark
-                                ? AppColors.textSecondaryDark
-                                : Colors.grey[600],
+                            color: Colors.white,
                           ),
                         )
                       : null,
-                  activeColor: AppColors.secondaryDark,
+                  activeColor: Colors.white,
                   controlAffinity: ListTileControlAffinity.leading,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: CheckboxListTile(
+                  checkColor: AppColors.primaryDark,
                   value: _contactContractor,
                   onChanged: (value) {
                     setState(() {
@@ -1715,23 +1850,18 @@ ${data['date']} - ${data['time']} ${intlx.DateFormat('yyyy-MM-dd').format(DateTi
                   },
                   title: Text(
                     'المقاول',
-                    style: GoogleFonts.cairo(fontSize: 14),
+                    style: GoogleFonts.cairo(fontSize: 14, color: Colors.white),
                   ),
                   subtitle: _contactContractor
                       ? Text(
                           _contactContractor ? _contractorPhone : '',
                           style: GoogleFonts.cairo(
                             fontSize: 12,
-                            color: _contactContractor
-                                ? AppColors.secondaryDark
-                                : Theme.of(context).brightness ==
-                                      Brightness.dark
-                                ? AppColors.textSecondaryDark
-                                : Colors.grey[600],
+                            color: Colors.white,
                           ),
                         )
                       : null,
-                  activeColor: AppColors.secondaryDark,
+                  activeColor: Colors.white,
                   controlAffinity: ListTileControlAffinity.leading,
                 ),
               ),
@@ -1998,10 +2128,14 @@ ${data['date']} - ${data['time']} ${intlx.DateFormat('yyyy-MM-dd').format(DateTi
   }
 
   void _saveVisit() async {
-    if (_descriptionController.text.trim().isEmpty) {
+    if (_descriptionController.text.trim().isEmpty ||
+        _notesController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('يرجى إدخال وصف الزيارة', style: GoogleFonts.cairo()),
+          content: Text(
+            'يرجى إدخال بيانات الزيارة',
+            style: GoogleFonts.cairo(),
+          ),
           backgroundColor: Colors.orange,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
