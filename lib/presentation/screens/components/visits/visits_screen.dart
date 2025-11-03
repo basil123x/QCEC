@@ -30,7 +30,6 @@ class VisitsScreen extends StatefulWidget {
 }
 
 class _VisitsScreenState extends State<VisitsScreen> {
-  
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -38,15 +37,15 @@ class _VisitsScreenState extends State<VisitsScreen> {
         children: [
           // Stats toggle button (only for admin)
           if (widget.authProvider.isAdmin()) _buildStatsToggle(),
-          
+
           // Content - either visits or statistics
           Expanded(
-            child: widget.showingStats 
+            child: widget.showingStats
                 ? StatisticsScreen(
                     authProvider: widget.authProvider,
                     selectedDate: widget.selectedDate,
                   )
-                : _buildVisitsList()
+                : _buildVisitsList(),
           ),
         ],
       ),
@@ -73,11 +72,14 @@ class _VisitsScreenState extends State<VisitsScreen> {
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: widget.showingStats 
-                    ? Colors.grey[600] 
+                backgroundColor: widget.showingStats
+                    ? Colors.grey[600]
                     : AppColors.primary,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 16,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -91,12 +93,12 @@ class _VisitsScreenState extends State<VisitsScreen> {
 
   Widget _buildVisitsList() {
     final dateKey = intlx.DateFormat('yyyy-MM-dd').format(widget.selectedDate);
-    
+
     // Check if we have cached data for this date
     if (widget.visitsCache.containsKey(dateKey)) {
       return _buildVisitsListFromCache(dateKey);
     }
-    
+
     // If no cache, load from API
     return FutureBuilder<Map<String, dynamic>>(
       future: _loadVisitsData(dateKey),
@@ -135,11 +137,18 @@ class _VisitsScreenState extends State<VisitsScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Iconsax.calendar_remove, size: 48, color: Colors.grey[400]),
+                Icon(
+                  Iconsax.calendar_remove,
+                  size: 48,
+                  color: Colors.grey[400],
+                ),
                 const SizedBox(height: 16),
                 Text(
                   'لا توجد زيارات في هذا التاريخ',
-                  style: GoogleFonts.cairo(fontSize: 16, color: Colors.grey[600]),
+                  style: GoogleFonts.cairo(
+                    fontSize: 16,
+                    color: Colors.grey[600],
+                  ),
                 ),
               ],
             ),
@@ -182,23 +191,44 @@ class _VisitsScreenState extends State<VisitsScreen> {
     }
 
     final visits = result['visits'] as List<dynamic>;
-    
+
     // Filter visits based on search query
     final filteredVisits = widget.searchQueryVisits.isEmpty
         ? visits
         : visits.where((visit) {
             final visitMap = visit as Map<String, dynamic>;
             final searchLower = widget.searchQueryVisits.toLowerCase();
-            
-            return (visitMap['cname']?.toString().toLowerCase().contains(searchLower) ?? false) ||
-                   (visitMap['ename']?.toString().toLowerCase().contains(searchLower) ?? false) ||
-                   (visitMap['cn_name']?.toString().toLowerCase().contains(searchLower) ?? false) ||
-                   (visitMap['proj']?.toString().toLowerCase().contains(searchLower) ?? false) ||
-                   (visitMap['place']?.toString().toLowerCase().contains(searchLower) ?? false) ||
-                   (visitMap['a2']?.toString().toLowerCase().contains(searchLower) ?? false) ||
-                   (visitMap['a4']?.toString().toLowerCase().contains(searchLower) ?? false);
+
+            return (visitMap['cname']?.toString().toLowerCase().contains(
+                      searchLower,
+                    ) ??
+                    false) ||
+                (visitMap['ename']?.toString().toLowerCase().contains(
+                      searchLower,
+                    ) ??
+                    false) ||
+                (visitMap['cn_name']?.toString().toLowerCase().contains(
+                      searchLower,
+                    ) ??
+                    false) ||
+                (visitMap['proj']?.toString().toLowerCase().contains(
+                      searchLower,
+                    ) ??
+                    false) ||
+                (visitMap['place']?.toString().toLowerCase().contains(
+                      searchLower,
+                    ) ??
+                    false) ||
+                (visitMap['a2']?.toString().toLowerCase().contains(
+                      searchLower,
+                    ) ??
+                    false) ||
+                (visitMap['a4']?.toString().toLowerCase().contains(
+                      searchLower,
+                    ) ??
+                    false);
           }).toList();
-    
+
     if (filteredVisits.isEmpty) {
       return Center(
         child: Column(

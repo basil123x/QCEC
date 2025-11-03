@@ -672,7 +672,6 @@ class _MainScreenState extends State<MainScreen> {
         centerTitle: true,
         title: Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
             boxShadow: [
               BoxShadow(
                 color: Theme.of(context).shadowColor.withAlpha(13),
@@ -2537,14 +2536,35 @@ class _MainScreenState extends State<MainScreen> {
       );
     }
 
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.all(16),
-      itemCount: filteredProjects.length,
-      itemBuilder: (context, index) {
-        final project = filteredProjects[index] as Map<String, dynamic>;
-        return _buildProjectCard(project, index + 1);
-      },
+    return Column(
+      children: [
+        Consumer<ThemeProvider>(
+          builder: (context, themeProvider, child) {
+            return Container(
+              color: themeProvider.isDarkMode
+                  ? AppColors.secondaryDark
+                  : AppColors.primary,
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              alignment: Alignment.centerRight,
+              child: Text(
+                "عدد المشاريع الإجمالية: ${filteredProjects.length} مشروع",
+                style: GoogleFonts.cairo(color: Colors.white),
+              ),
+            );
+          },
+        ),
+        Expanded(
+          child: ListView.builder(
+            controller: _scrollController,
+            padding: const EdgeInsets.all(16),
+            itemCount: filteredProjects.length,
+            itemBuilder: (context, index) {
+              final project = filteredProjects[index] as Map<String, dynamic>;
+              return _buildProjectCard(project, index + 1);
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -3202,13 +3222,27 @@ class _MainScreenState extends State<MainScreen> {
           );
         }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: visits.length,
-          itemBuilder: (context, index) {
-            final visit = visits[index] as Map<String, dynamic>;
-            return _buildVisitCard(visit, index + 1, authProvider);
-          },
+        return Column(
+          children: [
+            Container(
+              margin: EdgeInsets.symmetric(horizontal: 16),
+              alignment: Alignment.centerRight,
+              child: Text(
+                "عدد المشاريع الإجمالية: ${visits.length} مشروع",
+                style: GoogleFonts.cairo(),
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: visits.length,
+                itemBuilder: (context, index) {
+                  final visit = visits[index] as Map<String, dynamic>;
+                  return _buildVisitCard(visit, index + 1, authProvider);
+                },
+              ),
+            ),
+          ],
         );
       },
     );
@@ -3795,13 +3829,34 @@ class _MainScreenState extends State<MainScreen> {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: filteredVisits.length,
-      itemBuilder: (context, index) {
-        final visit = filteredVisits[index] as Map<String, dynamic>;
-        return _buildVisitCard(visit, index + 1, authProvider);
-      },
+    return Column(
+      children: [
+        Consumer<ThemeProvider>(
+          builder: (context, themeProvider, child) {
+            return Container(
+              color: themeProvider.isDarkMode
+                  ? AppColors.secondaryDark
+                  : AppColors.primary,
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              alignment: Alignment.centerRight,
+              child: Text(
+                "عدد زيارات اليوم: ${visits.length} زيارة",
+                style: GoogleFonts.cairo(color: Colors.white),
+              ),
+            );
+          },
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: filteredVisits.length,
+            itemBuilder: (context, index) {
+              final visit = filteredVisits[index] as Map<String, dynamic>;
+              return _buildVisitCard(visit, index + 1, authProvider);
+            },
+          ),
+        ),
+      ],
     );
   }
 

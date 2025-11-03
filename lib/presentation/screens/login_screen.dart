@@ -155,9 +155,11 @@ class _LoginScreenState extends State<LoginScreen>
         FocusScope.of(context).unfocus();
       },
       child: Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
+        builder: (context, themeProvider, child) {
           return Scaffold(
-            backgroundColor: themeProvider.isDarkMode ? AppColors.primaryDark : AppColors.pureWhite,
+            backgroundColor: themeProvider.isDarkMode
+                ? AppColors.primaryDark
+                : AppColors.pureWhite,
             body: SafeArea(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -168,11 +170,14 @@ class _LoginScreenState extends State<LoginScreen>
                     child: Column(
                       children: [
                         const SizedBox(height: 40),
-          
-                        Image.asset("assets/images/${themeProvider.isDarkMode ? "logo-light" : "logo"}.png", width: 100),
-          
+
+                        Image.asset(
+                          "assets/images/${themeProvider.isDarkMode ? "logo-white" : "logo"}.png",
+                          width: 100,
+                        ),
+
                         const SizedBox(height: 20),
-          
+
                         // Welcome Text
                         AnimatedBuilder(
                           animation: _animationController,
@@ -188,16 +193,22 @@ class _LoginScreenState extends State<LoginScreen>
                                       style: GoogleFonts.cairo(
                                         fontSize: 28,
                                         fontWeight: FontWeight.bold,
-                                        color: themeProvider.isDarkMode ? AppColors.pureWhite : Colors.grey[800],
+                                        color: themeProvider.isDarkMode
+                                            ? AppColors.pureWhite
+                                            : Colors.grey[800],
                                       ),
                                       textAlign: TextAlign.center,
                                     ),
                                     const SizedBox(height: 12),
                                     Text(
-                                      AppLocalizations.of(context)!.helloContent,
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.helloContent,
                                       style: GoogleFonts.cairo(
                                         fontSize: 16,
-                                        color: themeProvider.isDarkMode ? AppColors.pureWhite : Colors.grey[600],
+                                        color: themeProvider.isDarkMode
+                                            ? AppColors.pureWhite
+                                            : Colors.grey[600],
                                         height: 1.5,
                                       ),
                                       textAlign: TextAlign.center,
@@ -208,9 +219,9 @@ class _LoginScreenState extends State<LoginScreen>
                             );
                           },
                         ),
-          
+
                         const SizedBox(height: 50),
-          
+
                         // Form Fields
                         AnimatedBuilder(
                           animation: _animationController,
@@ -220,7 +231,8 @@ class _LoginScreenState extends State<LoginScreen>
                               child: FadeTransition(
                                 opacity: _fadeAnimation,
                                 child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
                                   children: [
                                     // Phone Field
                                     Text(
@@ -228,7 +240,9 @@ class _LoginScreenState extends State<LoginScreen>
                                       style: GoogleFonts.cairo(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600,
-                                        color: themeProvider.isDarkMode ? AppColors.pureWhite : Colors.grey[800],
+                                        color: themeProvider.isDarkMode
+                                            ? AppColors.pureWhite
+                                            : Colors.grey[800],
                                       ),
                                     ),
                                     const SizedBox(height: 8),
@@ -255,16 +269,18 @@ class _LoginScreenState extends State<LoginScreen>
                                         return null;
                                       },
                                     ),
-          
+
                                     const SizedBox(height: 24),
-          
+
                                     // Password Field
                                     Text(
                                       AppLocalizations.of(context)!.password,
                                       style: GoogleFonts.cairo(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600,
-                                        color: themeProvider.isDarkMode ? AppColors.pureWhite : Colors.grey[800],
+                                        color: themeProvider.isDarkMode
+                                            ? AppColors.pureWhite
+                                            : Colors.grey[800],
                                       ),
                                     ),
                                     const SizedBox(height: 8),
@@ -284,12 +300,12 @@ class _LoginScreenState extends State<LoginScreen>
                                         return null;
                                       },
                                     ),
-          
+
                                     const SizedBox(height: 32),
-          
+
                                     // Login Button
                                     _buildLoginButton(),
-          
+
                                     const SizedBox(height: 20),
                                   ],
                                 ),
@@ -304,7 +320,7 @@ class _LoginScreenState extends State<LoginScreen>
               ),
             ),
           );
-        }
+        },
       ),
     );
   }
@@ -322,7 +338,9 @@ class _LoginScreenState extends State<LoginScreen>
       builder: (context, themeProvider, child) {
         return Container(
           decoration: BoxDecoration(
-            color: themeProvider.isDarkMode ? AppColors.primaryDark : const Color(0xFFF8F9FA),
+            color: themeProvider.isDarkMode
+                ? AppColors.primaryDark
+                : const Color(0xFFF8F9FA),
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
@@ -340,15 +358,25 @@ class _LoginScreenState extends State<LoginScreen>
               keyboardType: keyboardType,
               inputFormatters: inputFormatters,
               validator: validator,
-              style: GoogleFonts.cairo(fontSize: 16, fontWeight: FontWeight.w500),
+              style: GoogleFonts.cairo(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
               decoration: InputDecoration(
                 filled: true,
-                fillColor: themeProvider.isDarkMode ? AppColors.secondaryDark : AppColors.pureWhite,
+                fillColor: themeProvider.isDarkMode
+                    ? AppColors.secondaryDark
+                    : AppColors.pureWhite,
                 hintText: hintText,
-                hintStyle: GoogleFonts.cairo(color: Colors.grey[500], fontSize: 14),
+                hintStyle: GoogleFonts.cairo(
+                  color: Colors.grey[500],
+                  fontSize: 14,
+                ),
                 prefixIcon: Icon(
                   prefixIcon,
-                  color: themeProvider.isDarkMode ? AppColors.pureWhite : Colors.black,
+                  color: themeProvider.isDarkMode
+                      ? AppColors.pureWhite
+                      : Colors.black,
                   size: 22,
                 ),
                 suffixIcon: isPassword
@@ -378,7 +406,7 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ),
         );
-      }
+      },
     );
   }
 
