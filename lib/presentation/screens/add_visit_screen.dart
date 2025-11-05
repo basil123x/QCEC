@@ -114,7 +114,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
       print("📊 Total files: ${images.length} images, ${videos.length} videos");
 
       // إضافة الصور
-      for (int i = 0; i < images.length; i++) {
+      for (int i = 1; i < images.length; i++) {
         final file = File(images[i]);
         if (!await file.exists()) {
           print("⚠️ File not found: ${images[i]}");
@@ -166,8 +166,8 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
           headers: {"Content-Type": "multipart/form-data"},
           sendTimeout: Duration(minutes: 10),
           receiveTimeout: Duration(minutes: 10),
-          validateStatus: (status) => true, // قبول كل الـ status codes
-          responseType: ResponseType.plain, // استقبال النص الخام أولاً
+          validateStatus: (status) => true,
+          responseType: ResponseType.plain,
         ),
         onSendProgress: (sent, total) {
           if (total != -1) {

@@ -65,6 +65,7 @@ class _MainScreenState extends State<MainScreen> {
   final Map<int, GlobalKey> _projectKeys = {};
   bool _isLoadingProjects = false;
   bool _hasLoadedProjects = false;
+  String custName = "";
 
   Future<void> addCompanyContact() async {
     // تحقق من حالة الإذن مرة واحدة فقط
@@ -937,7 +938,9 @@ class _MainScreenState extends State<MainScreen> {
           pageTitle = AppLocalizations.of(context)!.home;
           break;
         case 1:
-          pageTitle = AppLocalizations.of(context)!.allProjects;
+          pageTitle = custName != ''
+              ? custName
+              : AppLocalizations.of(context)!.allProjects;
           break;
         case 3:
           pageTitle = AppLocalizations.of(context)!.visits;
@@ -950,7 +953,9 @@ class _MainScreenState extends State<MainScreen> {
       // For others: 0=Home, 1=Projects, 2=Visits, 3=Profile
       switch (_selectedIndex) {
         case 1:
-          pageTitle = AppLocalizations.of(context)!.allProjects;
+          pageTitle = custName != ''
+              ? custName
+              : AppLocalizations.of(context)!.allProjects;
           break;
         case 3:
           pageTitle = AppLocalizations.of(context)!.profile;
@@ -1013,21 +1018,22 @@ class _MainScreenState extends State<MainScreen> {
           : Text(
               pageTitle,
               style: GoogleFonts.cairo(
-                fontSize: 20,
+                fontSize: custName != '' ? 15 : 20,
                 color: Theme.of(context).textTheme.titleLarge?.color,
                 fontWeight: FontWeight.bold,
               ),
             ),
+
       leading: // Only show search in projects tab
       IconButton(
         onPressed: () {
           setState(() {
-            if (_isSearching) {
-              _isSearching = false;
-              _searchQuery = '';
-              _searchController.clear();
+            if (_isSearchingVisits) {
+              _isSearchingVisits = false;
+              _searchQueryVisits = '';
+              _searchControllerVisits.clear();
             } else {
-              _isSearching = true;
+              _isSearchingVisits = true;
             }
           });
         },
@@ -1038,7 +1044,7 @@ class _MainScreenState extends State<MainScreen> {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
-            _isSearching ? Iconsax.close_square : Iconsax.search_normal,
+            _isSearchingVisits ? Iconsax.close_square : Iconsax.search_normal,
             color: AppColors.primary,
             size: 20,
           ),
@@ -1048,47 +1054,20 @@ class _MainScreenState extends State<MainScreen> {
         if (_selectedIndex == 3 ||
             _selectedIndex ==
                 2) // Show search in visits tab for both admin and engineer
-          IconButton(
-            onPressed: () {
-              setState(() {
-                if (_isSearchingVisits) {
-                  _isSearchingVisits = false;
-                  _searchQueryVisits = '';
-                  _searchControllerVisits.clear();
-                } else {
-                  _isSearchingVisits = true;
-                }
-              });
-            },
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withAlpha(51),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                _isSearchingVisits
-                    ? Iconsax.close_square
-                    : Iconsax.search_normal,
-                color: AppColors.primary,
-                size: 20,
+          if (_selectedIndex == 0) // Only show profile pic on home screen
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              child: CircleAvatar(
+                radius: 20,
+                backgroundColor: AppColors.primary.withAlpha(51),
+                backgroundImage: authProvider.getUserImageUrl().isNotEmpty
+                    ? NetworkImage(authProvider.getUserImageUrl())
+                    : null,
+                child: authProvider.getUserImageUrl().isEmpty
+                    ? Icon(Iconsax.user, color: AppColors.primary, size: 20)
+                    : null,
               ),
             ),
-          ),
-        if (_selectedIndex == 0) // Only show profile pic on home screen
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            child: CircleAvatar(
-              radius: 20,
-              backgroundColor: AppColors.primary.withAlpha(51),
-              backgroundImage: authProvider.getUserImageUrl().isNotEmpty
-                  ? NetworkImage(authProvider.getUserImageUrl())
-                  : null,
-              child: authProvider.getUserImageUrl().isEmpty
-                  ? Icon(Iconsax.user, color: AppColors.primary, size: 20)
-                  : null,
-            ),
-          ),
       ],
     );
   }
@@ -2768,6 +2747,7 @@ class _MainScreenState extends State<MainScreen> {
                       ),
                     ),
                   ),
+
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     child: Transform.scale(
@@ -2826,6 +2806,7 @@ class _MainScreenState extends State<MainScreen> {
         final newActiveId = isActive ? null : projectId;
         setState(() {
           _activeProjectId = newActiveId;
+          custName = project['cname'];
         });
 
         // Save to SharedPreferences
@@ -2858,9 +2839,8 @@ class _MainScreenState extends State<MainScreen> {
               child: Row(
                 children: [
                   GestureDetector(
-                    onLongPress: () {},
                     child: Container(
-                      width: 32,
+                      width: 40,
                       decoration: BoxDecoration(
                         color: project['std'] == '1'
                             ? isActive
@@ -2883,7 +2863,7 @@ class _MainScreenState extends State<MainScreen> {
                         serialNumber.toString(),
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 20,
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -3554,7 +3534,7 @@ class _MainScreenState extends State<MainScreen> {
                         }
                       },
                       child: Container(
-                        width: 32,
+                        width: 40,
                         decoration: BoxDecoration(
                           color: visit['a9'] == '0' ? Colors.red : Colors.green,
                           borderRadius: BorderRadius.only(
@@ -3567,7 +3547,7 @@ class _MainScreenState extends State<MainScreen> {
                           serialNumber.toString(),
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 20,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -3588,13 +3568,12 @@ class _MainScreenState extends State<MainScreen> {
                                   backgroundColor: AppColors.primary.withAlpha(
                                     51,
                                   ),
-                                  backgroundImage:
-                                      (authProvider?.isAdmin() ?? false)
+                                  backgroundImage: (authProvider.isAdmin())
                                       ? NetworkImage(
                                           'https://qcec.online/erp2025/assets/users/${visit['eid']}/images/1.jpg',
                                         )
                                       : null,
-                                  child: (authProvider?.isAdmin() ?? false)
+                                  child: (authProvider.isAdmin())
                                       ? null
                                       : Icon(
                                           Iconsax.user_octagon,

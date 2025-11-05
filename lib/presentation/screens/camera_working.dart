@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:async';
+import 'dart:isolate';
 import 'package:camerawesome/pigeon.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
@@ -41,6 +44,79 @@ class _CameraWorkingState extends State<CameraWorking> {
   // Mode state
   bool isVideoMode = false;
   Key _cameraKey = UniqueKey();
+
+  void startBackgroundTasks(Map<String, dynamic> data) async {
+    Isolate.spawn(runHeavyTasks, data);
+    data['images'].clear();
+  }
+
+  static void runHeavyTasks(Map<String, dynamic> data) async {
+    final formData = FormData();
+
+    formData.files.add(
+      MapEntry('images[]', await MultipartFile.fromFile(data['images'].first)),
+    );
+
+    formData.fields.add(MapEntry('visitId', data['visitId'].toString()));
+
+    final response = await Dio().post(
+      'https://qcec.online/app2026/cloud_multi_media.php',
+      data: formData,
+      options: Options(
+        headers: {"Content-Type": "multipart/form-data"},
+        sendTimeout: Duration(minutes: 10),
+        receiveTimeout: Duration(minutes: 10),
+        validateStatus: (status) => true,
+        responseType: ResponseType.plain,
+      ),
+      onSendProgress: (sent, total) {
+        if (total != -1) {
+          final progress = sent / total;
+          final sentMB = (sent / 1024 / 1024).toStringAsFixed(2);
+          final totalMB = (total / 1024 / 1024).toStringAsFixed(2);
+          print(
+            "📤 Uploading: ${(progress * 100).toStringAsFixed(1)}% ($sentMB/$totalMB MB)",
+          );
+        }
+      },
+    );
+
+    print("📥 Response Status: ${response.statusCode}");
+    print("📥 Raw Response: ${response.data}");
+
+    if (response.statusCode == 200) {
+      try {
+        // محاولة تحويل الـ response لـ JSON
+        final jsonData = jsonDecode(response.data.toString());
+
+        if (jsonData['success'] == true) {
+          print("✅ ${jsonData['message']}");
+          if (jsonData['uploaded_files'] != null) {
+            print("📁 Files uploaded:");
+            for (var file in jsonData['uploaded_files']) {
+              print("   - ${file['new_name']} (${file['type']})");
+            }
+          }
+        } else {
+          print("⚠️ ${jsonData['message']}");
+          if (jsonData['failed_files'] != null &&
+              jsonData['failed_files'].length > 0) {
+            print("❌ Failed files:");
+            for (var file in jsonData['failed_files']) {
+              print("   - ${file['name']}: ${file['reason']}");
+            }
+          }
+        }
+      } catch (e) {
+        print("❌ Failed to parse JSON response: $e");
+        print("Raw response was: ${response.data}");
+      }
+    } else {
+      print("⚠️ Upload failed with status: ${response.statusCode}");
+      print("Response: ${response.data}");
+    }
+    print("✅ All background tasks finished for visit ${data['visitId']}");
+  }
 
   Future<void> requestPermissions() async {
     // اطلب إذن الكاميرا والميكروفون
@@ -609,6 +685,14 @@ class _CameraWorkingState extends State<CameraWorking> {
   }
 
   void _finishCapture() async {
+    var imagesCopy = List<String>.from(allImages);
+
+    Map<String, dynamic> data = {
+      'images': imagesCopy,
+      'visitId': widget.visitId,
+    };
+
+    startBackgroundTasks(data);
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setStringList("visit_${widget.visitId}_images", allImages);
 
