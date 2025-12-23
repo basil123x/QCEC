@@ -67,63 +67,13 @@ class _MainScreenState extends State<MainScreen> {
   bool _hasLoadedProjects = false;
   String custName = "";
 
-  Future<void> addCompanyContact() async {
-    // تحقق من حالة الإذن مرة واحدة فقط
-    final hasPermission = await FlutterContacts.requestPermission();
-
-    if (!hasPermission) {
-      // لو الإذن مرفوض، ممكن تعرض رسالة تحذير مرة واحدة
-      AwesomeDialog(
-        context: context,
-        dialogType: DialogType.warning,
-        animType: AnimType.bottomSlide,
-        title: "Permission Denied",
-        desc: "You need to allow contact access to save the QCEC number.",
-        btnOkText: "OK",
-        btnOkOnPress: () {},
-      ).show();
-      return;
+  Future<void> _launchUrl(latitude, longitude) async {
+    final Uri url = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude',
+    );
+    if (!await launchUrl(url)) {
+      throw Exception('Could not launch $url');
     }
-
-    // جلب جهات الاتصال الموجودة للتحقق إذا QCEC موجودة
-    final contacts = await FlutterContacts.getContacts(withProperties: true);
-    final exists = contacts.any((c) => c.displayName.toLowerCase() == "qcec");
-
-    if (exists) {
-      // لو موجودة مسبقًا، لا نضيفها ولا نزعج المستخدم
-      return;
-    }
-
-    // لو مش موجودة، نعرض حوار التأكيد مرة واحدة
-    AwesomeDialog(
-      context: context,
-      dialogType: DialogType.question,
-      animType: AnimType.scale,
-      title: "Save The QCEC Number",
-      desc: "Please Save QCEC Number to Following your Visits",
-      btnCancelText: "No",
-      btnCancelOnPress: () {},
-      btnOkText: "Yes, Save",
-      btnOkOnPress: () async {
-        final contact = Contact()
-          ..name.first = "QCEC"
-          ..organizations = [Organization(company: "QCEC")]
-          ..phones = [Phone("+97452022844", label: PhoneLabel.mobile)];
-
-        await FlutterContacts.insertContact(contact);
-
-        // رسالة نجاح عند الإضافة فقط
-        AwesomeDialog(
-          context: context,
-          dialogType: DialogType.success,
-          animType: AnimType.bottomSlide,
-          title: "Contact Added!",
-          desc: "QCEC company contact has been saved successfully.",
-          btnOkText: "OK",
-          btnOkOnPress: () {},
-        ).show();
-      },
-    ).show();
   }
 
   // Cache for visits data
@@ -194,13 +144,363 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
+  // دالة لجلب قائمة ملفات PDF
+  Future<List<Map<String, String>>> _fetchPdfFiles(String projectId) async {
+    print("PPPPP $projectId");
+    try {
+      final response = await Dio().get(
+        'https://qcec.online/app2026/get_pdfs.php?project_id=$projectId',
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data['success'] == true) {
+          return List<Map<String, String>>.from(
+            data['files'].map(
+              (file) => {
+                'name': file['name'].toString(),
+                'url': file['url'].toString(),
+                'size': file['size'].toString(),
+              },
+            ),
+          );
+        }
+      }
+      return [];
+    } catch (e) {
+      debugPrint('Error fetching PDF files: $e');
+      return [];
+    }
+  }
+
+  // دالة لعرض modal bottom sheet مع قائمة الملفات
+  void _showPdfList(String projectId) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppColors.secondaryDark
+              : AppColors.pureWhite,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(25),
+            topRight: Radius.circular(25),
+          ),
+        ),
+        child: Column(
+          children: [
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[400],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withAlpha(51),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Iconsax.document_text,
+                      color: Colors.red,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'ملفات PDF للمشروع',
+                      style: GoogleFonts.cairo(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? AppColors.textPrimaryDark
+                            : Colors.grey[800],
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(
+                      Iconsax.close_circle,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppColors.textSecondaryDark
+                          : Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            // PDF List
+            Expanded(
+              child: FutureBuilder<List<Map<String, String>>>(
+                future: _fetchPdfFiles(projectId),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(color: AppColors.primary),
+                          const SizedBox(height: 16),
+                          Text(
+                            'جاري تحميل الملفات...',
+                            style: GoogleFonts.cairo(
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? AppColors.textSecondaryDark
+                                  : Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Iconsax.warning_2,
+                            size: 48,
+                            color: Colors.orange,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'حدث خطأ في تحميل الملفات',
+                            style: GoogleFonts.cairo(
+                              fontSize: 16,
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? AppColors.textSecondaryDark
+                                  : Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  final files = snapshot.data ?? [];
+
+                  if (files.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Iconsax.document_text,
+                            size: 64,
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                ? AppColors.textHintDark
+                                : Colors.grey[400],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'لا توجد ملفات PDF',
+                            style: GoogleFonts.cairo(
+                              fontSize: 16,
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? AppColors.textSecondaryDark
+                                  : Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'لم يتم رفع أي ملفات لهذا المشروع بعد',
+                            style: GoogleFonts.cairo(
+                              fontSize: 14,
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? AppColors.textHintDark
+                                  : Colors.grey[500],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: files.length,
+                    itemBuilder: (context, index) {
+                      final file = files[index];
+                      return _buildPdfItem(file, index + 1);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // دالة لبناء عنصر PDF في القائمة
+  Widget _buildPdfItem(Map<String, String> file, int index) {
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: themeProvider.isDarkMode
+                ? AppColors.primaryDark
+                : Colors.grey[50],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.borderDark
+                  : Colors.grey[300]!,
+            ),
+          ),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 8,
+            ),
+            leading: Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: Colors.red.withAlpha(51),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Iconsax.document_text, color: Colors.red, size: 20),
+                    Text(
+                      'PDF',
+                      style: GoogleFonts.cairo(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            title: Text(
+              file['name'] ?? 'ملف $index.pdf',
+              style: GoogleFonts.cairo(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.textPrimaryDark
+                    : Colors.grey[800],
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(
+              _formatFileSize(file['size'] ?? '0'),
+              style: GoogleFonts.cairo(
+                fontSize: 12,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.textSecondaryDark
+                    : Colors.grey[600],
+              ),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // زر الفتح
+                IconButton(
+                  onPressed: () => _openPdf(file['url']!),
+                  icon: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withAlpha(51),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(Iconsax.eye, color: Colors.blue, size: 18),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // دالة لتنسيق حجم الملف
+  String _formatFileSize(String bytes) {
+    try {
+      final size = int.parse(bytes);
+      if (size < 1024) return '$size B';
+      if (size < 1024 * 1024) return '${(size / 1024).toStringAsFixed(1)} KB';
+      return '${(size / (1024 * 1024)).toStringAsFixed(1)} MB';
+    } catch (e) {
+      return 'غير معروف';
+    }
+  }
+
+  // دالة لفتح ملف PDF
+  Future<void> _openPdf(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('لا يمكن فتح الملف', style: GoogleFonts.cairo()),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error opening PDF: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('حدث خطأ في فتح الملف', style: GoogleFonts.cairo()),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     _loadActiveProject();
     _loadProjectsOnce();
     _checkIncompleteVisits();
-    addCompanyContact();
   }
 
   int _getMediaCount(Map<String, dynamic> visit) {
@@ -994,10 +1294,10 @@ class _MainScreenState extends State<MainScreen> {
             )
           : _isSearchingVisits
           ? TextField(
-              controller: _searchControllerVisits,
+              controller: _searchController,
               autofocus: true,
               decoration: InputDecoration(
-                hintText: AppLocalizations.of(context)!.searchVisits,
+                hintText: AppLocalizations.of(context)!.searchProjects,
                 hintStyle: GoogleFonts.cairo(
                   color: Theme.of(context).textTheme.bodyMedium?.color,
                   fontSize: 16,
@@ -1011,7 +1311,7 @@ class _MainScreenState extends State<MainScreen> {
               ),
               onChanged: (value) {
                 setState(() {
-                  _searchQueryVisits = value;
+                  _searchQuery = value;
                 });
               },
             )
@@ -1226,9 +1526,33 @@ class _MainScreenState extends State<MainScreen> {
         title: AppLocalizations.of(context)!.projects,
         subtitle: AppLocalizations.of(context)!.viewAllProjects,
         color: Colors.blue,
-        onTap: () => setState(() => _selectedIndex = 1),
+        onTap: () async {
+          setState(() {
+            _selectedIndex = 1;
+            filterStdProjects = false;
+          });
+          await _loadProjectsOnce();
+        },
       ),
     );
+
+    if (authProvider.isAdmin() || authProvider.isEngineer()) {
+      actions.add(
+        _buildActionCard(
+          icon: Iconsax.folder,
+          title: "الدفعات",
+          subtitle: "عرض جميع الدفعات",
+          color: Colors.blue,
+          onTap: () async {
+            setState(() {
+              _selectedIndex = 1;
+              filterStdProjects = true;
+            });
+            await _loadProjectsOnce();
+          },
+        ),
+      );
+    }
 
     actions.add(
       _buildActionCard(
@@ -1236,7 +1560,13 @@ class _MainScreenState extends State<MainScreen> {
         title: AppLocalizations.of(context)!.visits,
         subtitle: AppLocalizations.of(context)!.scheduleVisits,
         color: Colors.green,
-        onTap: () => setState(() => _selectedIndex = 2),
+        onTap: () {
+          if (authProvider.isEngineer()) {
+            setState(() => _selectedIndex = 3);
+          } else {
+            setState(() => _selectedIndex = 2);
+          }
+        },
       ),
     );
 
@@ -1864,7 +2194,7 @@ class _MainScreenState extends State<MainScreen> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                SelectableText(
                   translatedText,
                   style: GoogleFonts.cairo(
                     fontSize: 14,
@@ -1874,7 +2204,6 @@ class _MainScreenState extends State<MainScreen> {
                     height: 1.4,
                   ),
                   maxLines: maxLines,
-                  overflow: isExpanded ? null : TextOverflow.ellipsis,
                 ),
                 if (translatedText.length > 100) ...[
                   const SizedBox(height: 4),
@@ -2739,7 +3068,7 @@ class _MainScreenState extends State<MainScreen> {
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     alignment: Alignment.centerRight,
                     child: Text(
-                      "عدد المشاريع: ${filteredProjects.length}",
+                      "عدد ${filterStdProjects == true ? "الدفعات" : "المشاريع"}: ${filteredProjects.length}",
                       style: GoogleFonts.cairo(
                         color: themeProvider.isDarkMode
                             ? Colors.white
@@ -2915,6 +3244,7 @@ class _MainScreenState extends State<MainScreen> {
                                         ),
                                       ],
                                     ),
+                                    Text(project['id']),
                                   ],
                                 ),
                               ),
@@ -3085,26 +3415,155 @@ class _MainScreenState extends State<MainScreen> {
                             ),
                             const SizedBox(height: 8),
                           ],
-
-                          // 6. الاستشاري/المهندس
                           if (project['ename'] != null) ...[
-                            Row(
-                              children: [
-                                Icon(
-                                  Iconsax.user_octagon,
-                                  size: 16,
-                                  color: Colors.blue[600],
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  '${AppLocalizations.of(context)!.engineerName}: م/ ${project['ename']}',
-                                  style: GoogleFonts.cairo(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.blue[700],
-                                  ),
-                                ),
-                              ],
+                            Consumer<AuthProvider>(
+                              builder: (context, authProvider, child) {
+                                return Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        '${AppLocalizations.of(context)!.engineerName}: م/ ${project['ename']}',
+                                        style: GoogleFonts.cairo(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.blue[700],
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+
+                                    if (authProvider.isAdmin() ||
+                                        authProvider.isEngineer())
+                                      Row(
+                                        children: [
+                                          // أيقونة PDF - تظهر فقط لو فيه ملفات
+                                          if (project['visits_count'] != '0')
+                                            FutureBuilder<
+                                              List<Map<String, String>>
+                                            >(
+                                              future: _fetchPdfFiles(
+                                                project['id'],
+                                              ),
+                                              builder: (context, snapshot) {
+                                                // لو لسه بيحمل، نخفي الأيقونة
+                                                if (snapshot.connectionState ==
+                                                    ConnectionState.waiting) {
+                                                  return SizedBox(
+                                                    width: 8,
+                                                  ); // مساحة فارغة صغيرة
+                                                }
+
+                                                // لو فيه ملفات، نعرض الأيقونة
+                                                final files =
+                                                    snapshot.data ?? [];
+                                                print(
+                                                  '📄 PDF Files found: ${files.length}',
+                                                );
+
+                                                if (files.isNotEmpty) {
+                                                  return Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                          left: 8,
+                                                        ),
+                                                    child: GestureDetector(
+                                                      onTap: () => _showPdfList(
+                                                        project['id'],
+                                                      ),
+                                                      child: Container(
+                                                        padding:
+                                                            const EdgeInsets.all(
+                                                              6,
+                                                            ),
+                                                        decoration: BoxDecoration(
+                                                          color: Colors.red
+                                                              .withAlpha(51),
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                8,
+                                                              ),
+                                                        ),
+                                                        child: Stack(
+                                                          clipBehavior:
+                                                              Clip.none,
+                                                          children: [
+                                                            Icon(
+                                                              Iconsax.document,
+                                                              color: Colors.red,
+                                                              size: 20,
+                                                            ),
+                                                            // عدد الملفات كـ badge
+                                                            Positioned(
+                                                              right: -4,
+                                                              top: -4,
+                                                              child: Container(
+                                                                padding:
+                                                                    EdgeInsets.all(
+                                                                      3,
+                                                                    ),
+                                                                decoration: BoxDecoration(
+                                                                  color: Colors
+                                                                      .red,
+                                                                  shape: BoxShape
+                                                                      .circle,
+                                                                ),
+                                                                constraints:
+                                                                    BoxConstraints(
+                                                                      minWidth:
+                                                                          16,
+                                                                      minHeight:
+                                                                          16,
+                                                                    ),
+                                                                child: Center(
+                                                                  child: Text(
+                                                                    '${files.length}',
+                                                                    style: GoogleFonts.cairo(
+                                                                      fontSize:
+                                                                          9,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold,
+                                                                      color: Colors
+                                                                          .white,
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+
+                                                // لو مفيش ملفات، نرجع widget فاضي
+                                                return const SizedBox.shrink();
+                                              },
+                                            ),
+
+                                          // أيقونة الموقع
+                                          if (project['visits_count'] != '0')
+                                            GestureDetector(
+                                              onTap: () => _launchUrl(
+                                                project['lat'],
+                                                project['lng'],
+                                              ),
+                                              child: Icon(
+                                                Iconsax.location,
+                                                color: themeProvider.isDarkMode
+                                                    ? Colors.white
+                                                    : Colors.black,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                  ],
+                                );
+                              },
                             ),
                           ],
 
@@ -3873,6 +4332,7 @@ class _MainScreenState extends State<MainScreen> {
                                               color: Colors.blue,
                                             ),
                                             const SizedBox(width: 8),
+
                                             Text(
                                               '${AppLocalizations.of(context)!.description}:',
                                               style: GoogleFonts.cairo(
@@ -3881,6 +4341,7 @@ class _MainScreenState extends State<MainScreen> {
                                                 color: Colors.blue,
                                               ),
                                             ),
+
                                             const SizedBox(width: 8),
 
                                             // استخدام Expanded للنص المترجم
@@ -3928,7 +4389,7 @@ class _MainScreenState extends State<MainScreen> {
                                                                       Color
                                                                     >(
                                                                       Colors
-                                                                          .blue!,
+                                                                          .blue,
                                                                     ),
                                                               ),
                                                             ),
@@ -3960,7 +4421,7 @@ class _MainScreenState extends State<MainScreen> {
                                                             CrossAxisAlignment
                                                                 .start,
                                                         children: [
-                                                          Text(
+                                                          SelectableText(
                                                             translatedText,
                                                             style: GoogleFonts.cairo(
                                                               fontSize: 14,
@@ -3976,9 +4437,9 @@ class _MainScreenState extends State<MainScreen> {
                                                                         .grey[800],
                                                               height: 1.4,
                                                             ),
-                                                            // إزالة maxLines لكي يلتف النص تلقائياً
-                                                            // overflow: TextOverflow.ellipsis, // إزالة هذا أيضاً
                                                           ),
+                                                          // إزالة maxLines لكي يلتف النص تلقائياً
+                                                          // overflow: TextOverflow.ellipsis, // إزالة هذا أيضاً
                                                           // Show translation indicator if text was translated
                                                           if (languageProvider
                                                                       .currentLocale !=

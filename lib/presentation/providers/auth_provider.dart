@@ -252,7 +252,6 @@ class AuthProvider extends ChangeNotifier {
           x = '3';
           break; // Contractor
       }
-
       final requestData = {
         'action': 'get_all_transactions',
         'uid': _userData!['id'].toString(),

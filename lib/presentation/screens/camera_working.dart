@@ -119,47 +119,19 @@ class _CameraWorkingState extends State<CameraWorking> {
   }
 
   Future<void> requestPermissions() async {
-    // اطلب إذن الكاميرا والميكروفون
     Map<Permission, PermissionStatus> statuses = await [
-      Permission.camera,
-      Permission.microphone,
-    ].request();
+        Permission.camera,
+        Permission.microphone,
+      ].request();
 
-    // تحقق إن الأذونات اتمنحت
-    if (statuses[Permission.camera]!.isGranted &&
-        statuses[Permission.microphone]!.isGranted) {
-      setState(() {
-        permissionsGranted = true;
-      });
-    } else {
-      // لو المستخدم رفض الأذونات
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'نحتاج أذونات الكاميرا والميكروفون لتسجيل الفيديو بالصوت',
-              style: GoogleFonts.cairo(),
-            ),
-            backgroundColor: Colors.red,
-            action: SnackBarAction(
-              label: 'الإعدادات',
-              textColor: Colors.white,
-              onPressed: () {
-                openAppSettings(); // يفتح إعدادات التطبيق
-              },
-            ),
-          ),
-        );
-        Navigator.pop(context);
+      if (statuses[Permission.camera]!.isGranted &&
+          statuses[Permission.microphone]!.isGranted) {
+        setState(() {
+          permissionsGranted = true;
+        });
       }
-    }
   }
 
-  @override
-  void initState() {
-    requestPermissions();
-    super.initState();
-  }
 
   @override
   void dispose() {
@@ -236,8 +208,7 @@ class _CameraWorkingState extends State<CameraWorking> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: permissionsGranted
-          ? Stack(
+      body:  Stack(
               children: [
                 KeyedSubtree(
                   key: _cameraKey,
@@ -249,7 +220,7 @@ class _CameraWorkingState extends State<CameraWorking> {
                       photoPathBuilder: _captureRequestBuilder,
                       videoPathBuilder: _videoCaptureRequestBuilder,
                       videoOptions: VideoOptions(
-                        enableAudio: true, // ⭐ده المهم!
+                        enableAudio: Platform.isAndroid,
                         quality: VideoRecordingQuality.fhd,
                       ),
                     ),
@@ -315,19 +286,6 @@ class _CameraWorkingState extends State<CameraWorking> {
                   ),
                 ),
               ],
-            )
-          : Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(color: Colors.white),
-                  SizedBox(height: 20),
-                  Text(
-                    'جاري طلب الأذونات...',
-                    style: GoogleFonts.cairo(color: Colors.white, fontSize: 16),
-                  ),
-                ],
-              ),
             ),
     );
   }

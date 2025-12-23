@@ -86,6 +86,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
   }
 
   static void runHeavyTasks(Map<String, dynamic> data) async {
+    int medias = 0;
     final appDir = data['appDir'];
     print("🚀 Starting upload for visit ${data['visitId']}");
 
@@ -106,10 +107,20 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
         final ext = filePath.toString().split('.').last.toLowerCase();
         if (['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(ext)) {
           images.add(filePath.toString());
+          medias = images.length;
         } else if (['mp4', 'mov', 'avi', 'mkv', 'webm', '3gp'].contains(ext)) {
           videos.add(filePath.toString());
+          medias += videos.length;
         }
       }
+      await Dio().post(
+        "https://qcec.online/app2026/sql.php",
+        data: {
+          "action": "update_images_a8",
+          "a8": medias,
+          "vix": data['visitId'],
+        },
+      );
 
       print("📊 Total files: ${images.length} images, ${videos.length} videos");
 
@@ -281,69 +292,57 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
 
       if (whatsRes.data != null && whatsRes.data['get_visits_whats'] != null) {
         List fullMessage = whatsRes.data['get_visits_whats'];
-
-        String msg =
-            """
-${data['date']} - ${data['time']} ${intlx.DateFormat('yyyy-MM-dd').format(DateTime.now())}
-*العميل*: ${fullMessage[0]['cname']}
-*المشروع*: ${fullMessage[0]['projx']}
-*المنطقة*: ${fullMessage[0]['place']}
-*الرقم المساحي*: ${fullMessage[0]['pin']}
-*المقاول*: ${fullMessage[0]['cnname']}
-*الاستشاري*: م/${fullMessage[0]['ename']}
-*الوصف*: ${fullMessage[0]['a2']}
-*التفاصيل*: ${fullMessage[0]['a4']}
-""";
-
-        data['msg'] = msg;
+        print("zeft $fullMessage");
 
         if (data['sendCmob'] != null && data['sendCmob'] != '') {
-          await Future.delayed(Duration(seconds: 10));
-          await sendSMS().sendSms(data['sendCmob'], data['msg'], 'both');
-          await Future.delayed(Duration(seconds: 10));
-          await Sendtowhatsapp().sendToWhatsDocs(
-            data['sendCmob'],
-            data['visitId'],
-            data['msg'],
+          await dio.post(
+            'https://qcec.online/app2026/api_stub.php',
+            data: {
+              "action": "send_whatsapp",
+              "whats_visit": data['visitId'],
+              "whats_media": myImages.length,
+              "mob": data['sendCmob'],
+              "type": "mob1",
+            },
           );
-          await Future.delayed(Duration(seconds: 10));
-          List videos = await Getimages().getImages(data['visitId'].toString());
-          for (var video in videos) {
-            if (video.toString().split('/').last.split('.').last == 'mp4') {
-              Sendtowhatsapp().sendToWhatsVideo(
-                data['sendCmob'],
-                video.toString(),
-              );
-              await Future.delayed(Duration(seconds: 10));
-            }
-          }
         }
 
         if (data['sendCNmob'] != null && data['sendCNmob'] != '') {
-          await Future.delayed(Duration(seconds: 10));
-          await sendSMS().sendSms(data['sendCNmob'], data['msg'], 'both');
-          await Future.delayed(Duration(seconds: 10));
-          await Sendtowhatsapp().sendToWhatsDocs(
-            data['sendCNmob'],
-            data['visitId'],
-            data['msg'],
+          await dio.post(
+            'https://qcec.online/app2026/api_stub.php',
+            data: {
+              "action": "send_whatsapp",
+              "whats_visit": data['visitId'],
+              "whats_media": myImages.length,
+              "mob": data['sendCNmob'],
+              "type": "mob1",
+            },
           );
-          await Future.delayed(Duration(seconds: 10));
-          List videos = await Getimages().getImages(data['visitId'].toString());
-          for (var video in videos) {
-            if (video.toString().split('/').last.split('.').last == 'mp4') {
-              Sendtowhatsapp().sendToWhatsVideo(
-                data['sendCNmob'],
-                video.toString(),
-              );
-              await Future.delayed(Duration(seconds: 10));
-            }
-          }
         }
       }
 
       if (data['images'] != null) {
         data['images'].clear();
+      }
+
+      if (data['sendCmob'] != null) {
+        await dio.post(
+          'https://qcec.online/app2026/update_visit.php',
+          data: {'visit_id': data['visitId'], 'mob1': "1"},
+          options: Options(
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          ),
+        );
+      }
+
+      if (data['sendCNmob'] != null) {
+        await dio.post(
+          'https://qcec.online/app2026/update_visit.php',
+          data: {'visit_id': data['visitId'], 'mob2': "1"},
+          options: Options(
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          ),
+        );
       }
 
       print("✅ All background tasks finished for visit ${data['visitId']}");
@@ -2226,7 +2225,6 @@ ${data['date']} - ${data['time']} ${intlx.DateFormat('yyyy-MM-dd').format(DateTi
           'desc': _descriptionController.text,
           'notes': _notesController.text,
           'images': imagesCopy,
-          'date': date,
           'time': formattedTime,
         };
 
@@ -2236,7 +2234,7 @@ ${data['date']} - ${data['time']} ${intlx.DateFormat('yyyy-MM-dd').format(DateTi
       // Close loading dialog
       if (mounted) Navigator.pop(context);
 
-      // Show success message
+      // // Show success message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
