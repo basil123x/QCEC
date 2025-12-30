@@ -238,6 +238,74 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
       List myImages = await Getimages().getImages(data['visitId'].toString());
       print("Found ${myImages.length} images for PDF");
 
+      try {
+        // 1️⃣ جيب الـ JSON
+        // ✅ قول لـ Dio إن الـ response هو JSON
+        final response = await Dio().get(
+          'http://qcec.online/erp2025/works/reports/rep6/pdf.php?vix=${data['visitId']}',
+          options: Options(
+            responseType: ResponseType.json, // ✅ ضروري!
+            headers: {'Accept': 'application/json'},
+          ),
+        );
+
+        print("📥 Response: ${response.data}");
+        print(
+          "📥 Response Type: ${response.data.runtimeType}",
+        ); // لازم يطلع _Map
+
+        // 2️⃣ استخرج الـ URL (وامسح الـ backslashes لو موجودة)
+        String pngUrl = response.data['image'];
+        pngUrl = pngUrl.replaceAll(r'\/', '/'); // ✅ نضف الـ escaping
+
+        print("🖼️ PNG URL: $pngUrl");
+
+        // 3️⃣ تحقق إن الصورة موجودة فعلاً
+        final headResponse = await Dio().head(pngUrl);
+        print("📊 Image Status: ${headResponse.statusCode}");
+        print("📊 Content-Type: ${headResponse.headers['content-type']}");
+
+        if (headResponse.statusCode != 200) {
+          throw Exception('Image not found: ${headResponse.statusCode}');
+        }
+
+        // 4️⃣ جيب الصورة
+        final pngResponse = await Dio().get(
+          pngUrl,
+          options: Options(responseType: ResponseType.bytes),
+        );
+
+        print("✅ Image loaded, type: ${pngResponse.data.runtimeType}");
+        print("✅ Image size: ${pngResponse.data.length} bytes");
+
+        // 5️⃣ حول لـ Uint8List
+        final Uint8List pngBytes;
+        if (pngResponse.data is Uint8List) {
+          pngBytes = pngResponse.data;
+        } else if (pngResponse.data is List) {
+          pngBytes = Uint8List.fromList(List<int>.from(pngResponse.data));
+        } else {
+          throw Exception(
+            'Expected bytes but got: ${pngResponse.data.runtimeType}',
+          );
+        }
+
+        // 6️⃣ أضف للـ PDF
+        final pngImage = pw.MemoryImage(pngBytes);
+        pdf.addPage(
+          pw.Page(
+            margin: pw.EdgeInsets.zero,
+            build: (context) => pw.Center(child: pw.Image(pngImage)),
+          ),
+        );
+
+        print("✅ PDF page added successfully");
+      } catch (e, stackTrace) {
+        print("❌ Error: $e");
+        print("📍 Stack: $stackTrace");
+        rethrow;
+      }
+
       for (var url in myImages) {
         if (url.toString().split('/').last.split('.').last == 'jpg') {
           try {
@@ -250,6 +318,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
               final image = pw.MemoryImage(Uint8List.fromList(response.data!));
               pdf.addPage(
                 pw.Page(
+                  margin: pw.EdgeInsets.zero,
                   build: (pw.Context context) {
                     return pw.Center(child: pw.Image(image));
                   },
@@ -290,35 +359,43 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
         data: {'action': 'get_whats_visit_data', 'vdId': data['visitId']},
       );
 
-      if (whatsRes.data != null && whatsRes.data['get_visits_whats'] != null) {
-        List fullMessage = whatsRes.data['get_visits_whats'];
-        print("zeft $fullMessage");
+      // ⭐ إرسال request واحد بس فيه كل الأرقام
+      List<String> mobsToSend = [];
 
-        if (data['sendCmob'] != null && data['sendCmob'] != '') {
-          await dio.post(
-            'https://qcec.online/app2026/api_stub.php',
-            data: {
-              "action": "send_whatsapp",
-              "whats_visit": data['visitId'],
-              "whats_media": myImages.length,
-              "mob": data['sendCmob'],
-              "type": "mob1",
-            },
-          );
-        }
+      // الأرقام الثابتة
+      mobsToSend.add("77307831|fixed_admin_1");
+      mobsToSend.add("71402613|fixed_admin_2");
 
-        if (data['sendCNmob'] != null && data['sendCNmob'] != '') {
-          await dio.post(
-            'https://qcec.online/app2026/api_stub.php',
-            data: {
-              "action": "send_whatsapp",
-              "whats_visit": data['visitId'],
-              "whats_media": myImages.length,
-              "mob": data['sendCNmob'],
-              "type": "mob1",
-            },
-          );
-        }
+      // رقم العميل
+      if (data['sendCmob'] != null &&
+          data['sendCmob'].toString().trim().isNotEmpty) {
+        mobsToSend.add("${data['sendCmob']}|customer");
+      }
+
+      // رقم المقاول (لو مختلف)
+      if (data['sendCNmob'] != null &&
+          data['sendCNmob'].toString().trim().isNotEmpty &&
+          data['sendCNmob'] != data['sendCmob']) {
+        mobsToSend.add("${data['sendCNmob']}|contractor");
+      }
+
+      // ✅ إرسال request واحد فقط
+      try {
+        print("📤 Sending WhatsApp to ${mobsToSend.length} numbers");
+        final response = await dio.post(
+          'https://qcec.online/app2026/api_stub.php',
+          data: {
+            "action": "send_whatsapp_batch", // ⭐ action جديد
+            "whats_visit": data['visitId'],
+            "whats_media": myImages.length,
+            "mobs": mobsToSend.join(
+              ',',
+            ), // "77307831|fixed,71402613|fixed,123456|customer"
+          },
+        );
+        print("✅ Response: ${response.data}");
+      } catch (e) {
+        print("❌ Failed: $e");
       }
 
       if (data['images'] != null) {
