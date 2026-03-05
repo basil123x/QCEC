@@ -1,26 +1,14 @@
 <?php
-/**
- * QCEC - Qatar Consulting Engineering Center
- * Unified SQL API Handler
- * Handles all CRUD operations for the mobile app
- */
-
-// Database Configuration
 $conx = mysqli_connect("localhost", "mrthhzmy_erp2025", "A122%133zzzz", "mrthhzmy_erp2025");
-date_default_timezone_set('Asia/Qatar');
-$conx->query("set names 'utf8'");
-ini_set('memory_limit', '256M');
 
-// Check connection
-if (!$conx) {
-    die(json_encode(['success' => false, 'message' => 'Database connection failed']));
-}
 
 // Set CORS headers
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json; charset=utf-8');
+
+
 
 // Handle preflight OPTIONS request
 if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
@@ -131,9 +119,87 @@ switch ($action) {
     case 'disable_user_account':
         disableUserAccount($input);
         break;
+    case 'update_images_a8':
+        updateImagesA8($input);
+        break;
+    case 'create_whats_logs':
+        createWhatsLogs($input);
+        break;
+
     default:
         sendResponse(false, 'Invalid action');
 }
+
+function createWhatsLogs($input) {
+    global $conx;
+    $whats_visit = isset($input['whats_visit']) ? sanitize($input['whats_visit']) : '';
+    $whats_media = isset($input['whats_media']) ? sanitize($input['whats_media']) : '';
+    $mob = isset($input['mob']) ? sanitize($input['mob']) : '';
+    
+     sendResponse(true, 'تم إنشاء حدث الواتس اب  بنجاح', [
+        'visit_id' => $whats_visit
+    ]);
+}
+
+
+
+
+
+// function createWhatsLogs($input) {
+//     global $conx;
+//     $vid = isset($input['vid']) ? sanitize($input['vid']) : '';
+//     $code = isset($input['code']) ? sanitize($input['code']) : '';
+//     $name = isset($input['name']) ? sanitize($input['name']) : '';
+//     $phone = isset($input['phone']) ? sanitize($input['phone']) : '';
+//     $desx = isset($input['desx']) ? sanitize($input['desx']) : '';
+//     $notes = isset($input['notes']) ? sanitize($input['notes']) : '';
+//     $a8 = isset($input['a8']) ? sanitize($input['a8']) : '';
+//     $datex = date('Y-m-d');
+//     $timex = date('h:i A');
+//     $msg_result = isset($input['msg_result']) ? sanitize($input['msg_result']) : '';
+//     $stx = isset($input['stx']) ? sanitize($input['stx']) : '';
+//     $typex = isset($input['typex']) ? sanitize($input['typex']) : '';
+    
+//     // Insert new visit into visits_det table
+//     $insertQuery = "INSERT INTO wa_messages (vid, code, name, phone, desx, notes, a8, datex, timex, message_result, stx, typex) VALUES('$vid', '$code', '$name', '$phone', '$desx', '$notes', '$a8', '$datex', '$timex', '$msg_result', '$stx', '$typex')";
+    
+//     error_log("Executing query: " . $insertQuery);
+
+//         if (mysqli_query($conx, $insertQuery)) {
+//             // Get the newly created visit ID
+//             $visitId = mysqli_insert_id($conx);
+//             if (checkS3FileExists("visits/Whatsapp/".$vid."/1.pdf")) {
+//                 sendWhatsOne($conx, $phone, $vid);
+//                 sleep(10);
+//                 sendWhatsOne($conx, '71402613', $vid);
+//                 sleep(10);
+//                 sendWhatsOne($conx, '77307831', $vid);
+//             } else {
+//                 sendWhatsTextOnly($conx, $phone, $vid);
+//                 sleep(10);
+//                 sendWhatsTextOnly($conx, '71402613', $vid);
+//                 sleep(10);
+//                 sendWhatsTextOnly($conx, '77307831', $vid);
+//                 sleep(10);
+//                 for ($i=1;$i<=$a8;$i++){
+//                     sleep(5);
+//                     sendWhatsMediaOnly($conx, '71402613', $vid, $i);
+//                     sleep(5);
+//                     sendWhatsMediaOnly($conx, '77307831', $vid, $i);
+//                     sleep(5);
+//                 }
+                
+                
+//             }
+           
+        
+//         } else {
+//             $error = mysqli_error($conx);
+//             error_log("MySQL Error: " . $error);
+//             sendResponse(false, 'فشل في إنشاء الزيارة: ' . $error);
+//         }
+// }
+
 
 /**
  * LOGIN HANDLER
@@ -342,16 +408,24 @@ function addVisit($input) {
     $visitTime = sanitize($input['visit_time']);
     $notes = isset($input['notes']) ? sanitize($input['notes']) : '';
     $photos = isset($input['photos']) ? json_encode($input['photos']) : 'NULL';
+    $xx = date("Y-m-d");
+    $result = $conx->query("SELECT id FROM visits_det WHERE a1='$projectId' and  a7 = '$xx' LIMIT 1");
     
-    $query = "INSERT INTO visits (project_id, engineer_id, visit_date, visit_time, notes, photos, created_at) 
-              VALUES ('$projectId', '$engineerId', '$visitDate', '$visitTime', '$notes', '$photos', NOW())";
-    
-    if (mysqli_query($conx, $query)) {
-        $visitId = mysqli_insert_id($conx);
-        sendResponse(true, 'Visit created successfully', ['visit_id' => $visitId]);
+    if (mysqli_num_rows($result) == 0) {
+        $query = "INSERT INTO visits (project_id, engineer_id, visit_date, visit_time, notes, photos, created_at) 
+                  VALUES ('$projectId', '$engineerId', '$visitDate', '$visitTime', '$notes', '$photos', NOW())";
+        
+        if (mysqli_query($conx, $query)) {
+            $visitId = mysqli_insert_id($conx);
+            sendResponse(true, 'Visit created successfully', ['visit_id' => $visitId]);
+        } else {
+            sendResponse(false, 'خطأ في إضافة الزيارة');
+        }
     } else {
-        sendResponse(false, 'خطأ في إضافة الزيارة');
+        sendResponse(false, 'تم تسجيل الزيارة مسبقاً');
     }
+    
+    
 }
 
 /**
@@ -646,7 +720,7 @@ function getAllTransactions($input) {
     // Main query to get projects/transactions
     $query = "SELECT v.id, c.id AS cid, c.a1 AS cname, c.a2 AS cphone, c.a3 AS cqid, 
               e.id AS eid, e.a11 AS ename, cn.id AS cnid, cn.a1 AS cnname, 
-              v.a4 as projx, v.a5 as place, v.a6 as pin, v.a7 as sdate, 
+              v.a4 as projx, v.a5 as place, v.a6 as pin, v.a7 as sdate, v.a8 as visits_count, 
               v.a8 as cntx, v.a10 as ldate, cn.a3 as cnphone, v.std, v.lat, v.lag AS lng
         FROM visitsx as v 
         LEFT JOIN customers as c ON v.a1 = c.id 
@@ -774,64 +848,57 @@ function updateVisitNotes($input) {
 }
 
 // Get full visits data for visits screen
-if ($action == 'get_full_visits_data') {
-    $xx = $input['xx'] ?? '';
-    $x = $input['x'] ?? '';
-    $uid = $input['uid'] ?? '';
-    $selectedId = $input['selectedId'] ?? '';
-    $selectedCust = $input['selectedCust'] ?? '';
+// if ($action == 'get_full_visits_data') {
+//     $xx = $input['xx'] ?? '';
+//     $x = $input['x'] ?? '';
+//     $uid = $input['uid'] ?? '';
+//     $selectedId = $input['selectedId'] ?? '';
+//     $selectedCust = $input['selectedCust'] ?? '';
     
-    $dx = "";
-    $dx1 = "";
+//     $dx = "";
+//     $dx1 = "";
     
-    if ($selectedId != "") {
-        $dx1 = "AND vd.a7 = '$xx' and v.a2 = '$selectedId'";
-    } else {
-        $dx1 = "AND vd.a7 = '$xx'";
-    }
+//     if ($selectedId != "") {
+//         $dx1 = "AND vd.a7 = '$xx' and v.a2 = '$selectedId'";
+//     } else {
+//         $dx1 = "AND vd.a7 = '$xx'";
+//     }
     
-    switch($x){
-        case '0': $dx = $dx1; break;
-        case '1': $dx = "AND vd.a7 = '$xx' AND v.a1='$uid'"; break;
-        case '2': $dx = "AND vd.a7 = '$xx' and v.a2='$uid'"; break;
-        case '3': $dx = "AND vd.a7 = '$xx' and v.a3='$uid'"; break;
-    }
+//     switch($x){
+//         case '0': $dx = $dx1; break;
+//         case '1': $dx = "AND vd.a7 = '$xx' AND v.a1='$uid'"; break;
+//         case '2': $dx = "AND vd.a7 = '$xx' and v.a2='$uid'"; break;
+//         case '3': $dx = "AND vd.a7 = '$xx' and v.a3='$uid'"; break;
+//     }
 
-    $query = "SELECT v.id AS vid, c.a1 AS cname, c.a2 AS cmob, e.id AS eid, e.a11 AS ename, 
-              cn.a1 AS cn_name, cn.a3 AS cnmob, vd.id AS vdid, vd.a2, vd.a4, vd.a7, vd.a8, 
-              vd.a10, v.a4 AS proj, v.a5 AS place, vd.a9 
-              FROM visitsx AS v 
-              LEFT JOIN customers AS c ON v.a1 = c.id 
-              LEFT JOIN employees AS e ON v.a2 = e.id 
-              LEFT JOIN contractors AS cn ON v.a3 = cn.id 
-              RIGHT JOIN visits_det AS vd ON vd.a1 = v.id 
-              WHERE v.stx = '1' $dx
-              ORDER BY vd.id DESC";
+//     $query = "SELECT v.id AS vid, c.a1 AS cname, c.a2 AS cmob, e.id AS eid, e.a11 AS ename,  cn.a1 AS cn_name, cn.a3 AS cnmob, vd.id AS vdid, vd.a2, vd.a4, vd.a7, vd.a8,  vd.a10, v.a4 AS proj, v.a5 AS place, vd.a9  FROM visitsx AS v  LEFT JOIN customers AS c ON v.a1 = c.id  LEFT JOIN employees AS e ON v.a2 = e.id  LEFT JOIN contractors AS cn ON v.a3 = cn.id  RIGHT JOIN visits_det AS vd ON vd.a1 = v.id  WHERE v.stx = '1' $dx ORDER BY vd.id DESC";
 
-    $result = $conx->query($query);
+//     $result = $conx->query($query);
 
-    $getVisits = [];
-    if ($result) {
-        while ($row = $result->fetch_assoc()) {
-            $getVisits[] = $row;
-        }
-    }
+//     $getVisits = [];
+//     if ($result) {
+//         while ($row = $result->fetch_assoc()) {
+//             $getVisits[] = $row;
+//         }
+//     }
 
-    // Add debug info to help troubleshoot
-    echo json_encode([
-        'status' => 'success',
-        'get_visits_data' => $getVisits,
-        'debug_info' => [
-            'xx' => $xx,
-            'x' => $x,
-            'uid' => $uid,
-            'dx' => $dx,
-            'query_count' => count($getVisits),
-            'has_result' => $result ? true : false
-        ]
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-}
+//     // Add debug info to help troubleshoot
+//     echo json_encode([
+//         'status' => 'success',
+//         'get_visits_data' => $getVisits,
+//         'debug_info' => [
+//             'xx' => $xx,
+//             'x' => $x,
+//             'uid' => $uid,
+//             'dx' => $dx,
+//             'query_count' => count($getVisits),
+//             'has_result' => $result ? true : false
+//         ],
+        
+//         'query' => $query
+//     ], JSON_UNESCAPED_UNICODE);
+//     exit;
+// }
 
 // Get top stats for admin dashboard
 if ($action == "get_top_stats") {
@@ -939,6 +1006,18 @@ function getFullVisitsData($input) {
     $selectedDate = isset($input['xx']) ? sanitize($input['xx']) : date('Y-m-d');
     $uid = isset($input['uid']) ? sanitize($input['uid']) : '';
     $x = isset($input['x']) ? sanitize($input['x']) : '0';
+    $prox = isset($input['prox']) ? sanitize($input['prox']) : '0';
+    
+    $filx = "";
+    
+    if ($selectedDate) {
+        $filx = "vd.a7 = '$selectedDate'";
+    }
+    
+    if ($prox) {
+        $filx = "v.id = '$prox'";
+    }
+    
     
     // Build the query based on user type
     $query = "SELECT
@@ -952,6 +1031,7 @@ cn.a1 AS cn_name,
 cn.a3 AS cnmob,
 v.a4 AS proj,
 v.a5 AS place,
+v.a8 AS visits_count,
 vd.a7,
 vd.a8,
 vd.a2,
@@ -968,7 +1048,7 @@ LEFT JOIN users AS u
 ON u.id = v.a2 
 LEFT JOIN contractors AS cn
 ON cn.id = v.a3
-    WHERE vd.a7 = '$selectedDate'";
+    WHERE $filx";
     
     // Add user-specific filters based on user type
     if ($x == '2') { // Engineer
@@ -976,10 +1056,10 @@ ON cn.id = v.a3
     } elseif ($x == '1') { // Customer
         $query .= " AND v.a1 = '$uid'";
     } elseif ($x == '3') { // Contractor
-        $query .= " AND v.a5 = '$uid'";
+        $query .= " AND v.a3 = '$uid'";
     }
     
-    $query .= " ORDER BY vd.id ";
+    $query .= " ORDER BY vd.id desc";
     
     $result = $conx->query($query);
     
@@ -1010,6 +1090,7 @@ ON cn.id = v.a3
  * Creates a new visit entry in visits_det table
  */
 function createNewVisit($input) {
+    date_default_timezone_set('Asia/Qatar');
     global $conx;
     
     // Debug: Log received input
@@ -1024,32 +1105,35 @@ function createNewVisit($input) {
     
     $projectId = sanitize($input['project_id']);
     $engineerId = isset($input['engineer_id']) ? sanitize($input['engineer_id']) : '0';
+    // $xx = date("Y-m-d");
+    // $result = $conx->query("SELECT id FROM visits_det WHERE a1='$projectId' and  a7 = '$xx' LIMIT 1");
     
     // Get current date and datetime
     $currentDate = date('Y-m-d');
-    $currentDateTime = date('Y-m-d H:i:s');
+    $currentDateTime = date('Y-m-d h:i:s');
     
     // Insert new visit into visits_det table
     $insertQuery = "INSERT INTO visits_det (a1, a7, a9, a10) VALUES ('$projectId', '$currentDate', '0', '$currentDateTime')";
     
     error_log("Executing query: " . $insertQuery);
+
+        if (mysqli_query($conx, $insertQuery)) {
+            // Get the newly created visit ID
+            $visitId = mysqli_insert_id($conx);
+            
+            sendResponse(true, 'تم إنشاء الزيارة بنجاح', [
+                'visit_id' => $visitId,
+                'project_id' => $projectId,
+                'engineer_id' => $engineerId,
+                'date' => $currentDate,
+                'datetime' => $currentDateTime
+            ]);
+        } else {
+            $error = mysqli_error($conx);
+            error_log("MySQL Error: " . $error);
+            sendResponse(false, 'فشل في إنشاء الزيارة: ' . $error);
+        }
     
-    if (mysqli_query($conx, $insertQuery)) {
-        // Get the newly created visit ID
-        $visitId = mysqli_insert_id($conx);
-        
-        sendResponse(true, 'تم إنشاء الزيارة بنجاح', [
-            'visit_id' => $visitId,
-            'project_id' => $projectId,
-            'engineer_id' => $engineerId,
-            'date' => $currentDate,
-            'datetime' => $currentDateTime
-        ]);
-    } else {
-        $error = mysqli_error($conx);
-        error_log("MySQL Error: " . $error);
-        sendResponse(false, 'فشل في إنشاء الزيارة: ' . $error);
-    }
 }
 
 /**
@@ -1356,6 +1440,29 @@ function disableUserAccount($input) {
         sendResponse(false, 'خطأ في تعطيل الحساب: ' . $e->getMessage());
     }
 }
+
+function updateImagesA8($input) {
+    global $conx;
+    $a8 = isset($input['a8']) ? sanitize($input['a8']) : '0';
+    $vix = isset($input['vix']) ? sanitize($input['vix']) : '0';
+    $updateQuery = "UPDATE visits_det SET a8 = '$a8', a9 = '1' WHERE id = '$vix'";
+
+        if (mysqli_query($conx, $updateQuery)) {
+            sendResponse(true, 'تم تحديث جميع الصور للزيارة', [
+                'CountImages' => $a8,
+                'VisitId' => $vix
+            ]);
+        } else {
+            $error = mysqli_error($conx);
+            error_log("MySQL Error: " . $error);
+            sendResponse(false, 'فشل في إنشاء الزيارة: ' . $error);
+        }
+}
+
+
+
+
+
 
 // If no action matched, return error
 echo json_encode([

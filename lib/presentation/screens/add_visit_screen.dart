@@ -3,8 +3,7 @@ import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:QCEC/core/Functions/GetImages.dart';
-import 'package:QCEC/core/Functions/SendToWhatsapp.dart';
-import 'package:QCEC/core/Functions/sendSMS.dart';
+import 'package:QCEC/data/services/cleanup_service.dart';
 import 'package:QCEC/presentation/providers/theme_provider.dart';
 import 'package:QCEC/presentation/screens/main_screen.dart';
 import 'package:flutter/material.dart';
@@ -17,8 +16,6 @@ import 'package:dio/dio.dart';
 import 'dart:io';
 import 'package:QCEC/core/constants/app_colors.dart';
 import '../providers/auth_provider.dart';
-import '../../services/upload_service.dart';
-import '../../services/report_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_photo_editor/flutter_photo_editor.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
@@ -30,7 +27,6 @@ import '../../models/draft_visit.dart';
 import '../../services/draft_visit_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:http_parser/http_parser.dart';
 
 class AddVisitScreen extends StatefulWidget {
   final int visitId;
@@ -73,7 +69,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
     );
 
     await Dio().post(
-      'https://qcec.online/erp2025/app_source/visits.php',
+      'http://qcec-qatar.com/erp2025/app_source/visits.php',
       data: {
         'action': 'update_visitsx',
         'proId': widget.projectId,
@@ -114,7 +110,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
         }
       }
       await Dio().post(
-        "https://qcec.online/app2026/sql.php",
+        "http://qcec-qatar.com/app2026/sql.php",
         data: {
           "action": "update_images_a8",
           "a8": medias,
@@ -171,7 +167,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
       );
 
       final response = await dio.post(
-        'https://qcec.online/app2026/cloud_multi_media.php',
+        'http://qcec-qatar.com/app2026/cloud_multi_media.php',
         data: formData,
         options: Options(
           headers: {"Content-Type": "multipart/form-data"},
@@ -249,14 +245,8 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
           ),
         );
 
-        print("📥 Response: ${response.data}");
-        print(
-          "📥 Response Type: ${response.data.runtimeType}",
-        ); // لازم يطلع _Map
-
-        // 2️⃣ استخرج الـ URL (وامسح الـ backslashes لو موجودة)
         String pngUrl = response.data['image'];
-        pngUrl = pngUrl.replaceAll(r'\/', '/'); // ✅ نضف الـ escaping
+        pngUrl = pngUrl.replaceAll(r'\/', '/');
 
         print("🖼️ PNG URL: $pngUrl");
 
@@ -346,7 +336,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
 
       print("📤 Uploading PDF...");
       await dio.post(
-        'https://qcec.online/erp2025/aws/cloud_pdf.php',
+        'http://qcec-qatar.com/erp2025/aws/cloud_pdf.php',
         data: pdfFormData,
         options: Options(headers: {"Content-Type": "multipart/form-data"}),
       );
@@ -355,7 +345,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
       // WhatsApp وSMS
       print("📱 Fetching WhatsApp data...");
       final whatsRes = await Dio().post(
-        'https://qcec.online/erp2025/app_source/visits.php',
+        'http://qcec-qatar.com/erp2025/app_source/visits.php',
         data: {'action': 'get_whats_visit_data', 'vdId': data['visitId']},
       );
 
@@ -383,7 +373,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
       try {
         print("📤 Sending WhatsApp to ${mobsToSend.length} numbers");
         final response = await dio.post(
-          'https://qcec.online/app2026/api_stub.php',
+          'http://qcec-qatar.com/app2026/api_stub.php',
           data: {
             "action": "send_whatsapp_batch", // ⭐ action جديد
             "whats_visit": data['visitId'],
@@ -404,7 +394,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
 
       if (data['sendCmob'] != null) {
         await dio.post(
-          'https://qcec.online/app2026/update_visit.php',
+          'http://qcec-qatar.com/app2026/update_visit.php',
           data: {'visit_id': data['visitId'], 'mob1': "1"},
           options: Options(
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -414,14 +404,35 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
 
       if (data['sendCNmob'] != null) {
         await dio.post(
-          'https://qcec.online/app2026/update_visit.php',
+          'http://qcec-qatar.com/app2026/update_visit.php',
           data: {'visit_id': data['visitId'], 'mob2': "1"},
           options: Options(
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
           ),
         );
       }
+      // قبل المسح
+      final visitFolder = Directory('$appDir/visits/${data['visitId']}');
+      double beforeSize = 0;
+      if (await visitFolder.exists()) {
+        visitFolder.listSync(recursive: true).forEach((f) {
+          if (f is File) beforeSize += f.lengthSync();
+        });
+        print(
+          '📁 حجم المجلد قبل المسح: ${(beforeSize / 1024 / 1024).toStringAsFixed(2)} MB',
+        );
 
+        // المسح
+        await visitFolder.delete(recursive: true);
+      }
+
+      // بعد المسح
+      final stillExists = await visitFolder.exists();
+      print(
+        stillExists
+            ? '❌ المجلد لسه موجود!'
+            : '✅ تم مسح ${(beforeSize / 1024 / 1024).toStringAsFixed(2)} MB بنجاح',
+      );
       print("✅ All background tasks finished for visit ${data['visitId']}");
     } catch (e, stackTrace) {
       print("❌ Exception in PDF/WhatsApp section: $e");
@@ -2067,7 +2078,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
 
     try {
       await dio.post(
-        'https://qcec.online/app2026/sql.php',
+        'http://qcec-qatar.com/app2026/sql.php',
         data: {
           'action': 'update_visit_description',
           'visit_id': widget.visitId.toString(),
@@ -2084,7 +2095,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
 
     try {
       await dio.post(
-        'https://qcec.online/app2026/sql.php',
+        'http://qcec-qatar.com/app2026/sql.php',
         data: {
           'action': 'update_visit_notes',
           'visit_id': widget.visitId.toString(),
@@ -2107,7 +2118,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
 
       // Fetch vlist data
       final response = await dio.post(
-        'https://qcec.online/app2026/sql.php',
+        'http://qcec-qatar.com/app2026/sql.php',
         data: {'action': 'get_vlist'},
       );
 
@@ -2260,25 +2271,6 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
         debugPrint(
           '📤 Starting background upload for ${_images.length} media files',
         );
-        // UploadService.uploadVisitMediaInBackground(
-        //   visitId: widget.visitId,
-        //   mediaPaths: _images,
-        // );
-
-        // // بدء إرسال التقارير في الخلفية (بعد رفع الصور)
-        // if (_contactCustomer || _contactContractor) {
-        //   debugPrint('📊 Starting background report generation');
-        //   // تأخير بسيط للسماح برفع الصور أولاً
-        //   Future.delayed(const Duration(seconds: 30), () {
-        //     ReportService.sendReportsInBackground(
-        //       projectId: widget.projectId.toString(),
-        //       visitId: widget.visitId,
-        //       imagePaths: _images,
-        //       sendToCustomer: _contactCustomer,
-        //       sendToContractor: _contactContractor,
-        //     );
-        //   });
-        // }
 
         String date = "26-09-2025";
         DateTime now = DateTime.now();
@@ -2304,34 +2296,33 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
           'images': imagesCopy,
           'time': formattedTime,
         };
-
         startBackgroundTasks(data);
       }
 
       // Close loading dialog
-      if (mounted) Navigator.pop(context);
+      // if (mounted) Navigator.pop(context);
 
       // // Show success message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _images.isNotEmpty
-                  ? (_contactCustomer || _contactContractor)
-                        ? 'تم حفظ الزيارة وبدء رفع ${_images.length} صورة وإرسال التقارير في الخلفية'
-                        : 'تم حفظ الزيارة وبدء رفع ${_images.length} صورة في الخلفية'
-                  : 'تم حفظ الزيارة بنجاح',
-              style: GoogleFonts.cairo(),
-            ),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            duration: const Duration(seconds: 4),
-          ),
-        );
-      }
+      // if (mounted) {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     SnackBar(
+      //       content: Text(
+      //         _images.isNotEmpty
+      //             ? (_contactCustomer || _contactContractor)
+      //                   ? 'تم حفظ الزيارة وبدء رفع ${_images.length} صورة وإرسال التقارير في الخلفية'
+      //                   : 'تم حفظ الزيارة وبدء رفع ${_images.length} صورة في الخلفية'
+      //             : 'تم حفظ الزيارة بنجاح',
+      //         style: GoogleFonts.cairo(),
+      //       ),
+      //       backgroundColor: Colors.green,
+      //       behavior: SnackBarBehavior.floating,
+      //       shape: RoundedRectangleBorder(
+      //         borderRadius: BorderRadius.circular(12),
+      //       ),
+      //       duration: const Duration(seconds: 4),
+      //     ),
+      //   );
+      // }
 
       // // Get current location and update visitsx table
 
@@ -2340,10 +2331,10 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
       debugPrint('✅ Visit completed and draft data cleaned up');
 
       // // Return to main screen
-      if (mounted) Navigator.pop(context, true);
+      // if (mounted) Navigator.pop(context, true);
     } catch (e) {
       // Close loading dialog
-      if (mounted) Navigator.pop(context);
+      // if (mounted) Navigator.pop(context);
 
       // Show error message
       if (mounted) {

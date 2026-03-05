@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:QCEC/core/utils/dio_helper.dart';
 import 'package:QCEC/presentation/screens/upgrade_screen.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +8,12 @@ import 'package:package_info_plus/package_info_plus.dart';
 String platform = "";
 
 class UpgradeRepository {
+  late final Dio _dio;
+
+  UpgradeRepository() {
+    _dio = DioHelper.createDio();
+  }
+
   Future<dynamic> checkUpdate(context, setState) async {
     if (Platform.isIOS) {
       setState(() {
@@ -18,7 +25,7 @@ class UpgradeRepository {
       });
     }
     try {
-      final response = await Dio().post(
+      final response = await _dio.post(
         'https://www.qcec.online/erp2025/app_source/check_update.php',
         data: {'action': 'ForceUpdate', 'platform': platform},
       );

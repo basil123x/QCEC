@@ -17,6 +17,8 @@ import 'presentation/providers/theme_provider.dart';
 import 'l10n/app_localizations.dart';
 import 'services/app_lifecycle_service.dart';
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppLifecycleService().initialize();
@@ -65,7 +67,10 @@ class _QCECAppState extends State<QCECApp> {
   }
 
   Future<void> checkForUpdates() async {
-    final loc = AppLocalizations.of(context)!;
+    if (!mounted) return;
+    final loc = AppLocalizations.of(context);
+    if (loc == null) return;
+
     final status = await updater.checkForUpdate();
     if (status == UpdateStatus.outdated) {
       try {
@@ -119,6 +124,7 @@ class _QCECAppState extends State<QCECApp> {
             debugShowCheckedModeBanner: false,
             theme: themeProvider.lightTheme,
             darkTheme: themeProvider.darkTheme,
+            navigatorKey: navigatorKey,
             themeMode: themeProvider.themeMode,
             locale: languageProvider.currentLocale,
             localizationsDelegates: AppLocalizations.localizationsDelegates,

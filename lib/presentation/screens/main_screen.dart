@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:QCEC/data/services/cleanup_service.dart';
 import 'package:QCEC/presentation/screens/about_us_screen.dart';
 import 'package:QCEC/presentation/screens/contact_us_screen.dart';
 import 'package:QCEC/services/translation_service.dart';
@@ -121,7 +122,7 @@ class _MainScreenState extends State<MainScreen> {
 
       final dio = Dio();
       final response = await dio.post(
-        'https://qcec.online/erp2025/aws/cloud_multi_New.php',
+        'http://qcec-qatar.com/erp2025/aws/cloud_multi_New.php',
         data: formData,
         options: Options(headers: {"Content-Type": "multipart/form-data"}),
         onSendProgress: (sent, total) {
@@ -149,7 +150,7 @@ class _MainScreenState extends State<MainScreen> {
     print("PPPPP $projectId");
     try {
       final response = await Dio().get(
-        'https://qcec.online/app2026/get_pdfs.php?project_id=$projectId',
+        'http://qcec-qatar.com/app2026/get_pdfs.php?project_id=$projectId',
       );
 
       if (response.statusCode == 200) {
@@ -559,126 +560,70 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  void _showFullScreenImage(String imageUrl, int imageNumber) {
+  void _showFullScreenImage(bool isVideo, String visitId, int imgLength) {
+    int currentIndex = 0;
     showDialog(
       context: context,
       barrierColor: Colors.black87,
       builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.all(0),
-          child: Stack(
-            children: [
-              // Full screen image
-              Center(
-                child: InteractiveViewer(
-                  child: Image.network(
-                    imageUrl,
-                    fit: BoxFit.contain,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                        loadingProgress.expectedTotalBytes!
-                                  : null,
-                              color: Theme.of(context).cardColor,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'جاري تحميل الصورة...',
-                              style: GoogleFonts.cairo(
-                                fontSize: 16,
-                                color: Theme.of(context).cardColor,
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding: const EdgeInsets.all(0),
+              child: Container(
+                height: 300,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    PageView.builder(
+                      onPageChanged: (val) {
+                        setState(() {
+                          currentIndex = val;
+                        });
+                      },
+                      itemCount: imgLength,
+                      itemBuilder: (context, i) {
+                        return Container(
+                          margin: EdgeInsets.all(10),
+                          width: 200,
+                          height: 200,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            image: DecorationImage(
+                              image: NetworkImage(
+                                "https://visitsqcecs.s3.ap-south-1.amazonaws.com/visits/$visitId/${i + 1}.jpg",
                               ),
+                              fit: BoxFit.cover,
                             ),
-                          ],
+                          ),
+                        );
+                      },
+                    ),
+                    Positioned(
+                      bottom: -10,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        alignment: Alignment.center,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text("$imgLength/${currentIndex + 1}"),
                         ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Iconsax.image,
-                              size: 80,
-                              color: Colors.white54,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'لا يمكن تحميل الصورة',
-                              style: GoogleFonts.cairo(
-                                fontSize: 18,
-                                color: Theme.of(context).cardColor,
-                              ),
-                            ),
-                            Text(
-                              'صورة رقم $imageNumber',
-                              style: GoogleFonts.cairo(
-                                fontSize: 14,
-                                color: Colors.white70,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              // Close button
-              Positioned(
-                top: 50,
-                right: 20,
-                child: GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Iconsax.close_circle,
-                      color: Theme.of(context).cardColor,
-                      size: 24,
-                    ),
-                  ),
-                ),
-              ),
-              // Image info
-              Positioned(
-                bottom: 50,
-                left: 20,
-                right: 20,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    'صورة رقم $imageNumber',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.cairo(
-                      fontSize: 16,
-                      color: Theme.of(context).cardColor,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -2571,7 +2516,7 @@ class _MainScreenState extends State<MainScreen> {
                   radius: 30,
                   backgroundColor: AppColors.primary.withAlpha(51),
                   backgroundImage: NetworkImage(
-                    'https://qcec.online/erp2025/assets/users/$engineerId/images/1.jpg',
+                    'http://qcec-qatar.com/erp2025/assets/users/$engineerId/images/1.jpg',
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -4029,7 +3974,7 @@ class _MainScreenState extends State<MainScreen> {
                                   ),
                                   backgroundImage: (authProvider.isAdmin())
                                       ? NetworkImage(
-                                          'https://qcec.online/erp2025/assets/users/${visit['eid']}/images/1.jpg',
+                                          'http://qcec-qatar.com/erp2025/assets/users/${visit['eid']}/images/1.jpg',
                                         )
                                       : null,
                                   child: (authProvider.isAdmin())
@@ -4887,11 +4832,12 @@ class _MainScreenState extends State<MainScreen> {
 
         return GestureDetector(
           onTap: () {
-            if (isVideo) {
-              _showFullScreenVideo(videoUrl, index + 1);
-            } else {
-              _showFullScreenImage(imageUrl, index + 1);
-            }
+            // if (isVideo) {
+            //   _showFullScreenVideo(videoUrl, index + 1);
+            // } else {
+            //   _showFullScreenImage(imageUrl, index + 1);
+            // }
+            _showFullScreenImage(isVideo, visitId, int.parse(visit['a8']));
           },
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 12),
@@ -5650,7 +5596,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       // Make API call to delete account
       final response = await dio.post(
-        'https://qcec.online/app2026/sql.php',
+        'http://qcec-qatar.com/app2026/sql.php',
         data: requestData,
         options: Options(
           headers: {'Content-Type': 'application/json'},

@@ -5,7 +5,7 @@
  */
 
 // Test URL
-$url = 'https://qcec.online/app2026/sql.php';
+$url = 'http://qcec-qatar.com/app2026/sql.php';
 
 // Test data
 $testData = [

@@ -86,17 +86,6 @@ class _LoginScreenState extends State<LoginScreen>
       });
 
       if (result['success']) {
-        // Check if contractor needs password reset
-        if (result['needsPasswordReset'] == true) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) =>
-                  ResetPasswordScreen(userData: result['userData']),
-            ),
-          );
-          return;
-        }
-
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

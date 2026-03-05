@@ -12,6 +12,7 @@
 #include <flutter_secure_storage_windows/flutter_secure_storage_windows_plugin.h>
 #include <geolocator_windows/geolocator_windows.h>
 #include <permission_handler_windows/permission_handler_windows_plugin.h>
+#include <restart_app/restart_app_plugin_c_api.h>
 #include <rive_native/rive_native_plugin.h>
 #include <url_launcher_windows/url_launcher_windows.h>
 
@@ -28,6 +29,8 @@ void RegisterPlugins(flutter::PluginRegistry* registry) {
       registry->GetRegistrarForPlugin("GeolocatorWindows"));
   PermissionHandlerWindowsPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("PermissionHandlerWindowsPlugin"));
+  RestartAppPluginCApiRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("RestartAppPluginCApi"));
   RiveNativePluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("RiveNativePlugin"));
   UrlLauncherWindowsRegisterWithRegistrar(

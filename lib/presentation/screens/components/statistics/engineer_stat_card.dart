@@ -7,11 +7,8 @@ class EngineerStatCard extends StatelessWidget {
   final Map<String, dynamic> stat;
   final int rank;
 
-  const EngineerStatCard({
-    Key? key,
-    required this.stat,
-    required this.rank,
-  }) : super(key: key);
+  const EngineerStatCard({Key? key, required this.stat, required this.rank})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +41,7 @@ class EngineerStatCard extends StatelessWidget {
               radius: 30,
               backgroundColor: AppColors.primary.withAlpha(51),
               backgroundImage: NetworkImage(
-                'https://qcec.online/erp2025/assets/users/$engineerId/images/1.jpg',
+                'http://qcec-qatar.com/erp2025/assets/users/$engineerId/images/1.jpg',
               ),
             ),
             const SizedBox(width: 16),

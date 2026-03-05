@@ -65,7 +65,7 @@ class Makepdf {
 
     //besso
     final response = await dio.post(
-      'https://qcec.online/erp2025/aws/cloud_pdf.php',
+      'http://qcec-qatar.com/erp2025/aws/cloud_pdf.php',
       data: formData,
       options: Options(headers: {"Content-Type": "multipart/form-data"}),
       onSendProgress: (sent, total) {

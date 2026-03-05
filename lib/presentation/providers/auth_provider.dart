@@ -1,3 +1,5 @@
+import 'package:QCEC/main.dart';
+import 'package:QCEC/presentation/screens/reset_password_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -20,7 +22,7 @@ class AuthProvider extends ChangeNotifier {
   int? get userType => _userType;
 
   // API Base URL - Change this to your server URL
-  static const String baseUrl = 'https://qcec.online/app2026/sql.php';
+  static const String baseUrl = 'http://qcec-qatar.com/app2026/sql.php';
 
   AuthProvider() {
     _initializeDio();
@@ -106,6 +108,15 @@ class AuthProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final data = response.data;
+
+        if (data['message'] == 'يجب إعادة تعيين كلمة المرور') {
+          navigatorKey.currentState?.pushReplacement(
+            MaterialPageRoute(
+              builder: (context) =>
+                  SimpleResetPasswordScreen(userData: data['data']),
+            ),
+          );
+        }
 
         if (data['success'] == true) {
           _userData = data['data']; // Changed from data['user'] to data['data']
@@ -198,8 +209,14 @@ class AuthProvider extends ChangeNotifier {
   String getUserImageUrl() {
     if (_userData == null) return '';
 
+    // Only engineers (2) and admins (0) have profile images
+    // Customers (1) and Contractors (3) should not show profile images
+    if (_userType == 1 || _userType == 3) {
+      return ''; // Return empty for customers and contractors
+    }
+
     final userId = _userData!['id'];
-    return 'https://qcec.online/erp2025/assets/users/$userId/images/1.jpg';
+    return 'http://qcec-qatar.com/erp2025/assets/users/$userId/images/1.jpg';
   }
 
   /// Logout function
@@ -346,6 +363,7 @@ class AuthProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final data = response.data;
+        await sendWhatsAppPassword(phone, newPassword);
         return {
           'success': data['success'] ?? false,
           'message': data['message'] ?? 'تم تغيير كلمة المرور بنجاح',

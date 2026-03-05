@@ -60,7 +60,7 @@ class _CameraWorkingState extends State<CameraWorking> {
     formData.fields.add(MapEntry('visitId', data['visitId'].toString()));
 
     final response = await Dio().post(
-      'https://qcec.online/app2026/cloud_multi_media.php',
+      'http://qcec-qatar.com/app2026/cloud_multi_media.php',
       data: formData,
       options: Options(
         headers: {"Content-Type": "multipart/form-data"},
@@ -120,18 +120,17 @@ class _CameraWorkingState extends State<CameraWorking> {
 
   Future<void> requestPermissions() async {
     Map<Permission, PermissionStatus> statuses = await [
-        Permission.camera,
-        Permission.microphone,
-      ].request();
+      Permission.camera,
+      Permission.microphone,
+    ].request();
 
-      if (statuses[Permission.camera]!.isGranted &&
-          statuses[Permission.microphone]!.isGranted) {
-        setState(() {
-          permissionsGranted = true;
-        });
-      }
+    if (statuses[Permission.camera]!.isGranted &&
+        statuses[Permission.microphone]!.isGranted) {
+      setState(() {
+        permissionsGranted = true;
+      });
+    }
   }
-
 
   @override
   void dispose() {
@@ -208,85 +207,84 @@ class _CameraWorkingState extends State<CameraWorking> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body:  Stack(
-              children: [
-                KeyedSubtree(
-                  key: _cameraKey,
-                  child: CameraAwesomeBuilder.awesome(
-                    saveConfig: SaveConfig.photoAndVideo(
-                      initialCaptureMode: isVideoMode
-                          ? CaptureMode.video
-                          : CaptureMode.photo,
-                      photoPathBuilder: _captureRequestBuilder,
-                      videoPathBuilder: _videoCaptureRequestBuilder,
-                      videoOptions: VideoOptions(
-                        enableAudio: Platform.isAndroid,
-                        quality: VideoRecordingQuality.fhd,
+      body: Stack(
+        children: [
+          KeyedSubtree(
+            key: _cameraKey,
+            child: CameraAwesomeBuilder.awesome(
+              saveConfig: SaveConfig.photoAndVideo(
+                initialCaptureMode: isVideoMode
+                    ? CaptureMode.video
+                    : CaptureMode.photo,
+                photoPathBuilder: _captureRequestBuilder,
+                videoPathBuilder: _videoCaptureRequestBuilder,
+                videoOptions: VideoOptions(
+                  enableAudio: Platform.isAndroid,
+                  quality: VideoRecordingQuality.fhd,
+                ),
+              ),
+              onMediaCaptureEvent: (MediaCapture capture) async {
+                SharedPreferences prefx = await SharedPreferences.getInstance();
+                final file = File(capture.captureRequest.path!);
+
+                if (await file.exists() && mounted) {
+                  final isVideo = capture.captureRequest.path!.contains(
+                    'video_',
+                  );
+
+                  await SaverGallery.saveFile(
+                    filePath: file.path,
+                    fileName:
+                        "GallerySaving${DateTime.now().millisecondsSinceEpoch}/${widget.projectId}/${widget.visitId}.jpg",
+                    skipIfExists: false,
+                  );
+
+                  debugPrint(
+                    '📸 ${isVideo ? "Video" : "Photo"} captured: ${file.path}',
+                  );
+
+                  setState(() {
+                    allImages.add(file.path);
+                    if (isVideo) {
+                      videoCounter++;
+                    } else {
+                      photoCounter++;
+                    }
+                    prefx.setStringList(
+                      "imagesSaved_${widget.visitId}",
+                      allImages,
+                    );
+                  });
+
+                  // Show success feedback
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        isVideo
+                            ? 'تم تسجيل الفيديو ${allImages.where((p) => p.contains('video_')).length} ✅'
+                            : 'تم التقاط الصورة ${allImages.where((p) => p.contains('photo_')).length} ✅',
+                        style: GoogleFonts.cairo(),
+                      ),
+                      backgroundColor: Colors.green,
+                      duration: const Duration(seconds: 1),
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    onMediaCaptureEvent: (MediaCapture capture) async {
-                      SharedPreferences prefx =
-                          await SharedPreferences.getInstance();
-                      final file = File(capture.captureRequest.path!);
-
-                      if (await file.exists() && mounted) {
-                        final isVideo = capture.captureRequest.path!.contains(
-                          'video_',
-                        );
-
-                        await SaverGallery.saveFile(
-                          filePath: file.path,
-                          fileName:
-                              "GallerySaving${DateTime.now().millisecondsSinceEpoch}/${widget.projectId}/${widget.visitId}.jpg",
-                          skipIfExists: false,
-                        );
-
-                        debugPrint(
-                          '📸 ${isVideo ? "Video" : "Photo"} captured: ${file.path}',
-                        );
-
-                        setState(() {
-                          allImages.add(file.path);
-                          if (isVideo) {
-                            videoCounter++;
-                          } else {
-                            photoCounter++;
-                          }
-                          prefx.setStringList(
-                            "imagesSaved_${widget.visitId}",
-                            allImages,
-                          );
-                        });
-
-                        // Show success feedback
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              isVideo
-                                  ? 'تم تسجيل الفيديو ${allImages.where((p) => p.contains('video_')).length} ✅'
-                                  : 'تم التقاط الصورة ${allImages.where((p) => p.contains('photo_')).length} ✅',
-                              style: GoogleFonts.cairo(),
-                            ),
-                            backgroundColor: Colors.green,
-                            duration: const Duration(seconds: 1),
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        );
-                      }
-                    },
-                    bottomActionsBuilder: (state) {
-                      return _buildBottomActions(state);
-                    },
-                    topActionsBuilder: (state) {
-                      return _buildTopActions(state);
-                    },
-                  ),
-                ),
-              ],
+                  );
+                }
+              },
+              bottomActionsBuilder: (state) {
+                return _buildBottomActions(state);
+              },
+              topActionsBuilder: (state) {
+                return _buildTopActions(state);
+              },
             ),
+          ),
+        ],
+      ),
     );
   }
 

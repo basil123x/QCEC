@@ -6,7 +6,7 @@ class Getimages {
   Future<List<String>> getImages(String folderId) async {
     try {
       var result = await Dio().get(
-        "https://qcec.online/erp2025/aws/get_cloud.php?folder=$folderId&k=${DateTime.now().microsecondsSinceEpoch}",
+        "http://qcec-qatar.com/erp2025/aws/get_cloud.php?folder=$folderId&k=${DateTime.now().microsecondsSinceEpoch}",
       );
 
       var data = result.data;

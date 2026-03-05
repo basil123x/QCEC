@@ -1,7 +1,7 @@
 name: QCEC
 description: "Qatar Consultant Enginnering Company - QCEC"
 publish_to: 'none'
-version: 1.0.0+14
+version: 1.0.0+15
 environment:
   sdk: ^3.9.2
 dependencies:
@@ -38,7 +38,6 @@ dependencies:
   saver_gallery: ^4.0.1
   shared_preferences: ^2.2.3
   shorebird_code_push: ^2.0.5
-  sqflite: ^2.3.3+1
   terminate_restart: ^1.0.11
   translator: ^1.0.4+1
   url_launcher: ^6.2.6

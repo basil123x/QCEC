@@ -8,7 +8,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 class ReportService {
-  static const String _smsUrl = 'https://qcec.online/app2026/sms.php';
+  static const String _smsUrl = 'http://qcec-qatar.com/app2026/sms.php';
   static const String _wasenderApiUrl =
       'https://www.wasenderapi.com/api/send-message';
   static const String _wasenderApiKey =
@@ -172,7 +172,7 @@ class ReportService {
       Future<List<String>> getMedia(String folderId) async {
         try {
           var result = await Dio().get(
-            "https://qcec.online/erp2025/aws/get_cloud.php?folder=$folderId&k=${DateTime.now().microsecondsSinceEpoch}",
+            "http://qcec-qatar.com/erp2025/aws/get_cloud.php?folder=$folderId&k=${DateTime.now().microsecondsSinceEpoch}",
           );
 
           var responseData = result.data;
@@ -488,7 +488,7 @@ class ReportService {
       );
 
       final response = await dio.post(
-        'https://qcec.online/app2026/s3.php',
+        'http://qcec-qatar.com/app2026/s3.php',
         data: {
           'action': 'upload_pdf',
           'visit_id': visitId.toString(),
@@ -610,7 +610,7 @@ class ReportService {
       debugPrint('📊 Image count: $imageCount, mob1: $mob1, mob2: $mob2');
 
       final response = await dio.post(
-        'https://qcec.online/app2026/update_visit.php',
+        'http://qcec-qatar.com/app2026/update_visit.php',
         data: {
           'visit_id': data.visitId,
           'image_count': imageCount,
