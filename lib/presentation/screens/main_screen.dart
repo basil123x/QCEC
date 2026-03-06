@@ -122,7 +122,7 @@ class _MainScreenState extends State<MainScreen> {
 
       final dio = Dio();
       final response = await dio.post(
-        'http://qcec-qatar.com/erp2025/aws/cloud_multi_New.php',
+        'http://qcec-qatar.com/erp2025/aws/cloud_multi_New.php?k=${DateTime.now().millisecondsSinceEpoch}',
         data: formData,
         options: Options(headers: {"Content-Type": "multipart/form-data"}),
         onSendProgress: (sent, total) {
@@ -150,7 +150,7 @@ class _MainScreenState extends State<MainScreen> {
     print("PPPPP $projectId");
     try {
       final response = await Dio().get(
-        'http://qcec-qatar.com/app2026/get_pdfs.php?project_id=$projectId',
+        'http://qcec-qatar.com/app2026/get_pdfs.php?project_id=$projectId&k=${DateTime.now().millisecondsSinceEpoch}',
       );
 
       if (response.statusCode == 200) {
@@ -5596,7 +5596,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       // Make API call to delete account
       final response = await dio.post(
-        'http://qcec-qatar.com/app2026/sql.php',
+        'http://qcec-qatar.com/app2026/sql.php?k=${DateTime.now().millisecondsSinceEpoch}',
         data: requestData,
         options: Options(
           headers: {'Content-Type': 'application/json'},

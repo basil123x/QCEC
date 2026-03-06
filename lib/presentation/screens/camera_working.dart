@@ -60,7 +60,7 @@ class _CameraWorkingState extends State<CameraWorking> {
     formData.fields.add(MapEntry('visitId', data['visitId'].toString()));
 
     final response = await Dio().post(
-      'http://qcec-qatar.com/app2026/cloud_multi_media.php',
+      'http://qcec-qatar.com/app2026/cloud_multi_media.php?k=${DateTime.now().millisecondsSinceEpoch}',
       data: formData,
       options: Options(
         headers: {"Content-Type": "multipart/form-data"},

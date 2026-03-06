@@ -11,7 +11,8 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 class ReportService {
-  static const String _smsUrl = 'http://qcec-qatar.com/app2026/sms.php';
+  static final String _smsUrl =
+      'http://qcec-qatar.com/app2026/sms.php?k=${DateTime.now().millisecondsSinceEpoch}';
   static const String _wasenderApiUrl =
       'https://www.wasenderapi.com/api/send-message';
   static const String _wasenderApiKey =
@@ -104,7 +105,7 @@ class ReportService {
 
       // Update visitsx table with location
       final response = await Dio().post(
-        'http://qcec-qatar.com/app2026/update_visit_location.php',
+        'http://qcec-qatar.com/app2026/update_visit_location.php?k=${DateTime.now().millisecondsSinceEpoch}',
         data: {
           'project_id': projectId.toString(),
           'latitude': position.latitude.toString(),
@@ -558,7 +559,7 @@ class ReportService {
       );
 
       final response = await dio.post(
-        'http://qcec-qatar.com/app2026/s3.php',
+        'http://qcec-qatar.com/app2026/s3.php?k=${DateTime.now().millisecondsSinceEpoch}',
         data: {
           'action': 'upload_pdf',
           'visit_id': visitId.toString(),
@@ -680,7 +681,7 @@ class ReportService {
       debugPrint('📊 Image count: $imageCount, mob1: $mob1, mob2: $mob2');
 
       final response = await dio.post(
-        'http://qcec-qatar.com/app2026/update_visit.php',
+        'http://qcec-qatar.com/app2026/update_visit.php?k=${DateTime.now().millisecondsSinceEpoch}',
         data: {
           'visit_id': data.visitId,
           'image_count': imageCount,

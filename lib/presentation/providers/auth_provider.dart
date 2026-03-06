@@ -22,7 +22,7 @@ class AuthProvider extends ChangeNotifier {
   int? get userType => _userType;
 
   // API Base URL - Change this to your server URL
-  static const String baseUrl = 'http://qcec-qatar.com/app2026/sql.php';
+  static final String baseUrl = 'http://qcec-qatar.com/app2026/sql.php?k=${DateTime.now().millisecondsSinceEpoch}';
 
   AuthProvider() {
     _initializeDio();
