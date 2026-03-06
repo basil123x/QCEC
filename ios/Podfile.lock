@@ -4,8 +4,6 @@ PODS:
   - connectivity_plus (0.0.1):
     - Flutter
   - Flutter (1.0.0)
-  - flutter_contacts (0.0.1):
-    - Flutter
   - flutter_localization (0.0.1):
     - Flutter
   - flutter_photo_editor (0.0.1):
@@ -66,7 +64,6 @@ DEPENDENCIES:
   - camerawesome (from `.symlinks/plugins/camerawesome/ios`)
   - connectivity_plus (from `.symlinks/plugins/connectivity_plus/ios`)
   - Flutter (from `Flutter`)
-  - flutter_contacts (from `.symlinks/plugins/flutter_contacts/ios`)
   - flutter_localization (from `.symlinks/plugins/flutter_localization/ios`)
   - flutter_photo_editor (from `.symlinks/plugins/flutter_photo_editor/ios`)
   - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
@@ -97,8 +94,6 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/connectivity_plus/ios"
   Flutter:
     :path: Flutter
-  flutter_contacts:
-    :path: ".symlinks/plugins/flutter_contacts/ios"
   flutter_localization:
     :path: ".symlinks/plugins/flutter_localization/ios"
   flutter_photo_editor:
@@ -138,7 +133,6 @@ SPEC CHECKSUMS:
   camerawesome: a961fa32dafc00d2f093d824311c84f849586b58
   connectivity_plus: cb623214f4e1f6ef8fe7403d580fdad517d2f7dd
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
-  flutter_contacts: 5383945387e7ca37cf963d4be57c21f2fc15ca9f
   flutter_localization: 72299fb6cb4e51cae587bd953ed0b958040b71e6
   flutter_photo_editor: 3917a87114bfd8ef674c09e7548a50c8c9e6242e
   flutter_secure_storage: 1ed9476fba7e7a782b22888f956cce43e2c62f13
