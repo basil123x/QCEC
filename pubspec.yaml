@@ -15,7 +15,6 @@ dependencies:
   fl_chart: ^0.68.0
   flutter:
     sdk: flutter
-  flutter_contacts: ^1.1.9+2
   flutter_localization: ^0.3.3
   flutter_localizations:
     sdk: flutter

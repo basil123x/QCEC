@@ -33,8 +33,6 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>We use the camera to capture photos of construction sites and projects as part of visit documentation and reports.</string>
-	<key>NSContactsUsageDescription</key>
-	<string>This app may add the QCEC company contact to your phone book for your convenience, only after your permission.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>We use your location to improve visit accuracy while you are using the app.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

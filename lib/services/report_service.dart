@@ -856,13 +856,11 @@ class _ReportResult {
   final String message;
   final String? error;
   final int? sentCount;
-  final List<String>? errors;
 
   _ReportResult({
     required this.success,
     required this.message,
     this.error,
     this.sentCount,
-    this.errors,
   });
 }

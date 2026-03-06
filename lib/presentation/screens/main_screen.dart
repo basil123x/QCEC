@@ -8,8 +8,6 @@ import 'package:QCEC/services/translation_service.dart';
 import 'package:QCEC/widgets/dashed_border.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_contacts/flutter_contacts.dart';
-import 'package:flutter_contacts/properties/organization.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -2924,7 +2922,7 @@ class _MainScreenState extends State<MainScreen> {
     // فلترة المشاريع بناءً على std أولاً
     final stdFilteredProjects = filterStdProjects
         ? _projects.where((project) {
-            final projectMap = project as Map<String, dynamic>;
+            final projectMap = project;
             return projectMap['std'] == '1';
           }).toList()
         : _projects;
@@ -2934,7 +2932,7 @@ class _MainScreenState extends State<MainScreen> {
         ? stdFilteredProjects
         : stdFilteredProjects.where((project) {
             final searchLower = _searchQuery.toLowerCase();
-            final projectMap = project as Map<String, dynamic>;
+            final projectMap = project;
 
             return (projectMap['projx']?.toString().toLowerCase().contains(
                       searchLower,
@@ -3055,7 +3053,7 @@ class _MainScreenState extends State<MainScreen> {
             padding: const EdgeInsets.all(16),
             itemCount: filteredProjects.length,
             itemBuilder: (context, index) {
-              final project = filteredProjects[index] as Map<String, dynamic>;
+              final project = filteredProjects[index];
               return _buildProjectCard(project, index + 1);
             },
           ),
