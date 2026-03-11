@@ -41,7 +41,7 @@ class EngineerStatCard extends StatelessWidget {
               radius: 30,
               backgroundColor: AppColors.primary.withAlpha(51),
               backgroundImage: NetworkImage(
-                'http://qcec-qatar.com/erp2025/assets/users/$engineerId/images/1.jpg',
+                'https://qcec-qatar.com/erp2026/assets/users/$engineerId/images/1.jpg',
               ),
             ),
             const SizedBox(width: 16),

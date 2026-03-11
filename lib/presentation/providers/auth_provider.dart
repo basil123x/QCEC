@@ -22,7 +22,7 @@ class AuthProvider extends ChangeNotifier {
   int? get userType => _userType;
 
   // API Base URL - Change this to your server URL
-  static final String baseUrl = 'http://qcec-qatar.com/app2026/sql.php?k=${DateTime.now().millisecondsSinceEpoch}';
+  static final String baseUrl = 'https://qcec-qatar.com/app2026/sql.php?k=${DateTime.now().millisecondsSinceEpoch}';
 
   AuthProvider() {
     _initializeDio();
@@ -216,7 +216,7 @@ class AuthProvider extends ChangeNotifier {
     }
 
     final userId = _userData!['id'];
-    return 'http://qcec-qatar.com/erp2025/assets/users/$userId/images/1.jpg';
+    return 'https://qcec-qatar.com/erp2026/assets/users/$userId/images/1.jpg';
   }
 
   /// Logout function

@@ -22,9 +22,9 @@ class DioHelper {
     (dio.httpClientAdapter as DefaultHttpClientAdapter).onHttpClientCreate = (client) {
       client.badCertificateCallback = (cert, host, port) {
         // Accept certificates from qcec.online domains
-        return host == 'qcec.online' || 
-               host == 'www.qcec.online' ||
-               host.endsWith('.qcec.online');
+        return host == 'qcec-qatar.com' || 
+               host == 'www.qcec-qatar.com' ||
+               host.endsWith('.qcec-qatar.com');
       };
       return client;
     };

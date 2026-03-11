@@ -26,7 +26,7 @@ class UpgradeRepository {
     }
     try {
       final response = await _dio.post(
-        'https://www.qcec.online/erp2025/app_source/check_update.php',
+        'https://www.qcec-qatar.com/erp2026/app_source/check_update.php',
         data: {'action': 'ForceUpdate', 'platform': platform},
       );
       if (response.data['status'] == 'success') {

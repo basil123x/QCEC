@@ -69,7 +69,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
     );
 
     await Dio().post(
-      'http://qcec-qatar.com/erp2025/app_source/visits.php?k=${DateTime.now().millisecondsSinceEpoch}',
+      'https://qcec-qatar.com/erp2026/app_source/visits.php?k=${DateTime.now().millisecondsSinceEpoch}',
       data: {
         'action': 'update_visitsx',
         'proId': widget.projectId,
@@ -110,7 +110,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
         }
       }
       var responsex = await Dio().post(
-        "http://qcec-qatar.com/app2026/sql.php?k=${DateTime.now().millisecondsSinceEpoch}",
+        "https://qcec-qatar.com/app2026/sql.php?k=${DateTime.now().millisecondsSinceEpoch}",
         data: {
           "action": "update_images_a8",
           "a8": medias,
@@ -169,7 +169,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
       );
 
       final response = await dio.post(
-        'http://qcec-qatar.com/app2026/cloud_multi_media.php?k=${DateTime.now().millisecondsSinceEpoch}',
+        'https://qcec-qatar.com/app2026/cloud_multi_media.php?k=${DateTime.now().millisecondsSinceEpoch}',
         data: formData,
         options: Options(
           headers: {"Content-Type": "multipart/form-data"},
@@ -240,7 +240,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
         // 1️⃣ جيب الـ JSON
         // ✅ قول لـ Dio إن الـ response هو JSON
         final response = await Dio().get(
-          'http://qcec.online/erp2025/works/reports/rep6/pdf.php?vix=${data['visitId']}&k=${DateTime.now().millisecondsSinceEpoch}',
+          'https://qcec-qatar.com/erp2026/works/reports/rep6/pdf.php?vix=${data['visitId']}&k=${DateTime.now().millisecondsSinceEpoch}',
           options: Options(
             responseType: ResponseType.json, // ✅ ضروري!
             headers: {'Accept': 'application/json'},
@@ -338,7 +338,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
 
       print("📤 Uploading PDF...");
       await dio.post(
-        'http://qcec-qatar.com/erp2025/aws/cloud_pdf.php?k=${DateTime.now().millisecondsSinceEpoch}',
+        'https://qcec-qatar.com/erp2026/aws/cloud_pdf.php?k=${DateTime.now().millisecondsSinceEpoch}',
         data: pdfFormData,
         options: Options(headers: {"Content-Type": "multipart/form-data"}),
       );
@@ -347,7 +347,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
       // WhatsApp وSMS
       print("📱 Fetching WhatsApp data...");
       final whatsRes = await Dio().post(
-        'http://qcec-qatar.com/erp2025/app_source/visits.php?k=${DateTime.now().millisecondsSinceEpoch}',
+        'https://qcec-qatar.com/erp2026/app_source/visits.php?k=${DateTime.now().millisecondsSinceEpoch}',
         data: {'action': 'get_whats_visit_data', 'vdId': data['visitId']},
       );
 
@@ -375,7 +375,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
       try {
         print("📤 Sending WhatsApp to ${mobsToSend.length} numbers");
         final response = await dio.post(
-          'http://qcec-qatar.com/app2026/api_stub.php?k=${DateTime.now().millisecondsSinceEpoch}',
+          'https://qcec-qatar.com/app2026/api_stub.php?k=${DateTime.now().millisecondsSinceEpoch}',
           data: {
             "action": "send_whatsapp_batch", // ⭐ action جديد
             "whats_visit": data['visitId'],
@@ -396,7 +396,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
 
       if (data['sendCmob'] != null) {
         await dio.post(
-          'http://qcec-qatar.com/app2026/update_visit.php?k=${DateTime.now().millisecondsSinceEpoch}',
+          'https://qcec-qatar.com/app2026/update_visit.php?k=${DateTime.now().millisecondsSinceEpoch}',
           data: {'visit_id': data['visitId'], 'mob1': "1"},
           options: Options(
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -406,7 +406,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
 
       if (data['sendCNmob'] != null) {
         await dio.post(
-          'http://qcec-qatar.com/app2026/update_visit.php?k=${DateTime.now().millisecondsSinceEpoch}',
+          'https://qcec-qatar.com/app2026/update_visit.php?k=${DateTime.now().millisecondsSinceEpoch}',
           data: {'visit_id': data['visitId'], 'mob2': "1"},
           options: Options(
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -2080,7 +2080,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
 
     try {
       await dio.post(
-        'http://qcec-qatar.com/app2026/sql.php?k=${DateTime.now().millisecondsSinceEpoch}',
+        'https://qcec-qatar.com/app2026/sql.php?k=${DateTime.now().millisecondsSinceEpoch}',
         data: {
           'action': 'update_visit_description',
           'visit_id': widget.visitId.toString(),
@@ -2097,7 +2097,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
 
     try {
       await dio.post(
-        'http://qcec-qatar.com/app2026/sql.php?k=${DateTime.now().millisecondsSinceEpoch}',
+        'https://qcec-qatar.com/app2026/sql.php?k=${DateTime.now().millisecondsSinceEpoch}',
         data: {
           'action': 'update_visit_notes',
           'visit_id': widget.visitId.toString(),
@@ -2120,7 +2120,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
 
       // Fetch vlist data
       final response = await dio.post(
-        'http://qcec-qatar.com/app2026/sql.php?k=${DateTime.now().millisecondsSinceEpoch}',
+        'https://qcec-qatar.com/app2026/sql.php?k=${DateTime.now().millisecondsSinceEpoch}',
         data: {'action': 'get_vlist'},
       );
 

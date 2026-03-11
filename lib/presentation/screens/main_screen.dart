@@ -120,7 +120,7 @@ class _MainScreenState extends State<MainScreen> {
 
       final dio = Dio();
       final response = await dio.post(
-        'http://qcec-qatar.com/erp2025/aws/cloud_multi_New.php?k=${DateTime.now().millisecondsSinceEpoch}',
+        'https://qcec-qatar.com/erp2026/aws/cloud_multi_New.php?k=${DateTime.now().millisecondsSinceEpoch}',
         data: formData,
         options: Options(headers: {"Content-Type": "multipart/form-data"}),
         onSendProgress: (sent, total) {
@@ -148,7 +148,7 @@ class _MainScreenState extends State<MainScreen> {
     print("PPPPP $projectId");
     try {
       final response = await Dio().get(
-        'http://qcec-qatar.com/app2026/get_pdfs.php?project_id=$projectId&k=${DateTime.now().millisecondsSinceEpoch}',
+        'https://qcec-qatar.com/app2026/get_pdfs.php?project_id=$projectId&k=${DateTime.now().millisecondsSinceEpoch}',
       );
 
       if (response.statusCode == 200) {
@@ -2514,7 +2514,7 @@ class _MainScreenState extends State<MainScreen> {
                   radius: 30,
                   backgroundColor: AppColors.primary.withAlpha(51),
                   backgroundImage: NetworkImage(
-                    'http://qcec-qatar.com/erp2025/assets/users/$engineerId/images/1.jpg',
+                    'https://qcec-qatar.com/erp2026/assets/users/$engineerId/images/1.jpg',
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -3972,7 +3972,7 @@ class _MainScreenState extends State<MainScreen> {
                                   ),
                                   backgroundImage: (authProvider.isAdmin())
                                       ? NetworkImage(
-                                          'http://qcec-qatar.com/erp2025/assets/users/${visit['eid']}/images/1.jpg',
+                                          'https://qcec-qatar.com/erp2026/assets/users/${visit['eid']}/images/1.jpg',
                                         )
                                       : null,
                                   child: (authProvider.isAdmin())
@@ -5594,7 +5594,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       // Make API call to delete account
       final response = await dio.post(
-        'http://qcec-qatar.com/app2026/sql.php?k=${DateTime.now().millisecondsSinceEpoch}',
+        'https://qcec-qatar.com/app2026/sql.php?k=${DateTime.now().millisecondsSinceEpoch}',
         data: requestData,
         options: Options(
           headers: {'Content-Type': 'application/json'},

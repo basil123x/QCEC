@@ -48,7 +48,7 @@ foreach ($testCases as $testCase) {
     
     // Simulate the API call
     $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, 'http://qcec-qatar.com/app2026/sql.php');
+    curl_setopt($ch, CURLOPT_URL, 'https://qcec-qatar.com/app2026/sql.php');
     curl_setopt($ch, CURLOPT_POST, 1);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($testCase['data']));
     curl_setopt($ch, CURLOPT_HTTPHEADER, [

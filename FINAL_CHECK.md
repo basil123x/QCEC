@@ -43,7 +43,7 @@ lib/
 ```
 
 ## API Endpoint
-- **URL**: http://qcec-qatar.com/app2026/sql.php
+- **URL**: https://qcec-qatar.com/app2026/sql.php
 - **Action**: get_total
 - **Parameters**: uid, x
 - **Response**: {status: 'success', trans_data: [{v1, v2, v3}]}
