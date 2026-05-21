@@ -125,7 +125,7 @@ class _StatsSectionState extends State<StatsSection> {
   }
 
   Widget _buildLoadingState() {
-    return Container(
+    return SizedBox(
       height: 200,
       child: Row(
         children: [

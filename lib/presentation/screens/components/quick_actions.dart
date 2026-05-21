@@ -10,11 +10,11 @@ class QuickActions extends StatelessWidget {
   final VoidCallback onComingSoon;
 
   const QuickActions({
-    Key? key,
+    super.key,
     required this.authProvider,
     required this.onTabChange,
     required this.onComingSoon,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

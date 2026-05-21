@@ -20,7 +20,7 @@ class ProjectsScreen extends StatefulWidget {
   final Function(Set<int>) onExpandedProjectsChange;
 
   const ProjectsScreen({
-    Key? key,
+    super.key,
     required this.authProvider,
     required this.projects,
     required this.isLoadingProjects,
@@ -32,7 +32,7 @@ class ProjectsScreen extends StatefulWidget {
     required this.projectKeys,
     required this.onActiveProjectChange,
     required this.onExpandedProjectsChange,
-  }) : super(key: key);
+  });
 
   @override
   State<ProjectsScreen> createState() => _ProjectsScreenState();
@@ -80,7 +80,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         ? allProjects
         : allProjects.where((project) {
             final searchLower = widget.searchQuery.toLowerCase();
-            final projectMap = project as Map<String, dynamic>;
+            final projectMap = project;
 
             return (projectMap['projx']?.toString().toLowerCase().contains(
                       searchLower,
@@ -142,7 +142,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       padding: const EdgeInsets.all(16),
       itemCount: filteredProjects.length,
       itemBuilder: (context, index) {
-        final project = filteredProjects[index] as Map<String, dynamic>;
+        final project = filteredProjects[index];
         return ProjectCard(
           project: project,
           serialNumber: index + 1,

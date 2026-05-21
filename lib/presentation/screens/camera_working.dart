@@ -20,10 +20,10 @@ class CameraWorking extends StatefulWidget {
   final int projectId;
 
   const CameraWorking({
-    Key? key,
+    super.key,
     required this.visitId,
     required this.projectId,
-  }) : super(key: key);
+  });
 
   @override
   State<CameraWorking> createState() => _CameraWorkingState();
@@ -43,7 +43,7 @@ class _CameraWorkingState extends State<CameraWorking> {
 
   // Mode state
   bool isVideoMode = false;
-  Key _cameraKey = UniqueKey();
+  final Key _cameraKey = UniqueKey();
 
   void startBackgroundTasks(Map<String, dynamic> data) async {
     Isolate.spawn(runHeavyTasks, data);
@@ -53,9 +53,21 @@ class _CameraWorkingState extends State<CameraWorking> {
   static void runHeavyTasks(Map<String, dynamic> data) async {
     final formData = FormData();
 
-    formData.files.add(
-      MapEntry('images[]', await MultipartFile.fromFile(data['images'].first)),
-    );
+    for (var filePath in data['images']) {
+      final file = File(filePath.toString());
+      if (!await file.exists()) {
+        print("⚠️ File not found: $filePath");
+        continue;
+      }
+      formData.files.add(
+        MapEntry('images[]', await MultipartFile.fromFile(file.path)),
+      );
+    }
+
+    if (formData.files.isEmpty) {
+      print("⚠️ No valid files to upload");
+      return;
+    }
 
     formData.fields.add(MapEntry('visitId', data['visitId'].toString()));
 
@@ -254,6 +266,11 @@ class _CameraWorkingState extends State<CameraWorking> {
                       "imagesSaved_${widget.visitId}",
                       allImages,
                     );
+                  });
+
+                  Isolate.spawn(runHeavyTasks, {
+                    'images': [file.path],
+                    'visitId': widget.visitId,
                   });
 
                   // Show success feedback
@@ -486,7 +503,7 @@ class _CameraWorkingState extends State<CameraWorking> {
                       ),
                     ),
                   ),
-                  onPreparingCamera: (_) => Container(
+                  onPreparingCamera: (_) => SizedBox(
                     width: 80,
                     height: 80,
                     child: CircularProgressIndicator(color: Colors.white),
@@ -641,14 +658,6 @@ class _CameraWorkingState extends State<CameraWorking> {
   }
 
   void _finishCapture() async {
-    var imagesCopy = List<String>.from(allImages);
-
-    Map<String, dynamic> data = {
-      'images': imagesCopy,
-      'visitId': widget.visitId,
-    };
-
-    startBackgroundTasks(data);
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setStringList("visit_${widget.visitId}_images", allImages);
 

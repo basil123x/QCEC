@@ -7,8 +7,7 @@ class EngineerStatCard extends StatelessWidget {
   final Map<String, dynamic> stat;
   final int rank;
 
-  const EngineerStatCard({Key? key, required this.stat, required this.rank})
-    : super(key: key);
+  const EngineerStatCard({super.key, required this.stat, required this.rank});
 
   @override
   Widget build(BuildContext context) {

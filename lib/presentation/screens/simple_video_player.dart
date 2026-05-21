@@ -8,9 +8,9 @@ class SimpleVideoPlayer extends StatefulWidget {
   final String videoPath;
 
   const SimpleVideoPlayer({
-    Key? key,
+    super.key,
     required this.videoPath,
-  }) : super(key: key);
+  });
 
   @override
   State<SimpleVideoPlayer> createState() => _SimpleVideoPlayerState();

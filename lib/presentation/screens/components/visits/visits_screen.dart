@@ -16,14 +16,14 @@ class VisitsScreen extends StatefulWidget {
   final Function(bool) onStatsToggle;
 
   const VisitsScreen({
-    Key? key,
+    super.key,
     required this.authProvider,
     required this.selectedDate,
     required this.visitsCache,
     required this.searchQueryVisits,
     required this.showingStats,
     required this.onStatsToggle,
-  }) : super(key: key);
+  });
 
   @override
   State<VisitsScreen> createState() => _VisitsScreenState();

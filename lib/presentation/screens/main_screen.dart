@@ -47,7 +47,7 @@ class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
   DateTime _selectedDate = DateTime.now();
   Set<int> _expandedProjects = {};
-  bool _isSearching = false;
+  final bool _isSearching = false;
   String _searchQuery = '';
   String prox = "";
   final TextEditingController _searchController = TextEditingController();
@@ -76,13 +76,13 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   // Cache for visits data
-  Map<String, Map<String, dynamic>> _visitsCache = {};
+  final Map<String, Map<String, dynamic>> _visitsCache = {};
   bool _isLoadingVisits = false;
 
   // For expandable text and photos
-  Set<int> _expandedNotes = {};
-  Set<int> _expandedPhotos = {};
-  Map<int, int> _currentPhotoIndex = {};
+  final Set<int> _expandedNotes = {};
+  final Set<int> _expandedPhotos = {};
+  final Map<int, int> _currentPhotoIndex = {};
 
   bool _showingStats = false; // Toggle between visits and statistics
 
@@ -569,7 +569,7 @@ class _MainScreenState extends State<MainScreen> {
             return Dialog(
               backgroundColor: Colors.transparent,
               insetPadding: const EdgeInsets.all(0),
-              child: Container(
+              child: SizedBox(
                 height: 300,
                 child: Stack(
                   clipBehavior: Clip.none,
@@ -2414,7 +2414,7 @@ class _MainScreenState extends State<MainScreen> {
               ),
               child: Center(
                 child: Text(
-                  '${authProvider.getUserId()}',
+                  authProvider.getUserId(),
                   style: GoogleFonts.cairo(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
@@ -4691,7 +4691,7 @@ class _MainScreenState extends State<MainScreen> {
             ),
           ),
           // Media PageView
-          Container(
+          SizedBox(
             height: 200,
             child: PageView.builder(
               itemCount: mediaCount,
@@ -5306,7 +5306,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   // Logout Button
                   Consumer<ThemeProvider>(
                     builder: (context, themeProvider, child) {
-                      return Container(
+                      return SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: () => _logout(authProvider),
@@ -5806,7 +5806,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   languageProvider,
                 ),
               );
-            }).toList(),
+            }),
           ],
         ),
       ),
@@ -5884,7 +5884,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           );
         },
-        activeColor: AppColors.primary,
+        activeThumbColor: AppColors.primary,
       ),
     );
   }

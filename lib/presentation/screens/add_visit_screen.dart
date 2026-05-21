@@ -34,11 +34,11 @@ class AddVisitScreen extends StatefulWidget {
   final List<String> capturedImages;
 
   const AddVisitScreen({
-    Key? key,
+    super.key,
     required this.visitId,
     required this.projectId,
     required this.capturedImages,
-  }) : super(key: key);
+  });
 
   @override
   State<AddVisitScreen> createState() => _AddVisitScreenState();
@@ -82,152 +82,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
   }
 
   static void runHeavyTasks(Map<String, dynamic> data) async {
-    int medias = 0;
     final appDir = data['appDir'];
-    print("🚀 Starting upload for visit ${data['visitId']}");
-
-    try {
-      final formData = FormData();
-
-      // التحقق من وجود الملفات
-      if (data['images'] == null || (data['images'] as List).isEmpty) {
-        print("⚠️ No files to upload");
-        return;
-      }
-
-      // فصل الصور عن الفيديوهات
-      List<String> images = [];
-      List<String> videos = [];
-
-      for (var filePath in data['images']) {
-        final ext = filePath.toString().split('.').last.toLowerCase();
-        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(ext)) {
-          images.add(filePath.toString());
-          medias = images.length;
-        } else if (['mp4', 'mov', 'avi', 'mkv', 'webm', '3gp'].contains(ext)) {
-          videos.add(filePath.toString());
-          medias += videos.length;
-        }
-      }
-      var responsex = await Dio().post(
-        "https://qcec-qatar.com/app2026/sql.php?k=${DateTime.now().millisecondsSinceEpoch}",
-        data: {
-          "action": "update_images_a8",
-          "a8": medias,
-          "vix": data['visitId'],
-        },
-      );
-
-      print("SSSSSS ${responsex.data}");
-
-      print("📊 Total files: ${images.length} images, ${videos.length} videos");
-
-      // إضافة الصور
-      for (int i = 1; i < images.length; i++) {
-        final file = File(images[i]);
-        if (!await file.exists()) {
-          print("⚠️ File not found: ${images[i]}");
-          continue;
-        }
-
-        formData.files.add(
-          MapEntry('images[]', await MultipartFile.fromFile(file.path)),
-        );
-        print("✅ Added image ${i + 1}");
-      }
-
-      // إضافة الفيديوهات
-      for (int i = 0; i < videos.length; i++) {
-        final file = File(videos[i]);
-        if (!await file.exists()) {
-          print("⚠️ File not found: ${videos[i]}");
-          continue;
-        }
-
-        final fileSize = await file.length();
-        print(
-          "✅ Added video ${i + 1} (${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB)",
-        );
-
-        formData.files.add(
-          MapEntry('videos[]', await MultipartFile.fromFile(file.path)),
-        );
-      }
-
-      // التحقق من وجود ملفات للرفع
-      if (formData.files.isEmpty) {
-        print("⚠️ No valid files to upload");
-        return;
-      }
-
-      // إضافة رقم الزيارة
-      formData.fields.add(MapEntry('visitId', data['visitId'].toString()));
-
-      final dio = Dio();
-      print(
-        "📤 Starting upload to visits/${data['visitId']}/ (${formData.files.length} files)",
-      );
-
-      final response = await dio.post(
-        'https://qcec-qatar.com/app2026/cloud_multi_media.php?k=${DateTime.now().millisecondsSinceEpoch}',
-        data: formData,
-        options: Options(
-          headers: {"Content-Type": "multipart/form-data"},
-          sendTimeout: Duration(minutes: 10),
-          receiveTimeout: Duration(minutes: 10),
-          validateStatus: (status) => true,
-          responseType: ResponseType.plain,
-        ),
-        onSendProgress: (sent, total) {
-          if (total != -1) {
-            final progress = sent / total;
-            final sentMB = (sent / 1024 / 1024).toStringAsFixed(2);
-            final totalMB = (total / 1024 / 1024).toStringAsFixed(2);
-            print(
-              "📤 Uploading: ${(progress * 100).toStringAsFixed(1)}% ($sentMB/$totalMB MB)",
-            );
-          }
-        },
-      );
-
-      print("📥 Response Status: ${response.statusCode}");
-      print("📥 Raw Response: ${response.data}");
-
-      if (response.statusCode == 200) {
-        try {
-          // محاولة تحويل الـ response لـ JSON
-          final jsonData = jsonDecode(response.data.toString());
-
-          if (jsonData['success'] == true) {
-            print("✅ ${jsonData['message']}");
-            if (jsonData['uploaded_files'] != null) {
-              print("📁 Files uploaded:");
-              for (var file in jsonData['uploaded_files']) {
-                print("   - ${file['new_name']} (${file['type']})");
-              }
-            }
-          } else {
-            print("⚠️ ${jsonData['message']}");
-            if (jsonData['failed_files'] != null &&
-                jsonData['failed_files'].length > 0) {
-              print("❌ Failed files:");
-              for (var file in jsonData['failed_files']) {
-                print("   - ${file['name']}: ${file['reason']}");
-              }
-            }
-          }
-        } catch (e) {
-          print("❌ Failed to parse JSON response: $e");
-          print("Raw response was: ${response.data}");
-        }
-      } else {
-        print("⚠️ Upload failed with status: ${response.statusCode}");
-        print("Response: ${response.data}");
-      }
-    } catch (e, stackTrace) {
-      print("❌ Exception during upload: $e");
-      print("Stack trace: $stackTrace");
-    }
 
     try {
       print("📄 Starting PDF generation...");
@@ -343,6 +198,10 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
         options: Options(headers: {"Content-Type": "multipart/form-data"}),
       );
       print("✅ PDF uploaded successfully");
+      try {
+        await file.delete();
+        print("🗑️ Deleted PDF: ${file.path}");
+      } catch (e) {}
 
       // WhatsApp وSMS
       print("📱 Fetching WhatsApp data...");
@@ -1732,7 +1591,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
 
                   SizedBox(height: 10),
 
-                  Container(
+                  SizedBox(
                     width: double.maxFinite,
                     child: ElevatedButton(
                       onPressed: _saveVisit,
@@ -2282,17 +2141,17 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
 
         String visitIdCopy = widget.visitId.toString();
 
-        String _contPhone = "";
-        String _custPhone = "";
+        String contPhone = "";
+        String custPhone = "";
 
-        _contactContractor ? _contPhone = _contractorPhone : _contPhone = '';
-        _contactCustomer ? _custPhone = _customerPhone : _custPhone = '';
+        _contactContractor ? contPhone = _contractorPhone : contPhone = '';
+        _contactCustomer ? custPhone = _customerPhone : custPhone = '';
 
         // إعداد البيانات بدون await
         Map<String, dynamic> data = {
           'visitId': visitIdCopy,
-          'sendCmob': _custPhone,
-          'sendCNmob': _contPhone,
+          'sendCmob': custPhone,
+          'sendCNmob': contPhone,
           'desc': _descriptionController.text,
           'notes': _notesController.text,
           'images': imagesCopy,

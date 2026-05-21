@@ -19,7 +19,7 @@ class DioHelper {
     );
 
     // Configure SSL certificate handling for qcec.online
-    (dio.httpClientAdapter as DefaultHttpClientAdapter).onHttpClientCreate = (client) {
+    (dio.httpClientAdapter as IOHttpClientAdapter).onHttpClientCreate = (client) {
       client.badCertificateCallback = (cert, host, port) {
         // Accept certificates from qcec.online domains
         return host == 'qcec-qatar.com' || 

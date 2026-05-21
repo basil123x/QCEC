@@ -131,7 +131,7 @@ class ReportService {
       }
     } catch (e) {
       debugPrint('📍 Error updating visit location: $e');
-      throw e;
+      rethrow;
     }
   }
 

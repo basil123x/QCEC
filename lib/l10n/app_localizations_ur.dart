@@ -2,7 +2,7 @@ import 'app_localizations.dart';
 
 /// The translations for Urdu (`ur`).
 class AppLocalizationsUr extends AppLocalizations {
-  AppLocalizationsUr([String locale = 'ur']) : super(locale);
+  AppLocalizationsUr([super.locale = 'ur']);
 
   @override
   String get appName => 'QCEC';

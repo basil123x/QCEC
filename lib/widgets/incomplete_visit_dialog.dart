@@ -13,11 +13,11 @@ class IncompleteVisitDialog extends StatelessWidget {
   final VoidCallback? onCancel;
 
   const IncompleteVisitDialog({
-    Key? key,
+    super.key,
     required this.visitInfo,
     this.onResume,
     this.onCancel,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

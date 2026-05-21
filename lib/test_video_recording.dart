@@ -7,7 +7,7 @@ import 'package:iconsax/iconsax.dart';
 /// يمكن استخدامه لاختبار الوظائف قبل تطبيقها في الكاميرا الرئيسية
 
 class VideoRecordingTestScreen extends StatefulWidget {
-  const VideoRecordingTestScreen({Key? key}) : super(key: key);
+  const VideoRecordingTestScreen({super.key});
 
   @override
   State<VideoRecordingTestScreen> createState() =>
@@ -17,7 +17,7 @@ class VideoRecordingTestScreen extends StatefulWidget {
 class _VideoRecordingTestScreenState extends State<VideoRecordingTestScreen> {
   bool _isRecordingVideo = false;
   int _recordingSeconds = 0;
-  int _maxVideoDuration = 15;
+  final int _maxVideoDuration = 15;
   Timer? _videoTimer;
   
 

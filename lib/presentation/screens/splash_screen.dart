@@ -317,7 +317,7 @@ class _SplashScreenState extends State<SplashScreen>
   Widget _buildLogo() {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
-        return Container(
+        return SizedBox(
           width: 150,
           height: 150,
           child: Image.asset(

@@ -10,11 +10,11 @@ class VisitCard extends StatelessWidget {
   final AuthProvider authProvider;
 
   const VisitCard({
-    Key? key,
+    super.key,
     required this.visit,
     required this.serialNumber,
     required this.authProvider,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -8,7 +8,6 @@ import 'package:restart_app/restart_app.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
 import 'package:terminate_restart/terminate_restart.dart';
-import 'core/theme/app_theme.dart';
 import 'core/constants/app_strings.dart';
 import 'presentation/screens/auth_wrapper.dart';
 import 'presentation/providers/auth_provider.dart';

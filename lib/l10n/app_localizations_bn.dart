@@ -2,7 +2,7 @@ import 'app_localizations.dart';
 
 /// The translations for Bengali (`bn`).
 class AppLocalizationsBn extends AppLocalizations {
-  AppLocalizationsBn([String locale = 'bn']) : super(locale);
+  AppLocalizationsBn([super.locale = 'bn']);
 
   @override
   String get appName => 'QCEC';

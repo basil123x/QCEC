@@ -11,12 +11,12 @@ class DashboardScreen extends StatelessWidget {
   final VoidCallback onComingSoon;
 
   const DashboardScreen({
-    Key? key,
+    super.key,
     required this.authProvider,
     required this.selectedDate,
     required this.onTabChange,
     required this.onComingSoon,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

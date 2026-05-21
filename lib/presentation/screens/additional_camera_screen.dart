@@ -11,10 +11,10 @@ class AdditionalCameraScreen extends StatefulWidget {
   final List<String> existingImages;
 
   const AdditionalCameraScreen({
-    Key? key,
+    super.key,
     required this.visitId,
     required this.existingImages,
-  }) : super(key: key);
+  });
 
   @override
   State<AdditionalCameraScreen> createState() => _AdditionalCameraScreenState();

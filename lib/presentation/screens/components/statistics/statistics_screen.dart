@@ -11,10 +11,10 @@ class StatisticsScreen extends StatelessWidget {
   final DateTime selectedDate;
 
   const StatisticsScreen({
-    Key? key,
+    super.key,
     required this.authProvider,
     required this.selectedDate,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

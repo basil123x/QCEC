@@ -15,7 +15,7 @@ class ProjectCard extends StatefulWidget {
   final Function(Set<int>) onExpandedProjectsChange;
 
   const ProjectCard({
-    Key? key,
+    super.key,
     required this.project,
     required this.serialNumber,
     required this.expandedProjects,
@@ -23,7 +23,7 @@ class ProjectCard extends StatefulWidget {
     required this.projectKeys,
     required this.onActiveProjectChange,
     required this.onExpandedProjectsChange,
-  }) : super(key: key);
+  });
 
   @override
   State<ProjectCard> createState() => _ProjectCardState();
