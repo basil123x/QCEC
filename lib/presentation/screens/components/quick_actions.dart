@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import '../../providers/auth_provider.dart';
-import '../../../core/constants/app_colors.dart';
 
 class QuickActions extends StatelessWidget {
   final AuthProvider authProvider;

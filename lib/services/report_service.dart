@@ -1,11 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
-import 'package:QCEC/presentation/providers/auth_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;

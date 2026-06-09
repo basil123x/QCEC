@@ -1,9 +1,5 @@
-import 'dart:convert';
 import 'dart:isolate';
-import 'dart:typed_data';
-
 import 'package:QCEC/core/Functions/GetImages.dart';
-import 'package:QCEC/data/services/cleanup_service.dart';
 import 'package:QCEC/presentation/providers/theme_provider.dart';
 import 'package:QCEC/presentation/screens/main_screen.dart';
 import 'package:flutter/material.dart';
@@ -26,7 +22,6 @@ import 'simple_video_player.dart';
 import '../../models/draft_visit.dart';
 import '../../services/draft_visit_service.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:pdf/widgets.dart' as pw;
 
 class AddVisitScreen extends StatefulWidget {
   final int visitId;
@@ -85,125 +80,25 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
     final appDir = data['appDir'];
 
     try {
-      print("📄 Starting PDF generation...");
-      final pdf = pw.Document();
-
-      List myImages = await Getimages().getImages(data['visitId'].toString());
-      print("Found ${myImages.length} images for PDF");
-
+      print("📄 Requesting PDF generation from server...");
       try {
-        // 1️⃣ جيب الـ JSON
-        // ✅ قول لـ Dio إن الـ response هو JSON
-        final response = await Dio().get(
-          'https://qcec-qatar.com/erp2026/works/reports/rep6/pdf.php?vix=${data['visitId']}&k=${DateTime.now().millisecondsSinceEpoch}',
+        final pdfResponse = await Dio().post(
+          'https://qcec-qatar.com/erp2026/aws/make_visit_pdf.php?k=${DateTime.now().millisecondsSinceEpoch}',
+          data: 'visit_id=${data['visitId']}',
           options: Options(
-            responseType: ResponseType.json, // ✅ ضروري!
-            headers: {'Accept': 'application/json'},
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            sendTimeout: const Duration(seconds: 120),
+            receiveTimeout: const Duration(seconds: 120),
           ),
         );
-
-        String pngUrl = response.data['image'];
-        pngUrl = pngUrl.replaceAll(r'\/', '/');
-
-        print("🖼️ PNG URL: $pngUrl");
-
-        // 3️⃣ تحقق إن الصورة موجودة فعلاً
-        final headResponse = await Dio().head(pngUrl);
-        print("📊 Image Status: ${headResponse.statusCode}");
-        print("📊 Content-Type: ${headResponse.headers['content-type']}");
-
-        if (headResponse.statusCode != 200) {
-          throw Exception('Image not found: ${headResponse.statusCode}');
-        }
-
-        // 4️⃣ جيب الصورة
-        final pngResponse = await Dio().get(
-          pngUrl,
-          options: Options(responseType: ResponseType.bytes),
-        );
-
-        print("✅ Image loaded, type: ${pngResponse.data.runtimeType}");
-        print("✅ Image size: ${pngResponse.data.length} bytes");
-
-        // 5️⃣ حول لـ Uint8List
-        final Uint8List pngBytes;
-        if (pngResponse.data is Uint8List) {
-          pngBytes = pngResponse.data;
-        } else if (pngResponse.data is List) {
-          pngBytes = Uint8List.fromList(List<int>.from(pngResponse.data));
-        } else {
-          throw Exception(
-            'Expected bytes but got: ${pngResponse.data.runtimeType}',
-          );
-        }
-
-        // 6️⃣ أضف للـ PDF
-        final pngImage = pw.MemoryImage(pngBytes);
-        pdf.addPage(
-          pw.Page(
-            margin: pw.EdgeInsets.zero,
-            build: (context) => pw.Center(child: pw.Image(pngImage)),
-          ),
-        );
-
-        print("✅ PDF page added successfully");
-      } catch (e, stackTrace) {
-        print("❌ Error: $e");
-        print("📍 Stack: $stackTrace");
-        rethrow;
+        print("✅ PDF created on server: ${pdfResponse.data}");
+      } catch (e) {
+        print("❌ PDF generation failed: $e");
       }
-
-      for (var url in myImages) {
-        if (url.toString().split('/').last.split('.').last == 'jpg') {
-          try {
-            final response = await Dio().get<List<int>>(
-              url,
-              options: Options(responseType: ResponseType.bytes),
-            );
-
-            if (response.statusCode == 200 && response.data != null) {
-              final image = pw.MemoryImage(Uint8List.fromList(response.data!));
-              pdf.addPage(
-                pw.Page(
-                  margin: pw.EdgeInsets.zero,
-                  build: (pw.Context context) {
-                    return pw.Center(child: pw.Image(image));
-                  },
-                ),
-              );
-            }
-          } catch (e) {
-            print("⚠️ Failed to add image to PDF: $e");
-          }
-        }
-      }
-
-      final timestamp = intlx.DateFormat(
-        'yyyyMMdd_HHmmss',
-      ).format(DateTime.now());
-      final file = File('$appDir/visit_report_$timestamp.pdf');
-      await file.writeAsBytes(await pdf.save());
-      print("✅ PDF saved: ${file.path}");
-
-      final dio = Dio();
-      final pdfFormData = FormData.fromMap({
-        'folder': "Whatsapp/${data['visitId']}",
-        'pdf': await MultipartFile.fromFile(file.path, filename: '1.pdf'),
-      });
-
-      print("📤 Uploading PDF...");
-      await dio.post(
-        'https://qcec-qatar.com/erp2026/aws/cloud_pdf.php?k=${DateTime.now().millisecondsSinceEpoch}',
-        data: pdfFormData,
-        options: Options(headers: {"Content-Type": "multipart/form-data"}),
-      );
-      print("✅ PDF uploaded successfully");
-      try {
-        await file.delete();
-        print("🗑️ Deleted PDF: ${file.path}");
-      } catch (e) {}
 
       // WhatsApp وSMS
+      final dio = Dio();
+      List myImages = await Getimages().getImages(data['visitId'].toString());
       print("📱 Fetching WhatsApp data...");
       final whatsRes = await Dio().post(
         'https://qcec-qatar.com/erp2026/app_source/visits.php?k=${DateTime.now().millisecondsSinceEpoch}',
@@ -243,6 +138,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
               ',',
             ), // "77307831|fixed,71402613|fixed,123456|customer"
           },
+          options: Options(headers: {'Content-Type': 'application/json'}),
         );
         print("✅ Response: ${response.data}");
       } catch (e) {

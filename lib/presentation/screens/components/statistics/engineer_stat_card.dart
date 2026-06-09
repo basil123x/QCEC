@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:iconsax/iconsax.dart';
 import 'package:QCEC/core/constants/app_colors.dart';
 
 class EngineerStatCard extends StatelessWidget {

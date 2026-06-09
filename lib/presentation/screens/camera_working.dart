@@ -11,7 +11,6 @@ import 'package:camerawesome/camerawesome_plugin.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:QCEC/core/constants/app_colors.dart';
 import 'add_visit_screen.dart';
 import 'package:saver_gallery/saver_gallery.dart';
 
