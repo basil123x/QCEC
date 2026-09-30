@@ -91,81 +91,113 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Login function
-  Future<Map<String, dynamic>> login(String phone, String password) async {
-    _setLoading(true);
-
+  /// Send OTP via WhatsApp
+  Future<Map<String, dynamic>> sendOtp(String phone) async {
     try {
-      debugPrint('Attempting login for phone: $phone');
+      debugPrint('Sending OTP for phone: $phone');
 
       final response = await _dio.post(
-        '', // baseUrl is already set in Dio configuration
-        data: {'action': 'login', 'phone': phone, 'password': password},
+        '',
+        data: {'action': 'send_otp', 'phone': phone},
       );
 
-      debugPrint('Response status: ${response.statusCode}');
-      debugPrint('Response data: ${response.data}');
+      debugPrint('Send OTP response: ${response.data}');
 
       if (response.statusCode == 200) {
         final data = response.data;
-
-        if (data['message'] == 'يجب إعادة تعيين كلمة المرور') {
-          navigatorKey.currentState?.pushReplacement(
-            MaterialPageRoute(
-              builder: (context) =>
-                  SimpleResetPasswordScreen(userData: data['data']),
-            ),
-          );
-        }
-
-        if (data['success'] == true) {
-          _userData = data['data']; // Changed from data['user'] to data['data']
-          _userType = data['user_type']; // Get user_type directly from response
-          _isLoggedIn = true;
-
-          // Save to secure storage
-          await _secureStorage.write(
-            key: 'user_id',
-            value: data['data']['id'].toString(),
-          );
-          await _secureStorage.write(
-            key: 'user_data',
-            value: json.encode(data['data']),
-          );
-          await _secureStorage.write(
-            key: 'user_type',
-            value: _userType.toString(),
-          );
-          await _secureStorage.write(key: 'is_logged_in', value: 'true');
-
-          _setLoading(false);
-          notifyListeners();
-
-          return {
-            'success': true,
-            'message': 'تم تسجيل الدخول بنجاح',
-            'user': data['data'],
-          };
-        } else {
-          _setLoading(false);
-          return {
-            'success': false,
-            'message': data['message'] ?? 'خطأ في تسجيل الدخول',
-          };
-        }
-      } else {
-        _setLoading(false);
-        return {'success': false, 'message': 'خطأ في الاتصال بالخادم'};
+        return {
+          'success': data['success'] == true,
+          'message': data['message'] ?? 'حدث خطأ في إرسال رمز التحقق',
+        };
       }
+      return {'success': false, 'message': 'خطأ في الاتصال بالخادم'};
     } catch (e) {
-      _setLoading(false);
-      debugPrint('Login error: $e');
-      debugPrint('Error type: ${e.runtimeType}');
+      debugPrint('Send OTP error: $e');
       return {
         'success': false,
         'message': 'حدث خطأ غير متوقع: ${e.toString()}',
       };
     }
+  }
+
+  /// Verify OTP and complete login (same response handling as legacy login)
+  Future<Map<String, dynamic>> verifyOtp(String phone, String code) async {
+    _setLoading(true);
+
+    try {
+      debugPrint('Verifying OTP for phone: $phone');
+
+      final response = await _dio.post(
+        '',
+        data: {'action': 'verify_otp', 'phone': phone, 'code': code},
+      );
+
+      debugPrint('Verify OTP response status: ${response.statusCode}');
+      debugPrint('Verify OTP response data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        return await _processAuthResponse(response.data);
+      }
+      _setLoading(false);
+      return {'success': false, 'message': 'خطأ في الاتصال بالخادم'};
+    } catch (e) {
+      _setLoading(false);
+      debugPrint('Verify OTP error: $e');
+      return {
+        'success': false,
+        'message': 'حدث خطأ غير متوقع: ${e.toString()}',
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> _processAuthResponse(dynamic rawData) async {
+    final data = rawData is Map<String, dynamic>
+        ? rawData
+        : Map<String, dynamic>.from(rawData as Map);
+
+    if (data['message'] == 'يجب إعادة تعيين كلمة المرور') {
+      navigatorKey.currentState?.pushReplacement(
+        MaterialPageRoute(
+          builder: (context) =>
+              SimpleResetPasswordScreen(userData: data['data']),
+        ),
+      );
+    }
+
+    if (data['success'] == true) {
+      _userData = data['data'];
+      _userType = data['user_type'];
+      _isLoggedIn = true;
+
+      await _secureStorage.write(
+        key: 'user_id',
+        value: data['data']['id'].toString(),
+      );
+      await _secureStorage.write(
+        key: 'user_data',
+        value: json.encode(data['data']),
+      );
+      await _secureStorage.write(
+        key: 'user_type',
+        value: _userType.toString(),
+      );
+      await _secureStorage.write(key: 'is_logged_in', value: 'true');
+
+      _setLoading(false);
+      notifyListeners();
+
+      return {
+        'success': true,
+        'message': 'تم تسجيل الدخول بنجاح',
+        'user': data['data'],
+      };
+    }
+
+    _setLoading(false);
+    return {
+      'success': false,
+      'message': data['message'] ?? 'خطأ في تسجيل الدخول',
+    };
   }
 
   /// Get user type name

@@ -697,9 +697,30 @@ class AppLocalizationsHi extends AppLocalizations {
   String get importantNotification => 'महत्वपूर्ण सूचना';
 
   @override
-  String get updatePrompt =>
-      'कृपया इस बार अपडेट करें ताकि अगली बार स्वचालित अपडेट चालू हों';
+  String get updatePrompt => 'ऐप का यह संस्करण अब समर्थित नहीं है';
 
   @override
   String get updateNow => 'अभी अपडेट करें';
+
+  @override
+  String get versionUnsupportedTitle => 'ऐप का यह संस्करण अब समर्थित नहीं है';
+
+  @override
+  String get versionUnsupportedBody =>
+      'जारी रखने के लिए कृपया स्टोर से ऐप अपडेट करें।';
+
+  @override
+  String get checkingForUpdates => 'अपडेट जांच रहे हैं…';
+
+  @override
+  String get downloadingUpdate => 'अपडेट डाउनलोड हो रहा है…';
+
+  @override
+  String get applyingUpdate => 'अपडेट लागू हो रहा है…';
+
+  @override
+  String get pleaseWaitUpdate => 'कृपया थोड़ी प्रतीक्षा करें';
+
+  @override
+  String get closeApp => 'ऐप बंद करें';
 }

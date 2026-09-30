@@ -1,0 +1,4 @@
+storePassword=122133
+keyPassword=122133
+keyAlias=qcec
+storeFile=../qcec-keystore.jks

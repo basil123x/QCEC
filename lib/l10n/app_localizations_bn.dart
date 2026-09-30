@@ -700,9 +700,30 @@ class AppLocalizationsBn extends AppLocalizations {
   String get importantNotification => 'গুরুত্বপূর্ণ বিজ্ঞপ্তি';
 
   @override
-  String get updatePrompt =>
-      'পরবর্তীবার স্বয়ংক্রিয় আপডেট চালু করার জন্য অনুগ্রহ করে এইবার আপডেট করুন';
+  String get updatePrompt => 'অ্যাপের এই সংস্করণ আর সমর্থিত নয়';
 
   @override
   String get updateNow => 'এখন আপডেট করুন';
+
+  @override
+  String get versionUnsupportedTitle => 'অ্যাপের এই সংস্করণ আর সমর্থিত নয়';
+
+  @override
+  String get versionUnsupportedBody =>
+      'চালিয়ে যেতে অনুগ্রহ করে স্টোর থেকে অ্যাপ আপডেট করুন।';
+
+  @override
+  String get checkingForUpdates => 'আপডেট পরীক্ষা করা হচ্ছে…';
+
+  @override
+  String get downloadingUpdate => 'আপডেট ডাউনলোড হচ্ছে…';
+
+  @override
+  String get applyingUpdate => 'আপডেট প্রয়োগ করা হচ্ছে…';
+
+  @override
+  String get pleaseWaitUpdate => 'অনুগ্রহ করে কিছুক্ষণ অপেক্ষা করুন';
+
+  @override
+  String get closeApp => 'অ্যাপ বন্ধ করুন';
 }

@@ -297,6 +297,13 @@ abstract class AppLocalizations {
   String get importantNotification;
   String get updatePrompt;
   String get updateNow;
+  String get versionUnsupportedTitle;
+  String get versionUnsupportedBody;
+  String get checkingForUpdates;
+  String get downloadingUpdate;
+  String get applyingUpdate;
+  String get pleaseWaitUpdate;
+  String get closeApp;
 }
 
 class _AppLocalizationsDelegate

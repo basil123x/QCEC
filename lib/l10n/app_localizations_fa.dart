@@ -697,9 +697,31 @@ class AppLocalizationsFa extends AppLocalizations {
   String get importantNotification => 'اطلاعیه مهم';
 
   @override
-  String get updatePrompt =>
-      'لطفاً این بار بروزرسانی کنید تا بروزرسانی‌های خودکار در دفعه بعد فعال شود';
+  String get updatePrompt => 'این نسخه از برنامه دیگر پشتیبانی نمی‌شود';
 
   @override
   String get updateNow => 'هم‌اکنون بروزرسانی کنید';
+
+  @override
+  String get versionUnsupportedTitle =>
+      'این نسخه از برنامه دیگر پشتیبانی نمی‌شود';
+
+  @override
+  String get versionUnsupportedBody =>
+      'لطفاً برای ادامه، برنامه را از فروشگاه بروزرسانی کنید.';
+
+  @override
+  String get checkingForUpdates => 'در حال بررسی بروزرسانی‌ها…';
+
+  @override
+  String get downloadingUpdate => 'در حال دانلود بروزرسانی…';
+
+  @override
+  String get applyingUpdate => 'در حال اعمال بروزرسانی…';
+
+  @override
+  String get pleaseWaitUpdate => 'لطفاً چند لحظه صبر کنید';
+
+  @override
+  String get closeApp => 'بستن برنامه';
 }

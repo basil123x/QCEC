@@ -698,9 +698,30 @@ class AppLocalizationsUr extends AppLocalizations {
   String get importantNotification => 'اہم اطلاع';
 
   @override
-  String get updatePrompt =>
-      'براہ کرم اس بار اپ ڈیٹ کریں تاکہ اگلی بار خودکار اپ ڈیٹس فعال ہوں';
+  String get updatePrompt => 'ایپ کا یہ ورژن اب سپورٹ نہیں کرتا';
 
   @override
   String get updateNow => 'ابھی اپ ڈیٹ کریں';
+
+  @override
+  String get versionUnsupportedTitle => 'ایپ کا یہ ورژن اب سپورٹ نہیں کرتا';
+
+  @override
+  String get versionUnsupportedBody =>
+      'جاری رکھنے کے لیے براہ کرم اسٹور سے ایپ اپ ڈیٹ کریں۔';
+
+  @override
+  String get checkingForUpdates => 'اپ ڈیٹس چیک ہو رہی ہیں…';
+
+  @override
+  String get downloadingUpdate => 'اپ ڈیٹ ڈاؤن لوڈ ہو رہی ہے…';
+
+  @override
+  String get applyingUpdate => 'اپ ڈیٹ لاگو ہو رہی ہے…';
+
+  @override
+  String get pleaseWaitUpdate => 'براہ کرم کچھ لمحے انتظار کریں';
+
+  @override
+  String get closeApp => 'ایپ بند کریں';
 }

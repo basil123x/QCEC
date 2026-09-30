@@ -681,9 +681,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importantNotification => 'Important Notification';
 
   @override
-  String get updatePrompt =>
-      'Please update this time to enable automatic updates next time';
+  String get updatePrompt => 'This version of the app is no longer supported';
 
   @override
   String get updateNow => 'Update Now';
+
+  @override
+  String get versionUnsupportedTitle =>
+      'This version of the app is no longer supported';
+
+  @override
+  String get versionUnsupportedBody =>
+      'Please update the app from the store to continue.';
+
+  @override
+  String get checkingForUpdates => 'Checking for updates…';
+
+  @override
+  String get downloadingUpdate => 'Downloading update…';
+
+  @override
+  String get applyingUpdate => 'Applying update…';
+
+  @override
+  String get pleaseWaitUpdate => 'Please wait a moment';
+
+  @override
+  String get closeApp => 'Close app';
 }

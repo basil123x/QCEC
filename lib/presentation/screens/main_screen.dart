@@ -11,11 +11,8 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart' as intlx;
-import 'package:restart_app/restart_app.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
-import 'package:shorebird_code_push/shorebird_code_push.dart';
-import 'package:terminate_restart/terminate_restart.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'package:video_thumbnail/video_thumbnail.dart';
@@ -5049,70 +5046,6 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  Timer? timerx;
-  int currentPatchx = 0;
-  final updater = ShorebirdUpdater();
-  static const _lastPatchKey = "last_applied_patch";
-  bool hasUpdate = false;
-
-  @override
-  void initState() {
-    super.initState();
-    fetchUpdate();
-    checkForUpdates();
-
-    timerx = Timer.periodic(const Duration(seconds: 5), (_) => fetchUpdate());
-  }
-
-  void fetchUpdate() async {
-    final currentPatch = await updater.readCurrentPatch();
-    if (!mounted) return;
-    setState(() {
-      currentPatchx = currentPatch?.number ?? 0;
-    });
-  }
-
-  Future<void> checkForUpdates() async {
-    final status = await updater.checkForUpdate();
-    if (!mounted) return;
-    if (status == UpdateStatus.outdated) {
-      setState(() {
-        hasUpdate = true;
-      });
-    }
-  }
-
-  Future<void> applyUpdate() async {
-    try {
-      final loc = AppLocalizations.of(context)!;
-      await updater.update();
-      final prefs = await SharedPreferences.getInstance();
-      final currentPatch = await updater.readCurrentPatch();
-      if (currentPatch != null) {
-        await prefs.setInt(_lastPatchKey, currentPatch.number - 1);
-      }
-
-      if (Platform.isIOS) {
-        Restart.restartApp(
-          notificationBody: loc.importantNotification,
-          notificationTitle: loc.updatePrompt,
-        );
-      } else {
-        await TerminateRestart.instance.restartApp(
-          options: const TerminateRestartOptions(terminate: true),
-        );
-      }
-    } on UpdateException catch (error) {
-      print("Update failed: $error");
-    }
-  }
-
-  @override
-  void dispose() {
-    timerx?.cancel();
-    super.dispose();
-  }
-
   void _logout(AuthProvider authProvider) {
     // هنا ممكن تضيف أي عملية تسجيل خروج
     authProvider.logout();
@@ -5210,81 +5143,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   fontSize: 14,
                                   color: Colors.white,
                                   fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Container(
-                              margin: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                              ),
-                              width: double.maxFinite,
-                              child: Card(
-                                color: themeProvider.isDarkMode
-                                    ? AppColors.secondaryDark
-                                    : Colors.white,
-                                elevation: 0,
-                                child: Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Column(
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            "1.$currentPatchx",
-                                            style: TextStyle(
-                                              color: themeProvider.isDarkMode
-                                                  ? Colors.white
-                                                  : AppColors.primaryDark,
-                                              fontSize: 20,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      if (hasUpdate) const SizedBox(height: 20),
-                                      if (hasUpdate)
-                                        ElevatedButton(
-                                          onPressed: () async {
-                                            setState(() => hasUpdate = false);
-                                            try {
-                                              await updater.update();
-                                              final prefs =
-                                                  await SharedPreferences.getInstance();
-                                              final currentPatch = await updater
-                                                  .readCurrentPatch();
-                                              if (currentPatch != null) {
-                                                await prefs.setInt(
-                                                  _lastPatchKey,
-                                                  currentPatch.number,
-                                                );
-                                              }
-                                              if (Platform.isIOS) {
-                                                Restart.restartApp(
-                                                  notificationTitle:
-                                                      "تم تحميل تحديث جديد",
-                                                  notificationBody:
-                                                      "سيتم إعادة فتح التطبيق لتحميل الباتش",
-                                                );
-                                              } else {
-                                                await TerminateRestart.instance
-                                                    .restartApp(
-                                                      options:
-                                                          const TerminateRestartOptions(
-                                                            terminate: true,
-                                                          ),
-                                                    );
-                                              }
-                                            } on UpdateException catch (e) {
-                                              print("Update failed: $e");
-                                            }
-                                          },
-                                          child: Text("Update Now"),
-                                        ),
-                                    ],
-                                  ),
                                 ),
                               ),
                             ),

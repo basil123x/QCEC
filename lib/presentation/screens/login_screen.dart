@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:QCEC/l10n/app_localizations.dart';
 import 'package:QCEC/presentation/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +10,8 @@ import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../providers/auth_provider.dart';
 import 'main_screen.dart';
+
+enum _LoginPhase { phone, otp }
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -20,9 +24,14 @@ class _LoginScreenState extends State<LoginScreen>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _isPasswordVisible = false;
+  final List<TextEditingController> _otpControllers =
+      List.generate(6, (_) => TextEditingController());
+  final List<FocusNode> _otpFocusNodes = List.generate(6, (_) => FocusNode());
+
+  _LoginPhase _phase = _LoginPhase.phone;
   bool _isLoading = false;
+  int _countdownSeconds = 180;
+  Timer? _countdownTimer;
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -60,86 +69,215 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void dispose() {
     _phoneController.dispose();
-    _passwordController.dispose();
+    for (final controller in _otpControllers) {
+      controller.dispose();
+    }
+    for (final node in _otpFocusNodes) {
+      node.dispose();
+    }
+    _countdownTimer?.cancel();
     _animationController.dispose();
     super.dispose();
   }
 
-  Future<void> _login() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
-
-      HapticFeedback.lightImpact();
-
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
-      final result = await authProvider.login(
-        _phoneController.text.trim(),
-        _passwordController.text.trim(),
-      );
-
-      setState(() {
-        _isLoading = false;
-      });
-
-      if (result['success']) {
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(result['message'], style: GoogleFonts.cairo()),
-                ),
-              ],
-            ),
-            backgroundColor: const Color(0xFF4CAF50),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            margin: const EdgeInsets.all(16),
-          ),
-        );
-
-        // Navigate to main screen
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const MainScreen()),
-        );
-      } else {
-        // Show error message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(result['message'], style: GoogleFonts.cairo()),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            margin: const EdgeInsets.all(16),
-          ),
-        );
+  void _startCountdown() {
+    _countdownTimer?.cancel();
+    setState(() {
+      _countdownSeconds = 180;
+    });
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
       }
+      if (_countdownSeconds <= 1) {
+        timer.cancel();
+        setState(() {
+          _countdownSeconds = 0;
+        });
+      } else {
+        setState(() {
+          _countdownSeconds--;
+        });
+      }
+    });
+  }
+
+  String get _otpCode =>
+      _otpControllers.map((controller) => controller.text).join();
+
+  void _clearOtpFields() {
+    for (final controller in _otpControllers) {
+      controller.clear();
     }
+    if (_otpFocusNodes.isNotEmpty) {
+      _otpFocusNodes.first.requestFocus();
+    }
+  }
+
+  void _showMessage(String message, {required bool isError}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              isError ? Icons.error : Icons.check_circle,
+              color: Colors.white,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(message, style: GoogleFonts.cairo()),
+            ),
+          ],
+        ),
+        backgroundColor: isError ? Colors.red : const Color(0xFF4CAF50),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  Future<void> _sendOtp() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    HapticFeedback.lightImpact();
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final result = await authProvider.sendOtp(_phoneController.text.trim());
+
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (result['success'] == true) {
+      setState(() {
+        _phase = _LoginPhase.otp;
+      });
+      _clearOtpFields();
+      _startCountdown();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _otpFocusNodes.first.requestFocus();
+      });
+      if (result['message'] != null && result['message'].toString().isNotEmpty) {
+        _showMessage(result['message'], isError: false);
+      }
+    } else {
+      _showMessage(result['message'] ?? 'حدث خطأ', isError: true);
+    }
+  }
+
+  Future<void> _verifyOtp() async {
+    final code = _otpCode;
+    if (code.length != 6) {
+      _showMessage('يرجى إدخال رمز التحقق المكون من 6 أرقام', isError: true);
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    HapticFeedback.lightImpact();
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final result = await authProvider.verifyOtp(
+      _phoneController.text.trim(),
+      code,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (result['success'] == true) {
+      _showMessage(result['message'], isError: false);
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const MainScreen()),
+      );
+    } else {
+      _showMessage(result['message'] ?? 'حدث خطأ', isError: true);
+    }
+  }
+
+  Future<void> _resendOtp() async {
+    if (_countdownSeconds > 0 || _isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final result = await authProvider.sendOtp(_phoneController.text.trim());
+
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (result['success'] == true) {
+      _clearOtpFields();
+      _startCountdown();
+      _showMessage(result['message'] ?? 'تم إرسال رمز جديد', isError: false);
+    } else {
+      _showMessage(result['message'] ?? 'حدث خطأ', isError: true);
+    }
+  }
+
+  void _goBackToPhone() {
+    _countdownTimer?.cancel();
+    setState(() {
+      _phase = _LoginPhase.phone;
+      _countdownSeconds = 180;
+    });
+    _clearOtpFields();
+  }
+
+  String _formatCountdown() {
+    final minutes = (_countdownSeconds ~/ 60).toString();
+    final seconds = (_countdownSeconds % 60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
+  void _onOtpChanged(int index, String value) {
+    if (value.isEmpty && index > 0) {
+      _otpFocusNodes[index - 1].requestFocus();
+      setState(() {});
+      return;
+    }
+
+    if (value.length > 1) {
+      final digits = value.replaceAll(RegExp(r'\D'), '');
+      for (var i = 0; i < digits.length && index + i < 6; i++) {
+        _otpControllers[index + i].text = digits[i];
+      }
+      final nextIndex = (index + digits.length).clamp(0, 5);
+      _otpFocusNodes[nextIndex].requestFocus();
+      setState(() {});
+      return;
+    }
+
+    if (value.isNotEmpty && index < 5) {
+      _otpFocusNodes[index + 1].requestFocus();
+    }
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        // Hide keyboard when tapping outside
         FocusScope.of(context).unfocus();
       },
       child: Consumer<ThemeProvider>(
@@ -166,7 +304,6 @@ class _LoginScreenState extends State<LoginScreen>
 
                         const SizedBox(height: 20),
 
-                        // Welcome Text
                         AnimatedBuilder(
                           animation: _animationController,
                           builder: (context, child) {
@@ -189,9 +326,11 @@ class _LoginScreenState extends State<LoginScreen>
                                     ),
                                     const SizedBox(height: 12),
                                     Text(
-                                      AppLocalizations.of(
-                                        context,
-                                      )!.helloContent,
+                                      _phase == _LoginPhase.phone
+                                          ? AppLocalizations.of(
+                                              context,
+                                            )!.helloContent
+                                          : 'أدخل رمز التحقق المرسل عبر واتساب',
                                       style: GoogleFonts.cairo(
                                         fontSize: 16,
                                         color: themeProvider.isDarkMode
@@ -210,7 +349,6 @@ class _LoginScreenState extends State<LoginScreen>
 
                         const SizedBox(height: 50),
 
-                        // Form Fields
                         AnimatedBuilder(
                           animation: _animationController,
                           builder: (context, child) {
@@ -218,85 +356,9 @@ class _LoginScreenState extends State<LoginScreen>
                               position: _slideAnimation,
                               child: FadeTransition(
                                 opacity: _fadeAnimation,
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    // Phone Field
-                                    Text(
-                                      AppLocalizations.of(context)!.phoneNumber,
-                                      style: GoogleFonts.cairo(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: themeProvider.isDarkMode
-                                            ? AppColors.pureWhite
-                                            : Colors.grey[800],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    _buildTextField(
-                                      controller: _phoneController,
-                                      hintText: '12345678',
-                                      prefixIcon: Iconsax.call,
-                                      keyboardType: TextInputType.number,
-                                      inputFormatters: [
-                                        FilteringTextInputFormatter.digitsOnly,
-                                        LengthLimitingTextInputFormatter(8),
-                                      ],
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return AppLocalizations.of(
-                                            context,
-                                          )!.pleaseEnterPhoneNumber;
-                                        }
-                                        if (value.length != 8) {
-                                          return AppLocalizations.of(
-                                            context,
-                                          )!.phoneNumberMustBe8Digits;
-                                        }
-                                        return null;
-                                      },
-                                    ),
-
-                                    const SizedBox(height: 24),
-
-                                    // Password Field
-                                    Text(
-                                      AppLocalizations.of(context)!.password,
-                                      style: GoogleFonts.cairo(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: themeProvider.isDarkMode
-                                            ? AppColors.pureWhite
-                                            : Colors.grey[800],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    _buildTextField(
-                                      controller: _passwordController,
-                                      hintText: AppLocalizations.of(
-                                        context,
-                                      )!.writeYourPassword,
-                                      prefixIcon: Iconsax.lock,
-                                      isPassword: true,
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return AppLocalizations.of(
-                                            context,
-                                          )!.pleaseEnterPassword;
-                                        }
-                                        return null;
-                                      },
-                                    ),
-
-                                    const SizedBox(height: 32),
-
-                                    // Login Button
-                                    _buildLoginButton(),
-
-                                    const SizedBox(height: 20),
-                                  ],
-                                ),
+                                child: _phase == _LoginPhase.phone
+                                    ? _buildPhonePhase(themeProvider)
+                                    : _buildOtpPhase(themeProvider),
                               ),
                             );
                           },
@@ -313,11 +375,204 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
+  Widget _buildPhonePhase(ThemeProvider themeProvider) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          AppLocalizations.of(context)!.phoneNumber,
+          style: GoogleFonts.cairo(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: themeProvider.isDarkMode
+                ? AppColors.pureWhite
+                : Colors.grey[800],
+          ),
+        ),
+        const SizedBox(height: 8),
+        _buildTextField(
+          controller: _phoneController,
+          hintText: '12345678',
+          prefixIcon: Iconsax.call,
+          keyboardType: TextInputType.number,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(8),
+          ],
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return AppLocalizations.of(context)!.pleaseEnterPhoneNumber;
+            }
+            if (value.length != 8) {
+              return AppLocalizations.of(context)!.phoneNumberMustBe8Digits;
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 32),
+        _buildGradientButton(
+          label: 'إرسال رمز التحقق',
+          onTap: _sendOtp,
+        ),
+        const SizedBox(height: 20),
+      ],
+    );
+  }
+
+  Widget _buildOtpPhase(ThemeProvider themeProvider) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: _isLoading ? null : _goBackToPhone,
+            icon: Icon(
+              Iconsax.arrow_right_3,
+              size: 18,
+              color: themeProvider.isDarkMode
+                  ? AppColors.pureWhite
+                  : Colors.grey[700],
+            ),
+            label: Text(
+              'تعديل رقم الهاتف',
+              style: GoogleFonts.cairo(
+                fontSize: 14,
+                color: themeProvider.isDarkMode
+                    ? AppColors.pureWhite
+                    : Colors.grey[700],
+              ),
+            ),
+          ),
+        ),
+        Text(
+          'رمز التحقق',
+          style: GoogleFonts.cairo(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: themeProvider.isDarkMode
+                ? AppColors.pureWhite
+                : Colors.grey[800],
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          _phoneController.text.trim(),
+          style: GoogleFonts.cairo(
+            fontSize: 14,
+            color: themeProvider.isDarkMode
+                ? AppColors.pureWhite.withValues(alpha: 0.8)
+                : Colors.grey[600],
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 24),
+        _buildOtpFields(themeProvider),
+        const SizedBox(height: 16),
+        Text(
+          _countdownSeconds > 0
+              ? 'يمكنك إعادة الإرسال بعد ${_formatCountdown()}'
+              : 'يمكنك الآن طلب رمز جديد',
+          style: GoogleFonts.cairo(
+            fontSize: 14,
+            color: themeProvider.isDarkMode
+                ? AppColors.pureWhite.withValues(alpha: 0.8)
+                : Colors.grey[600],
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 12),
+        TextButton(
+          onPressed: (_countdownSeconds == 0 && !_isLoading) ? _resendOtp : null,
+          child: Text(
+            'إرسال رمز جديد',
+            style: GoogleFonts.cairo(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: _countdownSeconds == 0
+                  ? const Color(0xFF6B73FF)
+                  : Colors.grey,
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        _buildGradientButton(
+          label: AppLocalizations.of(context)!.login,
+          onTap: _verifyOtp,
+        ),
+        const SizedBox(height: 20),
+      ],
+    );
+  }
+
+  Widget _buildOtpFields(ThemeProvider themeProvider) {
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: List.generate(6, (index) {
+          return SizedBox(
+            width: 44,
+            height: 52,
+            child: Container(
+              decoration: BoxDecoration(
+                color: themeProvider.isDarkMode
+                    ? AppColors.primaryDark
+                    : const Color(0xFFF8F9FA),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(13),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: TextFormField(
+                    controller: _otpControllers[index],
+                    focusNode: _otpFocusNodes[index],
+                    textAlign: TextAlign.center,
+                    keyboardType: TextInputType.number,
+                    maxLength: 1,
+                    style: GoogleFonts.cairo(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: InputDecoration(
+                      counterText: '',
+                      filled: true,
+                      fillColor: themeProvider.isDarkMode
+                          ? AppColors.secondaryDark
+                          : AppColors.pureWhite,
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    onChanged: (value) => _onOtpChanged(index, value),
+                    onTap: () {
+                      _otpControllers[index].selection = TextSelection(
+                        baseOffset: 0,
+                        extentOffset: _otpControllers[index].text.length,
+                      );
+                    },
+                  ),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
   Widget _buildTextField({
     required TextEditingController controller,
     required String hintText,
     required IconData prefixIcon,
-    bool isPassword = false,
     TextInputType keyboardType = TextInputType.text,
     List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
@@ -342,7 +597,6 @@ class _LoginScreenState extends State<LoginScreen>
             borderRadius: BorderRadiusGeometry.circular(10),
             child: TextFormField(
               controller: controller,
-              obscureText: isPassword ? !_isPasswordVisible : false,
               keyboardType: keyboardType,
               inputFormatters: inputFormatters,
               validator: validator,
@@ -367,20 +621,6 @@ class _LoginScreenState extends State<LoginScreen>
                       : Colors.black,
                   size: 22,
                 ),
-                suffixIcon: isPassword
-                    ? IconButton(
-                        icon: Icon(
-                          _isPasswordVisible ? Iconsax.eye : Iconsax.eye_slash,
-                          color: Colors.grey[600],
-                          size: 22,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _isPasswordVisible = !_isPasswordVisible;
-                          });
-                        },
-                      )
-                    : null,
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
@@ -398,7 +638,10 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildLoginButton() {
+  Widget _buildGradientButton({
+    required String label,
+    required VoidCallback onTap,
+  }) {
     return Container(
       height: 56,
       decoration: BoxDecoration(
@@ -420,7 +663,7 @@ class _LoginScreenState extends State<LoginScreen>
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: _isLoading ? null : _login,
+          onTap: _isLoading ? null : onTap,
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 16),
             child: _isLoading
@@ -436,7 +679,7 @@ class _LoginScreenState extends State<LoginScreen>
                   )
                 : Center(
                     child: Text(
-                      AppLocalizations.of(context)!.login,
+                      label,
                       style: GoogleFonts.cairo(
                         color: Colors.white,
                         fontSize: 18,

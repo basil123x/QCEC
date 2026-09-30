@@ -680,9 +680,30 @@ class AppLocalizationsAr extends AppLocalizations {
   String get importantNotification => 'إشعار هام';
 
   @override
-  String get updatePrompt =>
-      'برجاء التحديث للمرة الأخيرة لتشغيل التحديثات التلقائية المرة القادمة';
+  String get updatePrompt => 'هذا الإصدار من التطبيق غير مدعوم';
 
   @override
   String get updateNow => 'قم بالتحديث الآن';
+
+  @override
+  String get versionUnsupportedTitle => 'هذا الإصدار من التطبيق غير مدعوم';
+
+  @override
+  String get versionUnsupportedBody =>
+      'يرجى تحديث التطبيق من المتجر للمتابعة.';
+
+  @override
+  String get checkingForUpdates => 'جاري التحقق من التحديثات…';
+
+  @override
+  String get downloadingUpdate => 'جاري تحميل التحديث…';
+
+  @override
+  String get applyingUpdate => 'جاري تطبيق التحديث…';
+
+  @override
+  String get pleaseWaitUpdate => 'يرجى الانتظار لحظات';
+
+  @override
+  String get closeApp => 'إغلاق التطبيق';
 }
